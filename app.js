@@ -2,6 +2,7 @@ const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
 const stepOrder=['cadre','zone','mens','macloe','smepp','synthese'];
 const titles={cadre:'Cadre de mission',zone:'Zone de mission',mens:'MENS',macloe:'MACLOE',smepp:'SMEPP',synthese:'Synthèse'};
 let currentStep='cadre',map,marker,circle,baseLayer;
+let macloeValidated=new Set();
 let smeppValidated=new Set();
 let missionGroundElevationM=null;
 let airspaceLayerGroup=null;
@@ -142,6 +143,111 @@ function buildGuides(host,items,prefix){
  host.querySelectorAll('textarea').forEach(t=>t.addEventListener('input',updateProgress));
 }
 
+function buildMacloeAccordion(host){
+ host.innerHTML=macloe.map((x,index)=>{
+  const tips=(x.tips||[]).map(t=>`<span>${t}</span>`).join('');
+  const help=`<div class="accordion-main-help">
+    <p>${x.h||''}</p>
+    ${tips?`<div class="guide-tip-chips">${tips}</div>`:''}
+    ${x.example?`<div class="guide-example"><b>Exemple</b><span>${x.example}</span></div>`:''}
+  </div>`;
+
+  return `<article class="smepp-accordion macloe-accordion" data-macloe-key="${x.k}">
+    <button class="smepp-accordion-toggle" type="button" aria-expanded="${index===0?'true':'false'}">
+      <span class="smepp-status-icon">○</span>
+      <span class="badge">${x.k}</span>
+      <span class="smepp-head-copy"><b>${x.t}</b><small>${x.d}</small></span>
+      <span class="smepp-state-label">À faire</span>
+      <span class="smepp-chevron">⌄</span>
+    </button>
+    <div class="smepp-accordion-body ${index===0?'open':''}">
+      ${help}
+      <textarea id="macloe-${x.k}" data-macloe-key="${x.k}" placeholder="Saisir ou dicter..."></textarea>
+      <div class="smepp-validation-row">
+        <span class="smepp-validation-hint">Complète la rubrique avant validation.</span>
+        <button class="smepp-validate" data-validate-macloe="${x.k}" type="button" disabled>Valider et continuer</button>
+      </div>
+    </div>
+  </article>`;
+ }).join('');
+
+ host.querySelectorAll('.smepp-accordion-toggle').forEach(btn=>btn.addEventListener('click',()=>{
+  const card=btn.closest('.macloe-accordion');
+  const body=card.querySelector('.smepp-accordion-body');
+  const willOpen=!body.classList.contains('open');
+  host.querySelectorAll('.smepp-accordion-body').forEach(b=>b.classList.remove('open'));
+  host.querySelectorAll('.smepp-accordion-toggle').forEach(b=>b.setAttribute('aria-expanded','false'));
+  if(willOpen){
+   body.classList.add('open');
+   btn.setAttribute('aria-expanded','true');
+  }
+  renderMacloeStates();
+ }));
+
+ host.querySelectorAll('textarea').forEach(t=>t.addEventListener('input',()=>{
+  const key=t.dataset.macloeKey;
+  if(macloeValidated.has(key))macloeValidated.delete(key);
+  renderMacloeStates();
+  updateProgress();
+ }));
+
+ host.querySelectorAll('[data-validate-macloe]').forEach(btn=>btn.addEventListener('click',()=>{
+  const key=btn.dataset.validateMacloe;
+  const value=$('#macloe-'+key)?.value.trim();
+  if(!value)return;
+  macloeValidated.add(key);
+  saveLocal();
+  updateProgress();
+
+  const index=macloe.findIndex(x=>x.k===key);
+  const next=macloe.slice(index+1).find(x=>!macloeValidated.has(x.k));
+  host.querySelectorAll('.smepp-accordion-body').forEach(b=>b.classList.remove('open'));
+  host.querySelectorAll('.smepp-accordion-toggle').forEach(b=>b.setAttribute('aria-expanded','false'));
+  if(next){
+   const nextCard=host.querySelector('[data-macloe-key="'+next.k+'"]');
+   nextCard.querySelector('.smepp-accordion-body').classList.add('open');
+   nextCard.querySelector('.smepp-accordion-toggle').setAttribute('aria-expanded','true');
+   setTimeout(()=>nextCard.scrollIntoView({behavior:'smooth',block:'start'}),50);
+  }
+  renderMacloeStates();
+ }));
+
+ renderMacloeStates();
+}
+
+function renderMacloeStates(){
+ const host=$('#macloeFields');
+ if(!host)return;
+ macloe.forEach(item=>{
+  const card=host.querySelector('[data-macloe-key="'+item.k+'"]');
+  if(!card)return;
+  const done=macloeValidated.has(item.k);
+  const body=card.querySelector('.smepp-accordion-body');
+  const isOpen=body.classList.contains('open');
+  const complete=!!$('#macloe-'+item.k)?.value.trim();
+  const icon=card.querySelector('.smepp-status-icon');
+  const label=card.querySelector('.smepp-state-label');
+  const validate=card.querySelector('.smepp-validate');
+  const hint=card.querySelector('.smepp-validation-hint');
+
+  card.classList.toggle('validated',done);
+  card.classList.toggle('current',!done&&isOpen);
+  card.classList.toggle('ready-to-validate',!done&&complete);
+
+  icon.textContent=done?'✓':(isOpen?'•':'○');
+  label.textContent=done?'Validé':(isOpen?'En cours':'À faire');
+
+  if(validate){
+   validate.disabled=!complete||done;
+   validate.textContent=done?'Validé ✓':'Valider et continuer';
+  }
+  if(hint){
+   hint.textContent=done?'Rubrique validée.':(complete?'Tout est renseigné : tu peux valider.':'Complète la rubrique avant validation.');
+  }
+ });
+ if($('#macloeProgress'))$('#macloeProgress').textContent=`${macloeValidated.size}/6`;
+}
+
 function buildSmeppAccordion(host){
  host.innerHTML=smepp.map((x,index)=>{
   const editor=x.subs
@@ -262,7 +368,7 @@ function renderSmeppStates(){
  if($('#smeppProgress')) $('#smeppProgress').textContent=`${progress}/5`;
 }
 
-buildGuides($('#macloeFields'),macloe,'macloe');
+buildMacloeAccordion($('#macloeFields'));
 buildSmeppAccordion($('#smeppFields'));
 
 function syncBottomNav(step){
@@ -762,9 +868,8 @@ function itemComplete(prefix,item){
  return !!$('#'+prefix+'-'+item.k)?.value.trim();
 }
 function updateProgress(){
- const m=macloe.filter(x=>itemComplete('macloe',x)).length;
- $('#macloeProgress').textContent=`${m}/6`;
- if($('#smeppProgress')) $('#smeppProgress').textContent=`${smeppValidated.size}/5`;
+ if($('#macloeProgress'))$('#macloeProgress').textContent=`${macloeValidated.size}/6`;
+ if($('#smeppProgress'))$('#smeppProgress').textContent=`${smeppValidated.size}/5`;
  refreshHome();
 }
 function collect(){
@@ -779,6 +884,7 @@ function collect(){
    notamNotes:$('#notamNotes')?.value||'',
    supaipNotes:$('#supaipNotes')?.value||''
   },
+  macloeValidated:[...macloeValidated],
   macloe:Object.fromEntries(macloe.map(x=>[x.k,$('#macloe-'+x.k)?.value||''])),
   smeppValidated:[...smeppValidated],
   smepp:Object.fromEntries(smepp.map(x=>[
@@ -870,6 +976,7 @@ function loadLocal(){
    if($('#supaipNotes'))$('#supaipNotes').value=d.mens.supaipNotes||'';
   }
   macloe.forEach(x=>{const el=$('#macloe-'+x.k);if(el)el.value=d.macloe?.[x.k]||''});
+  macloeValidated=new Set(Array.isArray(d.macloeValidated)?d.macloeValidated:[]);
   smepp.forEach(x=>{
    if(x.subs){
     x.subs.forEach(s=>{
@@ -882,6 +989,7 @@ function loadLocal(){
    }
   });
   smeppValidated=new Set(Array.isArray(d.smeppValidated)?d.smeppValidated:[]);
+  renderMacloeStates();
   renderSmeppStates();
   updateMensProgress();
   updateProgress();
@@ -890,8 +998,8 @@ function loadLocal(){
   console.warn('Mission locale illisible',e);
  }
 }
-function refreshHome(){const d=collect(),m=Object.values(d.mens.checks).filter(Boolean).length,ma=Object.values(d.macloe).filter(v=>v.trim()).length,sm=smeppValidated.size;$('#homeMissionTitle').textContent=d.title||'Mission sans titre';$('#homeMissionMeta').textContent=d.title?`${d.type} · ${d.zone.environment}`:'Aucune mission enregistrée';$('#homeMens').textContent=`MENS ${m}/4`;$('#homeMacloe').textContent=`MACLOE ${ma}/6`;$('#homeSmepp').textContent=`SMEPP ${sm}/5`}
-function renderSummary(){const d=collect(),m=Object.values(d.mens.checks).filter(Boolean).length,ma=Object.values(d.macloe).filter(v=>v.trim()).length,sm=smeppValidated.size;$('#summary').innerHTML=`
+function refreshHome(){const d=collect(),m=Object.values(d.mens.checks).filter(Boolean).length,ma=macloeValidated.size,sm=smeppValidated.size;$('#homeMissionTitle').textContent=d.title||'Mission sans titre';$('#homeMissionMeta').textContent=d.title?`${d.type} · ${d.zone.environment}`:'Aucune mission enregistrée';$('#homeMens').textContent=`MENS ${m}/4`;$('#homeMacloe').textContent=`MACLOE ${ma}/6`;$('#homeSmepp').textContent=`SMEPP ${sm}/5`}
+function renderSummary(){const d=collect(),m=Object.values(d.mens.checks).filter(Boolean).length,ma=macloeValidated.size,sm=smeppValidated.size;$('#summary').innerHTML=`
  <div class="summary-box"><b>Mission</b><p>${esc(d.title||'Sans titre')}\n${esc(d.missionDateTime?new Date(d.missionDateTime).toLocaleString('fr-FR'):'Créneau non renseigné')}\n${esc(d.type)} · ${esc(d.capture)}\n${esc(d.useCases.join(' · ')||'Aucun cas d’usage')}</p></div>
  <div class="summary-box"><b>Zone</b><p>${d.zone.lat.toFixed(6)}, ${d.zone.lng.toFixed(6)}\nAltitude ${d.zone.altitude} m · Rayon ${d.zone.radius} m\n${esc(d.zone.environment)} · ${esc(d.zone.base.toUpperCase())}</p></div>
  <div class="summary-box"><b>Préparation</b><p>MENS ${m}/4 · MACLOE ${ma}/6 · SMEPP ${sm}/5</p></div>`;
