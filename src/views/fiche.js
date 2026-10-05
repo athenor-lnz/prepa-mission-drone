@@ -105,6 +105,7 @@ export function renderForm({ mission, route }) {
         onclick:()=>{active=s.id;draw();}
       }, isValidated(s.id)?icon('check',18):s.letter)));
 
+    let validate;
     const fields = sec.fields.map((f) => {
       const ta = h('textarea', {
         rows: 4, maxlength: 20000, value: mission[key][f.key] || '', id: `f-${f.key}`, 'aria-describedby': `h-${f.key}`,
@@ -113,7 +114,16 @@ export function renderForm({ mission, route }) {
             m[key][f.key] = ta.value;
             if ((m.validation[validationKey] || []).includes(sec.id)) m.validation[validationKey] = m.validation[validationKey].filter((x)=>x!==sec.id);
           }, { debounce: 350 });
-          queueMicrotask(draw);
+          const q = sectionProgress(sec, mission[key]);
+          const count = root.querySelector('[data-section-count]');
+          if (count) count.textContent = `${q.done} / ${q.total} champ(s)`;
+          if (validate) {
+            validate.disabled = !sectionComplete(sec, mission[key]);
+            validate.textContent = 'Valider cette partie et continuer';
+            validate.className = 'btn block primary';
+          }
+          root.querySelector('.active-form-section')?.classList.remove('section-validated');
+          root.querySelector('.rail-btn.active')?.classList.remove('validated');
         }
       });
       const interim = h('div', { class: 'interim', 'aria-live': 'polite' });
@@ -128,7 +138,7 @@ export function renderForm({ mission, route }) {
       sec.tips?.length ? h('div', { class: 'tip-chips' }, sec.tips.map((t)=>h('span',{},t))) : null,
       sec.example ? h('div', { class:'example-box' }, h('span',{class:'lbl'},'Exemple'), h('p',{},sec.example)) : null);
 
-    const validate = h('button', {
+    validate = h('button', {
       class: `btn block ${done?'validated-btn':'primary'}`,
       disabled: !complete && !done,
       onclick: () => {
@@ -155,7 +165,7 @@ export function renderForm({ mission, route }) {
         h('section', { class: `card-sec active-form-section ${done?'section-validated':''}` },
           h('div', { class: 'fsec-head' },
             h('span', { class: `letter ${done?'done':''}` }, done?icon('check',18):sec.letter),
-            h('div',{class:'fsec-title'},h('h2', {}, sec.title), h('span',{class:'mono small'},`${sp.done} / ${sp.total} champ(s)`))),
+            h('div',{class:'fsec-title'},h('h2', {}, sec.title), h('span',{class:'mono small','data-section-count':'1'},`${sp.done} / ${sp.total} champ(s)`))),
           guidance,
           fields,
           validate),
