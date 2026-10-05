@@ -32,6 +32,7 @@
           <p>Une préparation drone guidée, pensée d'abord pour le téléphone.</p>
           <button id="newMissionBtn" class="cta">＋ Nouvelle mission</button>
           <button id="installBtn" class="install-cta hidden-install" type="button">⇩ Installer l’application</button>
+          <button id="importHomeBtn" class="hero-secondary-btn" type="button">↥ Importer une mission</button>
         </div>
       </div>
 
@@ -103,8 +104,9 @@
           <div id="map"></div>
           <div class="map-search">⌕ <input placeholder="Rechercher un lieu, une adresse..."></div>
           <div class="basemap">
-            <button data-base="osm" class="active">OSM</button>
-            <button data-base="sat">Satellite</button>
+            <button data-base="osm">OSM</button>
+            <button data-base="sat" class="active">Satellite</button>
+            <button data-base="oaci">OACI</button>
           </div>
         </div>
         <div class="sheet card">
@@ -128,6 +130,41 @@
           <label><input type="checkbox" data-check="notam"><span class="letter l3">N</span><span><b>NOTAM</b><small>Activités temporaires, restrictions et informations opérationnelles.</small></span></label>
           <label><input type="checkbox" data-check="supaip"><span class="letter l4">S</span><span><b>SUP AIP</b><small>Publications temporaires impactant le volume de vol.</small></span></label>
         </div>
+        <section class="card aero-directory">
+          <div class="aero-directory-head">
+            <div>
+              <span class="section-eyebrow">ESPACE AÉRIEN</span>
+              <h3>Annuaire & cartes VAC</h3>
+              <p>Téléphones cliquables, fréquences et accès rapide aux cartes SIA.</p>
+            </div>
+            <button id="toggleContactForm" class="small-action" type="button">＋ Contact</button>
+          </div>
+
+          <div class="vac-search-row">
+            <input id="vacIcao" maxlength="8" autocomplete="off" placeholder="ICAO / zone — ex. LFBO">
+            <button id="openVacBtn" class="secondary" type="button">VAC / AIP ↗</button>
+          </div>
+          <small class="source-note">Recherche ouverte sur le SIA. Les cartes VAC sont mises à jour par cycles AIRAC.</small>
+
+          <input id="contactSearch" class="contact-search" placeholder="Rechercher un contact, une zone, une fréquence…">
+          <div id="contactsList" class="contacts-list"></div>
+
+          <div id="contactForm" class="contact-form hidden-contact">
+            <div class="grid2">
+              <label>Nom<input id="contactName" placeholder="Ex. Tour de contrôle Toulouse"></label>
+              <label>Type<select id="contactType"><option>TWR</option><option>APP</option><option>FIC / INFO</option><option>Opérations</option><option>Autorité d'emploi</option><option>Autre</option></select></label>
+              <label>Zone / ICAO<input id="contactZone" placeholder="LFBO, LFR51…"></label>
+              <label>Téléphone<input id="contactPhone" inputmode="tel" placeholder="05 61…"></label>
+            </div>
+            <label>Fréquence<input id="contactFreq" placeholder="Ex. TWR 118.100 MHz"></label>
+            <label>Notes<textarea id="contactNotes" rows="3" placeholder="Horaires, conditions d’activation, consignes…"></textarea></label>
+            <div class="action-row">
+              <button id="cancelContactBtn" class="secondary" type="button">Annuler</button>
+              <button id="saveContactBtn" class="primary" type="button">Enregistrer le contact</button>
+            </div>
+          </div>
+        </section>
+
         <label class="card notes">Notes MENS<textarea id="mensNotes" placeholder="Contraintes, contacts, hauteur, vent, visibilité..."></textarea></label>
       </section>
 
@@ -144,7 +181,12 @@
       <section class="panel" data-panel="synthese">
         <div id="readiness" class="ready-card"><span>✓</span><div><b>Mission en préparation</b><small>Complète les étapes restantes avant validation.</small></div></div>
         <div id="summary" class="summary-list"></div>
-        <div class="bottom-actions"><button id="exportBtn" class="secondary">Exporter JSON</button><button id="saveBtn" class="primary">Enregistrer</button></div>
+        <div class="mission-transfer">
+          <button id="importBtn" class="secondary" type="button">↥ Importer</button>
+          <button id="shareBtn" class="secondary" type="button">↗ Envoyer</button>
+          <button id="exportBtn" class="secondary" type="button">⇩ Exporter</button>
+          <button id="saveBtn" class="primary" type="button">✓ Enregistrer</button>
+        </div>
       </section>
 
       <div class="nav-actions"><button id="prevBtn" class="secondary">← Précédent</button><button id="nextBtn" class="primary">Suivant →</button></div>
@@ -157,6 +199,7 @@
     <button data-open-step="zone">⌖<small>Carte</small></button>
     <button data-open-step="synthese">✓<small>Synthèse</small></button>
   </nav>
+  <input id="missionImportFile" type="file" accept=".json,application/json" hidden>
 </div>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="app.js"></script>
