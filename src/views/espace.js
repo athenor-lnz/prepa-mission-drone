@@ -157,35 +157,57 @@ export function renderEspace({ mission }) {
   }
 
   function contactDirectoryCard() {
-    const contacts=listContacts();
-    const openAdd=()=>{
-      const name=h('input',{placeholder:'Nom du contact',maxlength:160,'aria-label':'Nom du contact'});
-      const type=h('input',{placeholder:'Type : TWR, APP, opérations…',maxlength:80,'aria-label':'Type de contact'});
-      const zone=h('input',{placeholder:'Zone / ICAO',maxlength:40,'aria-label':'Zone ou ICAO'});
-      const phone=h('input',{placeholder:'Téléphone',inputmode:'tel',maxlength:40,'aria-label':'Téléphone'});
-      const freq=h('input',{placeholder:'Fréquence (facultatif)',maxlength:160,'aria-label':'Fréquence'});
-      const notes=h('textarea',{rows:3,placeholder:'Notes / horaires / consignes',maxlength:600,'aria-label':'Notes'});
+    const contacts = listContacts();
+
+    const openAdd = () => {
+      const name = h('input', { placeholder: 'Nom du contact', maxlength: 160, 'aria-label': 'Nom du contact' });
+      const type = h('input', { placeholder: 'Type : TWR, APP, opérations…', maxlength: 80, 'aria-label': 'Type de contact' });
+      const zone = h('input', { placeholder: 'Zone / ICAO', maxlength: 40, 'aria-label': 'Zone ou ICAO' });
+      const phone = h('input', { placeholder: 'Téléphone', inputmode: 'tel', maxlength: 40, 'aria-label': 'Téléphone' });
+      const freq = h('input', { placeholder: 'Fréquence (facultatif)', maxlength: 160, 'aria-label': 'Fréquence' });
+      const notes = h('textarea', { rows: 3, placeholder: 'Notes / horaires / consignes', maxlength: 600, 'aria-label': 'Notes' });
       let sh;
-      const save=()=>{
-        try{
-          addContact({name:name.value,type:type.value,zone:zone.value,phone:phone.value,frequency:freq.value,notes:notes.value});
-          sh.close();toast('Contact ajouté');draw();
-        }catch(e){toast(e.message,'bad');}
+      const save = () => {
+        try {
+          addContact({ name: name.value, type: type.value, zone: zone.value, phone: phone.value, frequency: freq.value, notes: notes.value });
+          sh.close();
+          toast('Contact ajouté');
+          draw();
+        } catch (e) {
+          toast(e.message, 'bad');
+        }
       };
-      sh=sheet('Ajouter un contact aéronautique',h('div',{class:'stack'},name,type,zone,phone,freq,notes,h('button',{class:'btn primary block',onclick:save},'Enregistrer')));
+      sh = sheet('Ajouter un contact aéronautique',
+        h('div', { class: 'stack' },
+          name, type, zone, phone, freq, notes,
+          h('button', { class: 'btn primary block', onclick: save }, 'Enregistrer')));
     };
-    return h('section',{class:'card-sec'},
-      h('div',{class:'dataset-head'},
-        h('div',{},h('span',{class:'lbl'},'Annuaire aéronautique'),h('p',{class:'note'},'Contacts personnels stockés uniquement sur cet appareil. Les numéros sont directement appelables.')),
-        h('button',{class:'btn ghost small',onclick:openAdd},'＋ Contact')),
-      contacts.length?h('div',{class:'contact-list'},contacts.map((x)=>h('article',{class:'contact-card'},
-        h('div',{class:'contact-main'},h('strong',{},x.name),h('small',{},[x.type,x.zone].filter(Boolean).join(' · '))),
-        x.frequency?h('p',{class:'mono small'},x.frequency):null,
-        x.notes?h('p',{class:'note'},x.notes):null,
-        h('div',{class:'contact-actions'},
-          h('a',{class:'btn contact-call',href:telHref(x.phone)},`☎ ${x.phone}`),
-          h('button',{class:'btn ghost small','aria-label':`Supprimer ${x.name}`,onclick:()=>{removeContact(x.id);draw();}},icon('trash',18)))))))
-        :h('p',{class:'note'},'Aucun contact personnel enregistré.'));
+
+    const body = contacts.length
+      ? h('div', { class: 'contact-list' },
+          contacts.map((x) =>
+            h('article', { class: 'contact-card' },
+              h('div', { class: 'contact-main' },
+                h('strong', {}, x.name),
+                h('small', {}, [x.type, x.zone].filter(Boolean).join(' · '))),
+              x.frequency ? h('p', { class: 'mono small' }, x.frequency) : null,
+              x.notes ? h('p', { class: 'note' }, x.notes) : null,
+              h('div', { class: 'contact-actions' },
+                h('a', { class: 'btn contact-call', href: telHref(x.phone) }, `☎ ${x.phone}`),
+                h('button', {
+                  class: 'btn ghost small',
+                  'aria-label': `Supprimer ${x.name}`,
+                  onclick: () => { removeContact(x.id); draw(); }
+                }, icon('trash', 18))))))
+      : h('p', { class: 'note' }, 'Aucun contact personnel enregistré.');
+
+    return h('section', { class: 'card-sec' },
+      h('div', { class: 'dataset-head' },
+        h('div', {},
+          h('span', { class: 'lbl' }, 'Annuaire aéronautique'),
+          h('p', { class: 'note' }, 'Contacts personnels stockés uniquement sur cet appareil. Les numéros sont directement appelables.')),
+        h('button', { class: 'btn ghost small', onclick: openAdd }, '＋ Contact')),
+      body);
   }
 
   function aerodromeCard() {
