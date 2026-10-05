@@ -80,7 +80,7 @@ test('structure d\'une nouvelle mission', () => {
   const m = newMission({ now: new Date('2026-10-05T10:00:00Z') });
   assert.match(m.id, /^m_20261005_[0-9a-z]{4}$/);
   assert.equal(m.place.radiusM, 500);
-  assert.equal(m.mens.meteo.gustLimitMs, 12);
+  assert.equal(m.mens.meteo.gustLimitMs, 10.3);
   assert.equal(Object.keys(m.smepp).length, 9);
   assert.equal(Object.keys(m.macloe).length, 6);
   assert.deepEqual(m.admin, { gendrone: 'todo', visualdrone: 'todo' });

@@ -34,3 +34,8 @@ S'arrêter à la fin de chaque phase pour validation.
 
 ## Phase 5 — Confort
 - PWA hors ligne (service worker), impression/PDF de la fiche mission, dictée locale (étude), versions mobiles affinées, audit d'accessibilité.
+
+## État d'avancement (06/10/2026)
+Phases 0 à 4 codées sur cette branche, plus le PWA de base de la phase 5 (service worker, manifeste). Vérifié : 57 tests unitaires, parcours complet dans Chromium (iPhone 390×844, clair et sombre, API simulées), aucune erreur console.
+**Non vérifié** (le bac à sable n'atteint pas ces services) : CORS réel d'Open-Meteo, Géoplateforme (géocodage et WFS), NOAA, Nominatim ; tuiles Esri ; dictée vocale réelle ; affichage sur un vrai téléphone. Un échec réseau ouvre toujours la saisie manuelle.
+Choix assumés : NOTAM, SUP AIP, alertes météo et « zone contrôlée » sont saisis à la main (aucune source ouverte fiable) ; hors France métropolitaine la couche de restrictions UAS n'est pas interrogée (« non vérifié »). Reste à faire : impression/PDF, audit d'accessibilité sur appareil.

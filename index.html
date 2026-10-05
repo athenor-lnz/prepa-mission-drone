@@ -2,26 +2,20 @@
 <html lang="fr">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self'">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob: https://tile.openstreetmap.org https://server.arcgisonline.com https://data.geopf.fr; connect-src 'self' https://data.geopf.fr https://api.open-meteo.com https://services.swpc.noaa.gov https://nominatim.openstreetmap.org; manifest-src 'self'; worker-src 'self'; base-uri 'none'; form-action 'none'">
+<meta name="theme-color" content="#EEF0EA">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/icon.svg" type="image/svg+xml">
 <title>Prépa Mission Drone</title>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Sora:wght@600;700&family=Manrope:wght@500;600;700&family=JetBrains+Mono:wght@500&display=swap">
+<link rel="stylesheet" href="vendor/leaflet/leaflet.css">
 <link rel="stylesheet" href="design/tokens.css">
-<style>
-  body { margin: 0; background: var(--bg); color: var(--ink); font-family: var(--font-body); font-size: 15px; line-height: 1.4; }
-  h1, h2 { font-family: var(--font-display); font-weight: 700; letter-spacing: -.02em; margin: 0; }
-  .center { min-height: 100vh; display: grid; place-items: center; padding: 16px; }
-  .card { background: var(--panel); border-radius: var(--r-card); box-shadow: var(--shadow); padding: 28px; width: min(420px, 100%); display: flex; flex-direction: column; gap: 16px; }
-  .lbl { font-size: 12px; letter-spacing: .1em; text-transform: uppercase; color: var(--mute); font-weight: 600; }
-  input { min-height: 56px; border: 2px solid var(--field-line); border-radius: var(--r-ctl); background: var(--panel2); color: var(--ink); padding: 0 12px; font: inherit; width: 100%; box-sizing: border-box; }
-  input:focus-visible, button:focus-visible { outline: 3px solid var(--acc); outline-offset: 2px; }
-  button { min-height: var(--cta-h); border-radius: var(--r-cta); border: 0; background: var(--acc); color: var(--accInk); font: inherit; font-family: var(--font-display); font-weight: 700; font-size: 17px; cursor: pointer; padding: 0 18px; }
-  .err { color: var(--bad); font-weight: 600; }
-  .note { color: var(--mute); font-size: 14px; }
-</style>
+<link rel="stylesheet" href="css/app.css">
 </head>
 <body>
+<noscript>Cette application nécessite JavaScript.</noscript>
 <div id="app"></div>
+<script src="vendor/leaflet/leaflet.js"></script>
 <script type="module" src="src/main.js"></script>
 </body>
 </html>

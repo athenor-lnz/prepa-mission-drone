@@ -1,68 +1,54 @@
-// Coquille de démarrage : verrou + page d'accueil minimale.
-// L'IA de développement remplace ceci par le routeur et les vues (docs/02, docs/07 phase 0).
+// Point d'entrée : verrou, routeur par hash, rendu des vues.
 import { verifier } from './config.js';
-import { verify, isUnlocked, setUnlocked } from './lib/gate.js';
-import { createMissionStore } from './lib/storage.js';
+import { isUnlocked, setUnlocked } from './lib/gate.js';
+import { store, applyTheme, flush } from './state.js';
+import { renderConnexion } from './views/connexion.js';
+import { renderAccueil } from './views/accueil.js';
+import { renderLieu } from './views/lieu.js';
+import { renderMeteo } from './views/meteo.js';
+import { renderEspace, renderNotam, renderSupAip } from './views/espace.js';
+import { renderFiche, renderForm } from './views/fiche.js';
+import { h } from './ui/dom.js';
 
-const root = document.getElementById('app');
-const store = createMissionStore();
-
-const THEME_KEY = 'pmd.theme';
-function applyTheme() {
-  let t = null;
-  try { t = localStorage.getItem(THEME_KEY); } catch { /* ignore */ }
-  if (t === 'light' || t === 'dark') document.documentElement.dataset.theme = t;
-}
+const app = document.getElementById('app');
 applyTheme();
+matchMedia('(prefers-color-scheme: dark)').addEventListener?.('change', applyTheme);
 
-const el = (tag, attrs = {}, ...kids) => {
-  const n = document.createElement(tag);
-  for (const [k, v] of Object.entries(attrs)) {
-    if (k === 'class') n.className = v;
-    else if (k.startsWith('on')) n.addEventListener(k.slice(2), v);
-    else n.setAttribute(k, v);
-  }
-  n.append(...kids);
-  return n;
-};
-
-function showLock() {
-  const msg = el('p', { class: 'err', role: 'alert' });
-  const input = el('input', { id: 'pw', type: 'password', autocomplete: 'current-password' });
-  const form = el('form', { class: 'card' },
-    el('span', { class: 'lbl' }, 'Usage interne'),
-    el('h1', {}, 'Prépa Mission Drone'),
-    el('label', { for: 'pw', class: 'lbl' }, 'Mot de passe'),
-    input,
-    msg,
-    el('button', { type: 'submit' }, 'Entrer')
-  );
-  if (!verifier) {
-    msg.className = 'note';
-    msg.textContent = 'Mot de passe non configuré : lancez « node scripts/make-verifier.mjs » puis copiez le résultat dans src/config.js.';
-  }
-  form.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    if (!verifier) return;
-    if (await verify(input.value, verifier)) { setUnlocked(true); showHome(); }
-    else { msg.textContent = 'Mot de passe incorrect'; msg.className = 'err'; input.select(); }
-  });
-  root.replaceChildren(el('div', { class: 'center' }, form));
-  input.focus();
+let current = null;
+function mount(view) {
+  current?.destroy?.();
+  current = view;
+  app.replaceChildren(view.el);
+  window.scrollTo(0, 0);
+  const t = view.el.querySelector('h1, h2');
+  if (t) { t.tabIndex = -1; }
 }
 
-function showHome() {
-  const missions = store.list();
-  const list = missions.length
-    ? el('ul', {}, ...missions.map((m) => el('li', {}, `${m.name} — ${m.place.label || 'lieu à définir'}`)))
-    : el('p', { class: 'note' }, 'Aucune mission enregistrée.');
-  root.replaceChildren(el('div', { class: 'center' }, el('div', { class: 'card' },
-    el('h1', {}, 'Missions'),
-    list,
-    el('button', { type: 'button', onclick: () => { store.create(); showHome(); } }, '+ Nouvelle mission'),
-    el('button', { type: 'button', onclick: () => { setUnlocked(false); showLock(); } }, 'Verrouiller'),
-    el('p', { class: 'note' }, 'Socle de démarrage : voir docs/07-feuille-de-route.md, phase 0.')
-  )));
+const ID_RE = /^[\w-]{1,64}$/;
+const MISSION_ROUTES = { lieu: renderLieu, meteo: renderMeteo, espace: renderEspace, notam: renderNotam, supaip: renderSupAip, fiche: renderFiche, smepp: renderForm, macloe: renderForm };
+
+function lock() { setUnlocked(false); route(); }
+
+function route() {
+  flush();
+  if (!verifier || !isUnlocked()) { mount(renderConnexion({ onUnlocked: route })); return; }
+  const parts = location.hash.replace(/^#\/?/, '').split('/').filter(Boolean);
+  if (parts[0] === 'mission' && ID_RE.test(parts[1] || '')) {
+    const mission = store.get(parts[1]);
+    const r = parts[2] || 'lieu';
+    if (mission && MISSION_ROUTES[r]) { mount(MISSION_ROUTES[r]({ mission, route: r })); return; }
+    location.hash = mission ? `#/mission/${mission.id}/lieu` : '#/';
+    return;
+  }
+  mount(renderAccueil({ onLock: lock }));
 }
 
-if (isUnlocked() && verifier) showHome(); else showLock();
+addEventListener('hashchange', route);
+try { route(); } catch (e) {
+  console.error(e);
+  app.replaceChildren(h('main', { class: 'center' }, h('div', { class: 'card' }, h('h1', {}, 'Erreur'), h('p', {}, 'L\'application a rencontré un problème. Rechargez la page ; vos missions sont conservées.'), h('a', { class: 'btn primary', href: '#/' }, 'Accueil'))));
+}
+
+if ('serviceWorker' in navigator && location.protocol !== 'file:') {
+  navigator.serviceWorker.register('sw.js').catch(() => { /* hors ligne non disponible */ });
+}
