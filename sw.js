@@ -1,4 +1,4 @@
-const CACHE = 'prepa-mission-drone-v3';
+const CACHE = 'prepa-mission-drone-v4';
 const APP_SHELL = [
   './',
   './index.html',
