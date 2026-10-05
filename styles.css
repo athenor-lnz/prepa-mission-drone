@@ -177,3 +177,79 @@ html[data-theme="light"] .contact-frequency{color:#165fae}
   .smepp-chevron{grid-column:4;grid-row:1/3}
   .vac-search-row{grid-template-columns:1fr}
 }
+
+
+/* --- MENS 2.0 --- */
+.full-action{width:100%;margin-top:12px}
+.mens-tools{display:grid;gap:12px}
+.mens-tool{padding:14px}
+.mens-tool-head{display:grid;grid-template-columns:42px minmax(0,1fr) auto;gap:10px;align-items:center}
+.mens-tool-head b,.mens-tool-head small{display:block}
+.mens-tool-head small{margin-top:4px;color:var(--muted);font-size:11px;line-height:1.4}
+.tool-state{padding:6px 8px;border-radius:999px;background:var(--panel2);border:1px solid var(--line);color:var(--muted);font-size:10px;font-weight:850;white-space:nowrap}
+.tool-state.validated{color:#79deb0;background:rgba(22,199,132,.10);border-color:rgba(22,199,132,.34)}
+.mens-tool-actions{margin-top:12px}
+.split-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.weather-results{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:10px}
+.weather-metric{padding:10px;border-radius:13px;background:var(--panel2);border:1px solid var(--line)}
+.weather-metric small,.weather-metric b{display:block}
+.weather-metric small{font-size:9px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:4px}
+.weather-metric b{font-size:13px}
+.weather-source{grid-column:1/-1;color:var(--muted);font-size:9px;line-height:1.45;padding-top:2px}
+.tool-placeholder{grid-column:1/-1;padding:14px;border:1px dashed var(--line);border-radius:13px;color:var(--muted);font-size:11px;text-align:center}
+.tool-placeholder.error{border-color:rgba(255,90,102,.34);color:#ff9ba3}
+.tool-placeholder.loading{animation:pulseText 1.2s ease-in-out infinite}
+@keyframes pulseText{50%{opacity:.55}}
+.mens-validate{display:flex;align-items:flex-start;gap:9px;margin-top:12px;padding:11px;border-radius:13px;background:var(--panel2);border:1px solid var(--line);font-size:11px;line-height:1.4}
+.mens-validate input{width:auto;margin:2px 0 0}
+.airspace-context{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-top:12px}
+.airspace-context>div{padding:9px;border-radius:12px;background:var(--panel2);border:1px solid var(--line)}
+.airspace-context small,.airspace-context b{display:block}
+.airspace-context small{color:var(--muted);font-size:8px;text-transform:uppercase;letter-spacing:.08em}
+.airspace-context b{font-size:10px;margin-top:3px}
+.official-source-note{margin-top:12px;padding:11px;border-radius:13px;background:rgba(8,124,255,.08);border:1px solid rgba(8,124,255,.22);color:var(--muted);font-size:11px;line-height:1.5}
+.embedded-directory{margin-top:14px;padding-top:14px;border-top:1px dashed var(--line)}
+.embedded-directory .aero-directory-head h3{font-size:15px}
+
+/* --- Leaflet location control --- */
+.locate-control{background:transparent!important;border:0!important;box-shadow:none!important}
+.leaflet-locate-btn{
+  width:34px;height:34px;display:grid;place-items:center;
+  border:2px solid rgba(0,0,0,.2)!important;border-radius:4px!important;
+  background:#fff!important;color:#111!important;font-size:19px!important;font-weight:900!important;
+  cursor:pointer;
+}
+.leaflet-locate-btn.loading{animation:locatePulse .9s ease-in-out infinite}
+@keyframes locatePulse{50%{transform:scale(.9);opacity:.65}}
+
+/* --- MACLOE richer guidance --- */
+.guide-help p{margin:0 0 10px}
+.guide-tip-chips{display:flex;flex-wrap:wrap;gap:6px}
+.guide-tip-chips span{padding:6px 8px;border-radius:999px;background:color-mix(in srgb,var(--panel) 62%,transparent);border:1px solid var(--line);color:var(--text);font-size:9px;font-weight:800}
+.guide-example{display:grid;gap:4px;margin-top:10px;padding:10px;border-radius:12px;border-left:3px solid var(--blue);background:color-mix(in srgb,var(--panel) 64%,transparent)}
+.guide-example b{font-size:9px;text-transform:uppercase;letter-spacing:.08em;color:#65b0ff}
+.guide-example span{font-size:11px;line-height:1.45;color:var(--muted)}
+
+/* --- Application toast, no browser alert --- */
+.app-toast{
+  position:fixed;left:50%;bottom:92px;z-index:5000;
+  transform:translate(-50%,18px);opacity:0;pointer-events:none;
+  width:min(calc(100% - 28px),520px);
+  padding:12px 14px;border-radius:14px;
+  background:#13253c;color:#fff;border:1px solid #294462;
+  box-shadow:0 16px 40px rgba(0,0,0,.34);
+  font-size:12px;font-weight:750;line-height:1.4;
+  transition:opacity .2s ease,transform .2s ease;
+}
+.app-toast.show{opacity:1;transform:translate(-50%,0)}
+.app-toast.success{border-color:rgba(22,199,132,.55);background:#0d3429}
+.app-toast.error{border-color:rgba(255,90,102,.55);background:#3b1720}
+.app-toast.info{border-color:rgba(8,124,255,.50);background:#102d4d}
+
+@media(max-width:420px){
+ .mens-tool-head{grid-template-columns:40px minmax(0,1fr)}
+ .mens-tool-head .tool-state{grid-column:2;justify-self:start;margin-top:-4px}
+ .split-actions{grid-template-columns:1fr}
+ .airspace-context{grid-template-columns:1fr 1fr}
+ .airspace-context>div:last-child{grid-column:1/-1}
+}
