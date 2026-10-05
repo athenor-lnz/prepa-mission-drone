@@ -193,3 +193,91 @@ button, .btn, .cta { font: inherit; cursor: pointer; }
 .search input:focus-visible { outline: none; }
 
 .v-label { font-size: clamp(44px, 16vw, 64px); }
+
+
+/* --- Cadre de mission --- */
+.choice-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.choice,.check-choice{
+  min-height:52px;border:2px solid var(--line);border-radius:16px;background:var(--surf2);color:var(--ink);
+  font-weight:700;padding:10px 12px;text-align:left
+}
+.choice.on,.check-choice.on{border-color:var(--acc);background:var(--accSoft);color:var(--acc)}
+.check-list{display:flex;flex-direction:column;gap:8px}
+.check-choice{display:flex;align-items:center;gap:10px}
+.check-dot{width:28px;height:28px;border-radius:10px;background:var(--surf);display:grid;place-items:center;flex:none}
+.check-choice.on .check-dot{background:var(--acc);color:var(--accInk)}
+
+/* --- Navigation 6 étapes --- */
+.steps{gap:4px}
+.step .dot{width:28px;height:28px;font-size:12px}
+.step.cur{min-width:0}
+.step-label{font-size:13px;white-space:nowrap}
+@media(max-width:390px){
+  .steps{padding:0 6px;gap:2px}
+  .step .dot{width:26px;height:26px}
+  .step.cur{gap:5px;padding-right:4px}
+  .step-label{font-size:12px}
+}
+
+/* --- MACLOE / SMEPP validés section par section --- */
+.form-flow{padding-bottom:calc(var(--cta-h) + 72px + env(safe-area-inset-bottom))}
+.form-rail{display:grid;grid-template-columns:repeat(6,1fr);gap:7px;position:sticky;top:76px;z-index:450}
+.form-rail .rail-btn{
+  min-width:0;height:50px;border:0;border-radius:16px;background:var(--surf);color:var(--mute);
+  box-shadow:var(--shadow);font-family:var(--font-display);font-weight:700;font-size:17px;display:grid;place-items:center
+}
+.form-rail .rail-btn.active{background:var(--acc);color:var(--accInk)}
+.form-rail .rail-btn.validated{background:var(--goSoft);color:var(--go)}
+.form-rail .rail-btn.validated.active{background:var(--go);color:var(--surf)}
+.active-form-section{gap:16px}
+.section-validated{box-shadow:inset 0 0 0 2px color-mix(in srgb,var(--go) 55%, transparent),var(--shadow)}
+.fsec-title{flex:1;min-width:0}.fsec-title h2{margin-bottom:2px}
+.letter.done{background:var(--go);color:var(--surf)}
+.form-guidance{display:flex;flex-direction:column;gap:10px;padding:12px;border-radius:16px;background:var(--surf2)}
+.form-guidance>p{font-weight:650}
+.tip-chips{display:flex;gap:6px;flex-wrap:wrap}
+.tip-chips span{padding:6px 9px;border-radius:99px;background:var(--surf);border:1px solid var(--line);font-size:12px;font-weight:700}
+.example-box{border-left:3px solid var(--acc);padding:8px 10px;background:var(--surf);border-radius:0 12px 12px 0}
+.example-box p{margin-top:4px;color:var(--mute);font-size:13px}
+.validated-btn{background:var(--goSoft)!important;color:var(--go)!important;box-shadow:inset 0 0 0 2px var(--go)}
+.transfer-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.transfer-card{margin-bottom:4px}
+@media(max-width:420px){
+  .form-rail{top:72px;gap:5px}
+  .form-rail .rail-btn{height:46px;border-radius:14px;font-size:15px}
+}
+
+/* --- GeoGM / SIA / aérodromes / VAC --- */
+.dataset-head{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}
+.dataset-head strong,.dataset-head .note{display:block}.dataset-head strong{margin-top:4px}
+.aerodata-card .row{margin-top:2px}
+.air-map-card{padding:12px}
+.air-map-title{display:flex;justify-content:space-between;gap:8px;align-items:center}
+.mini-seg{width:auto;min-width:156px}.mini-seg>a,.mini-seg>button{min-height:38px;font-size:12px}
+.air-map{height:300px;border-radius:18px;overflow:hidden;background:var(--surf2)}
+.air-zone-list,.ad-list{display:flex;flex-direction:column;gap:8px}
+.air-zone{border:1px solid var(--line);border-radius:16px;background:var(--surf2);overflow:hidden}
+.air-zone summary{min-height:52px;padding:10px 12px;display:flex;align-items:center;justify-content:space-between;gap:10px;cursor:pointer;list-style:none}
+.air-zone summary::-webkit-details-marker{display:none}
+.air-zone summary span:first-child{display:flex;flex-direction:column;gap:2px;min-width:0}
+.air-zone summary small{color:var(--mute);font-size:11px}
+.air-zone-body{padding:0 12px 12px;display:flex;flex-direction:column;gap:7px}
+.air-limits{display:flex;gap:8px;flex-wrap:wrap;font-family:var(--font-mono);font-size:12px}
+.air-limits span{padding:6px 8px;border-radius:10px;background:var(--surf);border:1px solid var(--line)}
+.ad-card{padding:12px;border-radius:16px;background:var(--surf2);border:1px solid var(--line);display:flex;flex-direction:column;gap:8px}
+.ad-head{display:flex;justify-content:space-between;gap:10px}
+.ad-head strong,.ad-head small{display:block}.ad-head small{margin-top:3px;color:var(--mute);font-size:12px}
+.official-note{padding:12px;border-radius:16px;border:1px dashed var(--field-line);color:var(--mute);font-size:13px}
+.map-stack{display:flex;flex-direction:column;gap:8px}
+.map-stack .icon-btn.float{width:48px;height:48px}
+.float-seg{max-width:250px}
+.float-seg>button{font-size:12px;padding:0 9px}
+
+/* ajustements mobile */
+@media(max-width:390px){
+  .choice-grid{grid-template-columns:1fr}
+  .dataset-head{display:grid}
+  .dataset-head .pill{justify-self:start}
+  .air-map{height:260px}
+  .stats{grid-template-columns:repeat(2,1fr)}
+}
