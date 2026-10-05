@@ -1,9 +1,10 @@
-const CACHE = 'prepa-mission-drone-v2';
+const CACHE = 'prepa-mission-drone-v3';
 const APP_SHELL = [
   './',
   './index.html',
   './styles.css',
   './app.js',
+  './airspace.js',
   './manifest.webmanifest',
   './icons/icon-192.png',
   './icons/icon-512.png'
