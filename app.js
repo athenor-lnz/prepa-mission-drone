@@ -3,6 +3,10 @@ const stepOrder=['cadre','zone','mens','macloe','smepp','synthese'];
 const titles={cadre:'Cadre de mission',zone:'Zone de mission',mens:'MENS',macloe:'MACLOE',smepp:'SMEPP',synthese:'Synthèse'};
 let currentStep='cadre',map,marker,circle,baseLayer;
 let smeppValidated=new Set();
+let missionGroundElevationM=null;
+let airspaceLayerGroup=null;
+let airspaceAnalysisTimer=null;
+let lastAirspaceAnalysis={dataset:null,hits:[]};
 const layers={};
 
 const SEEDED_AIR_CONTACTS=[
@@ -287,7 +291,7 @@ function go(step){
  const i=stepOrder.indexOf(step);$('#stepCounter').textContent=`Étape ${i+1}/${stepOrder.length}`;$('#stepTitle').textContent=titles[step];
  $('#prevBtn').style.visibility=i===0?'hidden':'visible';$('#nextBtn').textContent=i===stepOrder.length-1?'Terminer ✓':'Suivant →';
  if(step==='zone')setTimeout(initMap,50);
- if(step==='mens'){updateMensProgress();setTimeout(()=>fetchWeather(false),80);}
+ if(step==='mens'){updateMensProgress();setTimeout(()=>fetchWeather(false),80);setTimeout(()=>scheduleAirspaceAnalysis(true),120);}
  if(step==='synthese')renderSummary();
  syncBottomNav(step);
 }
@@ -344,6 +348,7 @@ function initMap(){
  setBase(localStorage.getItem('pmd-base')||'sat');
  marker=L.marker([lat,lng],{draggable:true}).addTo(map);
  circle=L.circle([lat,lng],{radius:+$('#radius').value,color:'#0b78f6',fillOpacity:.18}).addTo(map);
+ airspaceLayerGroup=L.layerGroup().addTo(map);
  marker.on('dragend',e=>{const p=e.target.getLatLng();setPos(p.lat,p.lng,false)});
  map.on('click',e=>setPos(e.latlng.lat,e.latlng.lng,false));
  ['lat','lng','radius'].forEach(id=>$('#'+id).addEventListener('change',syncMap));
@@ -364,10 +369,12 @@ function setPos(lat,lng,center=true){
  if(circle)circle.setLatLng([lat,lng]);
  if(center&&map)map.setView([lat,lng],15);
  updateAirspaceContext();
+ scheduleAirspaceAnalysis();
 }
 function syncMap(){
  setPos(+$('#lat').value,+$('#lng').value,true);
  if(circle)circle.setRadius(+$('#radius').value||0);
+ scheduleAirspaceAnalysis();
 }
 
 function weatherCodeLabel(code){
@@ -405,6 +412,9 @@ async function fetchWeather(force=true){
   const res=await fetch('https://api.open-meteo.com/v1/forecast?'+params.toString(),{cache:'no-store'});
   if(!res.ok)throw new Error('HTTP '+res.status);
   const d=await res.json();
+  missionGroundElevationM=Number.isFinite(Number(d.elevation))?Number(d.elevation):null;
+  updateAirspaceContext();
+  scheduleAirspaceAnalysis();
   const i=nearestHourlyIndex(d.hourly.time,target);
   const vis=(d.hourly.visibility?.[i]??0)/1000;
   const values=[
@@ -428,10 +438,210 @@ function updateAirspaceContext(){
  const el=$('#airspaceContext');
  if(!el)return;
  const lat=+$('#lat').value,lng=+$('#lng').value,alt=+$('#altitude').value;
+ const terrain=missionGroundElevationM==null?'—':Math.round(missionGroundElevationM)+' m AMSL';
+ const hitCount=lastAirspaceAnalysis?.hits?.length||0;
+ const status=lastAirspaceAnalysis?.dataset ? (hitCount+' espace'+(hitCount>1?'s':'')+' détecté'+(hitCount>1?'s':'')) : 'Base SIA à charger';
  el.innerHTML=`<div><small>Point mission</small><b>${lat.toFixed(5)}, ${lng.toFixed(5)}</b></div>
- <div><small>Altitude prévue</small><b>${alt} m</b></div>
- <div><small>Analyse</small><b>OACI + validation SIA</b></div>`;
+ <div><small>Altitude prévue</small><b>${alt} m AGL</b></div>
+ <div><small>Sol estimé</small><b>${terrain}</b></div>
+ <div><small>Analyse locale</small><b>${status}</b></div>`;
 }
+
+function airspaceTypeLabel(hit){
+ const p=hit.p||{};
+ return [p.type,p.sous_type].filter(Boolean).join(' · ');
+}
+function verticalLabel(status){
+ if(status==='intersects')return {text:'Dans le volume prévu',cls:'intersects'};
+ if(status==='below')return {text:'Au-dessus du volume prévu',cls:'outside'};
+ if(status==='above')return {text:'Sous le volume prévu',cls:'outside'};
+ return {text:'Vertical à confirmer',cls:'unknown'};
+}
+function airspaceStyle(hit){
+ const type=hit?.p?.type;
+ const restrictive=['P','R','D','CTR','TRA','D-OTHER'].includes(type);
+ const color=restrictive?'#ff5a66':(type==='TMA'||type==='CTA'?'#3b82f6':'#ff9f2d');
+ return {color,weight:2,opacity:.88,fillColor:color,fillOpacity:.10,dashArray:hit.vertical==='unknown'?'6 5':null};
+}
+function clearAirspaceOverlay(){
+ if(airspaceLayerGroup)airspaceLayerGroup.clearLayers();
+}
+function drawAirspaceAnalysis(result){
+ clearAirspaceOverlay();
+ if(!map||!airspaceLayerGroup||!result?.hits?.length)return;
+ result.hits.slice(0,30).forEach(hit=>{
+  if(!hit.geometry||hit.pointOnly)return;
+  try{
+   L.geoJSON({type:'Feature',geometry:hit.geometry,properties:hit.p},{style:()=>airspaceStyle(hit)}).addTo(airspaceLayerGroup);
+  }catch(e){console.warn('Espace non dessiné',hit?.p?.id,e)}
+ });
+}
+function focusAirspace(index){
+ const hit=lastAirspaceAnalysis?.hits?.[Number(index)];
+ if(!hit)return;
+ showMission('zone');
+ setTimeout(()=>{
+  if(!map)return;
+  if(hit.pointOnly && hit.geometry?.type==='Point'){
+   const [lng,lat]=hit.geometry.coordinates;
+   map.setView([lat,lng],14);
+   L.popup().setLatLng([lat,lng]).setContent('<b>'+esc(hit.p.id||hit.p.nom||'Espace')+'</b><br>Source SIA fournie sous forme de point.').openOn(map);
+   return;
+  }
+  try{
+   const layer=L.geoJSON({type:'Feature',geometry:hit.geometry},{style:()=>({...airspaceStyle(hit),weight:4,fillOpacity:.16})});
+   const bounds=layer.getBounds();
+   if(bounds.isValid())map.fitBounds(bounds.pad(.12),{maxZoom:13});
+  }catch(e){}
+ },160);
+}
+function renderAirspaceResults(result){
+ const host=$('#airspaceResults');
+ const title=$('#airspaceAnalysisTitle');
+ const count=$('#airspaceAnalysisCount');
+ if(!host)return;
+ lastAirspaceAnalysis=result||{dataset:null,hits:[]};
+ updateAirspaceContext();
+ drawAirspaceAnalysis(lastAirspaceAnalysis);
+
+ if(!result?.dataset){
+  if(title)title.textContent='Base SIA non chargée';
+  if(count)count.textContent='—';
+  host.innerHTML='<div class="tool-placeholder">Importe le ZIP GeoGM/SIA pour activer la détection automatique des espaces aériens.</div>';
+  return;
+ }
+ const hits=result.hits||[];
+ if(title)title.textContent='Analyse GeoGM/SIA au rayon de mission';
+ if(count)count.textContent=String(hits.length);
+
+ if(!hits.length){
+  host.innerHTML='<div class="airspace-none"><b>Aucun espace indexé détecté sur le rayon.</b><span>Ce résultat n’exonère pas de la consultation SIA, NOTAM et SUP AIP.</span></div>';
+  return;
+ }
+
+ host.innerHTML=hits.slice(0,40).map((hit,index)=>{
+  const p=hit.p||{};
+  const vertical=verticalLabel(hit.vertical);
+  const id=esc(p.id||'Sans identifiant');
+  const name=esc(p.nom||'Sans nom');
+  const typ=esc(airspaceTypeLabel(hit)||'Espace aérien');
+  const limits=[p.plancher?'Plancher '+p.plancher:null,p.plafond?'Plafond '+p.plafond:null].filter(Boolean).map(esc).join(' · ');
+  const schedule=p.horaire?'<div class="airspace-detail"><b>Horaire</b><span>'+esc(p.horaire)+'</span></div>':'';
+  const cls=p.classe?'<span class="airspace-class">Classe '+esc(p.classe)+'</span>':'';
+  const remark=p.remarque?'<details class="airspace-remark"><summary>Remarque SIA</summary><p>'+esc(p.remarque)+'</p></details>':'';
+  const pointWarning=hit.pointOnly?'<div class="airspace-point-warning">⚠ Contour absent dans la source : cet espace est fourni sous forme de point et nécessite une vérification manuelle.</div>':'';
+  return `<article class="airspace-hit ${vertical.cls}">
+    <div class="airspace-hit-top">
+      <div><span class="airspace-type">${typ}</span><b>${id} · ${name}</b></div>
+      <span class="airspace-vertical ${vertical.cls}">${vertical.text}</span>
+    </div>
+    <div class="airspace-meta">${cls}<span>${esc(limits||'Limites non renseignées')}</span></div>
+    ${schedule}
+    ${pointWarning}
+    ${remark}
+    <div class="airspace-actions">
+      <button type="button" class="secondary" data-focus-airspace="${index}">Voir sur la carte</button>
+      <button type="button" class="secondary" data-sia-query="${id}">SIA ↗</button>
+    </div>
+  </article>`;
+ }).join('')+(hits.length>40?'<div class="tool-placeholder">40 premiers espaces affichés sur '+hits.length+'. Affine la zone ou consulte le SIA pour le détail complet.</div>':'');
+
+ host.querySelectorAll('[data-focus-airspace]').forEach(btn=>btn.onclick=()=>focusAirspace(btn.dataset.focusAirspace));
+ host.querySelectorAll('[data-sia-query]').forEach(btn=>btn.onclick=()=>window.open(siaSearchUrl(btn.dataset.siaQuery),'_blank','noopener'));
+}
+
+async function refreshSiaStatus(){
+ const status=$('#siaDatasetStatus'),meta=$('#siaDatasetMeta'),badge=$('#siaDatasetBadge');
+ if(!window.PrepaAirspace){
+  if(status)status.textContent='Module SIA indisponible';
+  if(meta)meta.textContent='Le module local airspace.js n’a pas été chargé.';
+  if(badge){badge.textContent='Erreur';badge.className='sia-dataset-badge missing'}
+  return null;
+ }
+ try{
+  const info=await window.PrepaAirspace.info();
+  if(!info){
+   if(status)status.textContent='Base SIA non chargée';
+   if(meta)meta.textContent='Importe le ZIP GeoGM/SIA une première fois. Il restera ensuite stocké localement sur cet appareil.';
+   if(badge){badge.textContent='À importer';badge.className='sia-dataset-badge missing'}
+   return null;
+  }
+  if(status)status.textContent='Base SIA prête';
+  const eff=info.effective?new Date(info.effective).toLocaleDateString('fr-FR'):'date inconnue';
+  if(meta)meta.textContent=`${info.featureCount} espaces indexés · effectif ${eff} · stockage local IndexedDB`;
+  if(badge){badge.textContent='Disponible';badge.className='sia-dataset-badge ready'}
+  return info;
+ }catch(e){
+  if(status)status.textContent='Base SIA illisible';
+  if(meta)meta.textContent='Réimporte le ZIP GeoGM/SIA.';
+  if(badge){badge.textContent='Erreur';badge.className='sia-dataset-badge missing'}
+  return null;
+ }
+}
+async function analyzeAirspace(showFeedback=false){
+ if(!window.PrepaAirspace)return;
+ const info=await window.PrepaAirspace.info();
+ if(!info){
+  renderAirspaceResults({dataset:null,hits:[]});
+  if(showFeedback)showToast('Importe d’abord la base GeoGM/SIA.','info');
+  return;
+ }
+ const params={
+  lat:+$('#lat').value,
+  lng:+$('#lng').value,
+  radiusM:+$('#radius').value||0,
+  altitudeM:+$('#altitude').value||0,
+  terrainElevationM:missionGroundElevationM
+ };
+ try{
+  const result=await window.PrepaAirspace.analyze(params);
+  renderAirspaceResults(result);
+  if(showFeedback)showToast(`${result.hits.length} espace(s) détecté(s) sur le volume horizontal. Vérification officielle requise.`,'success',3400);
+ }catch(e){
+  console.warn(e);
+  renderAirspaceResults({dataset:null,hits:[]});
+  showToast('Impossible d’analyser la base SIA locale.','error');
+ }
+}
+function scheduleAirspaceAnalysis(immediate=false){
+ clearTimeout(airspaceAnalysisTimer);
+ airspaceAnalysisTimer=setTimeout(()=>analyzeAirspace(false),immediate?0:350);
+}
+function initSiaAirspace(){
+ const input=$('#siaZipInput');
+ $('#siaImportBtn')?.addEventListener('click',()=>input?.click());
+ $('#analyzeAirspaceBtn')?.addEventListener('click',()=>analyzeAirspace(true));
+ input?.addEventListener('change',async e=>{
+  const file=e.target.files?.[0];
+  e.target.value='';
+  if(!file)return;
+  const progress=$('#siaImportProgress');
+  try{
+   if(progress)progress.textContent='Import en cours…';
+   const dataset=await window.PrepaAirspace.importZip(file,msg=>{if(progress)progress.textContent=msg});
+   if(progress)progress.textContent=`${dataset.featureCount} espaces préparés et stockés localement.`;
+   await refreshSiaStatus();
+   await analyzeAirspace(false);
+   showToast('Base GeoGM/SIA importée sur cet appareil.','success',3400);
+  }catch(err){
+   console.warn(err);
+   if(progress)progress.textContent='Échec de l’import : '+(err?.message||'fichier incompatible');
+   showToast('Impossible d’importer ce ZIP GeoGM/SIA.','error');
+  }
+ });
+ $('#siaClearBtn')?.addEventListener('click',async()=>{
+  if(!window.PrepaAirspace)return;
+  await window.PrepaAirspace.clear();
+  clearAirspaceOverlay();
+  lastAirspaceAnalysis={dataset:null,hits:[]};
+  renderAirspaceResults(lastAirspaceAnalysis);
+  await refreshSiaStatus();
+  if($('#siaImportProgress'))$('#siaImportProgress').textContent='';
+  showToast('Base SIA locale supprimée de cet appareil.','info');
+ });
+ refreshSiaStatus().then(info=>{if(info)analyzeAirspace(false);else renderAirspaceResults({dataset:null,hits:[]})});
+}
+
 function initMensTools(){
  if($('#missionDateTime')&&!$('#missionDateTime').value){
   const d=new Date();
@@ -444,7 +654,8 @@ function initMensTools(){
  $('#openSofiaBtn')?.addEventListener('click',()=>window.open('https://sofia-briefing.aviation-civile.gouv.fr/sofia/pages/homepage.html','_blank','noopener'));
  $('#openSupAipBtn')?.addEventListener('click',()=>window.open('https://www.sia.aviation-civile.gouv.fr/documents/supaip/aip/','_blank','noopener'));
  $$('[data-check]').forEach(x=>x.addEventListener('change',()=>{updateMensProgress();saveLocal();refreshHome()}));
- ['lat','lng','altitude','missionDateTime'].forEach(id=>$('#'+id)?.addEventListener('change',()=>{weatherKey='';updateAirspaceContext()}));
+ ['lat','lng','altitude','radius','missionDateTime'].forEach(id=>$('#'+id)?.addEventListener('change',()=>{weatherKey='';updateAirspaceContext();scheduleAirspaceAnalysis()}));
+ initSiaAirspace();
  updateAirspaceContext();
  updateMensProgress();
 }
@@ -577,6 +788,11 @@ function collect(){
     : ($('#smepp-'+x.k)?.value||'')
   ])),
   airContacts:getCustomAirContacts(),
+  airspaceDetected:(lastAirspaceAnalysis?.hits||[]).map(h=>({
+   type:h.p?.type||null,sous_type:h.p?.sous_type||null,id:h.p?.id||null,nom:h.p?.nom||null,
+   classe:h.p?.classe||null,plafond:h.p?.plafond||null,plancher:h.p?.plancher||null,
+   horaire:h.p?.horaire||null,remarque:h.p?.remarque||null,vertical:h.vertical,pointOnly:!!h.pointOnly
+  })),
   updatedAt:new Date().toISOString()
  }
 }
