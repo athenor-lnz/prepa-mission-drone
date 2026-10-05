@@ -13,15 +13,15 @@ const macloe=[
  {k:'E',t:'Esquive',d:'Retour, urgence, zone de repli ou interruption.',h:'Prévois l’atterrissage de sécurité, le repli et les cas d’arrêt.'}
 ];
 const smepp=[
- {k:'S',t:'Situation',d:'Contexte général, environnement et contraintes.',h:'Décris les faits, le terrain, les tiers, les risques et les contraintes déjà identifiées.'},
- {k:'M',t:'Mission',d:'Objectif de la mission en une phrase.',h:'Résume qui fait quoi, quand, où et dans quel but.'},
- {k:'E',t:'Exécution',d:'Déroulement, phasage et conduite pratique.',h:'Ordre des actions, séquences de vol, critères de bascule ou d’arrêt.'},
- {k:'P',t:'Personnel / moyens',d:'Télépilote, observateur, drone, batteries, capteurs.',h:'Liste les personnels engagés et les moyens réellement disponibles.'},
- {k:'T',t:'Transmissions',d:'Moyens de communication, coordination et compte rendu.',h:'Précise les contacts, canaux, téléphones, modalités de CR et coordination.'}
+ {k:'S',badge:'S',t:'Situation',d:'Situation générale puis situation particulière.',h:'GÉNÉRALE : présentation de la mission, cadre juridique…\nPARTICULIÈRE : contexte actuel, amis, adversaire, population, géolocalisation.'},
+ {k:'M',badge:'M',t:'Mission',d:'Formulation claire de la mission confiée.',h:'Verbes proposés dans le cours : APPUYER, PRENDRE DES VUES, FAIRE DIVERSION, RECONNAÎTRE, OBSERVER, RENSEIGNER.'},
+ {k:'E',badge:'E',t:'Exécution',d:'Articulation au sol / en vol et conduite de la mission.',h:'Articulation au sol / en vol ; mission du télépilote et de l’observateur d’aéronef ; conduite à tenir (synchronisation avec l’autorité d’emploi, cheminement, ligne de débouché, rappel de sécurité…) ; amis sur place / renfort ; liaison avec l’autorité d’emploi, OCT, compte rendu.'},
+ {k:'PP',badge:'P',t:'Points particuliers',d:'Contraintes ou éléments spécifiques à garder à l’esprit.',h:'URBAIN / RURAL ; POPULATION ; LIMITE DANS LE TEMPS ; ESPACE AÉRIEN ; MÉTÉO.'},
+ {k:'PC',badge:'P',t:'Place du chef',d:'Position et rôle du chef pendant la mission.',h:'Précise où se place le chef et comment il conserve la capacité de commander, suivre la manœuvre et coordonner l’action.'}
 ];
 
 function buildGuides(host,items,prefix){
- host.innerHTML=items.map(x=>`<article class="guide-item"><div class="guide-head"><span class="badge">${x.k}</span><div><b>${x.t}</b><small>${x.d}</small></div><button class="help-btn" type="button">Rappel</button></div><div class="guide-help">${x.h}</div><textarea id="${prefix}-${x.k}" placeholder="Saisir ou dicter..."></textarea></article>`).join('');
+ host.innerHTML=items.map(x=>`<article class="guide-item"><div class="guide-head"><span class="badge">${x.badge||x.k}</span><div><b>${x.t}</b><small>${x.d}</small></div><button class="help-btn" type="button">Rappel</button></div><div class="guide-help">${x.h}</div><textarea id="${prefix}-${x.k}" placeholder="Saisir ou dicter..."></textarea></article>`).join('');
  host.querySelectorAll('.help-btn').forEach(b=>b.onclick=()=>b.closest('.guide-item').classList.toggle('open'));
  host.querySelectorAll('textarea').forEach(t=>t.addEventListener('input',updateProgress));
 }
@@ -54,7 +54,8 @@ $('#nextBtn').onclick=()=>{const i=stepOrder.indexOf(currentStep);if(i<stepOrder
 function initMap(){
  if(map){map.invalidateSize();return}
  const lat=+$('#lat').value,lng=+$('#lng').value;
- map=L.map('map',{zoomControl:false}).setView([lat,lng],14);\n L.control.zoom({position:'bottomright'}).addTo(map);
+ map=L.map('map',{zoomControl:false}).setView([lat,lng],14);
+ L.control.zoom({position:'bottomright'}).addTo(map);
  layers.osm=L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:20,attribution:'© OpenStreetMap'});
  layers.sat=L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',{maxZoom:20,attribution:'© Esri'});
  setBase(localStorage.getItem('pmd-base')||'sat');
