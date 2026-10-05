@@ -195,18 +195,26 @@
   }
   function verticalStatus(props,altitudeM,terrainM){
     const floor=parseLimit(props.plancher),ceil=parseLimit(props.plafond);
-    const aglFt=(Number(altitudeM)||0)*3.28084;
-    const amslFt=terrainM==null?null:(Number(terrainM)+Number(altitudeM||0))*3.28084;
-    const valueFor=lim=>{
-      if(!lim||lim.ft==null)return null;
-      if(lim.ref==='ASFC')return aglFt;
-      if(lim.ref==='AMSL'||lim.ref==='FL')return amslFt;
-      return null;
-    };
-    const vf=valueFor(floor),vc=valueFor(ceil);
-    if((floor?.ref==='AMSL'||floor?.ref==='FL'||ceil?.ref==='AMSL'||ceil?.ref==='FL')&&amslFt==null)return 'unknown';
-    if(floor&&vf!=null&&vf<floor.ft)return 'below';
-    if(ceil&&vc!=null&&vc>ceil.ft)return 'above';
+    const topAglFt=(Number(altitudeM)||0)*3.28084;
+    const groundAmslFt=terrainM==null?null:Number(terrainM)*3.28084;
+    const topAmslFt=groundAmslFt==null?null:groundAmslFt+topAglFt;
+
+    // Un FL dépend du calage altimétrique : on ne transforme pas cette estimation locale en décision automatique.
+    if(floor?.ref==='FL'||ceil?.ref==='FL')return 'unknown';
+
+    if(floor?.ref==='ASFC' && topAglFt < floor.ft)return 'below';
+    if(floor?.ref==='AMSL'){
+      if(topAmslFt==null)return 'unknown';
+      if(topAmslFt < floor.ft)return 'below';
+    }
+
+    if(ceil?.ref==='ASFC' && 0 > ceil.ft)return 'above';
+    if(ceil?.ref==='AMSL'){
+      if(groundAmslFt==null)return 'unknown';
+      if(groundAmslFt > ceil.ft)return 'above';
+    }
+
+    if((floor?.ref==='UNKNOWN'&&floor?.raw)||(ceil?.ref==='UNKNOWN'&&ceil?.raw))return 'unknown';
     return 'intersects';
   }
   function priority(p){
