@@ -281,3 +281,14 @@ button, .btn, .cta { font: inherit; cursor: pointer; }
   .air-map{height:260px}
   .stats{grid-template-columns:repeat(2,1fr)}
 }
+
+
+/* --- Annuaire aéronautique --- */
+.contact-list{display:flex;flex-direction:column;gap:8px}
+.contact-card{padding:12px;border-radius:16px;background:var(--surf2);border:1px solid var(--line);display:flex;flex-direction:column;gap:7px}
+.contact-main strong,.contact-main small{display:block}
+.contact-main small{margin-top:3px;color:var(--mute);font-size:11px}
+.contact-actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.contact-call{background:var(--goSoft)!important;color:var(--go)!important;min-height:42px;text-decoration:none}
+.detected-phones{display:flex;flex-direction:column;align-items:flex-start;gap:7px;padding:9px;border-radius:12px;background:var(--goSoft)}
+.detected-phones .lbl{color:var(--go)}
