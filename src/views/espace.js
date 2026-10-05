@@ -4,132 +4,259 @@ import { mutate } from '../state.js';
 import { fetchRestrictions } from '../services/airspace.js';
 import { summarizeZones } from '../lib/airspace.js';
 import { formatClock } from '../lib/time.js';
+import { importAerodata, info as aerodataInfo, clearAerodata, analyzeAerodata, vacSearchUrl, SIA_URL, SOFIA_URL, SUPAIP_URL } from '../services/aerodata.js';
 
-const OFFICIAL = [
-  { label: 'SIA — information aéronautique (NOTAM, SUP AIP)', url: 'https://www.sia.aviation-civile.gouv.fr/' },
-  { label: 'Géoportail — carte des restrictions drones', url: 'https://www.geoportail.gouv.fr/' }
-];
-
+const OFFICIAL = {
+  sia: { label: 'SIA — information aéronautique', url: SIA_URL },
+  sofia: { label: 'SOFIA-Briefing — NOTAM', url: SOFIA_URL },
+  supaip: { label: 'SIA — SUP AIP', url: SUPAIP_URL },
+  geo: { label: 'Géoportail — restrictions UAS', url: 'https://www.geoportail.gouv.fr/' }
+};
 function extLink(l) { return h('a', { class: 'ext', href: l.url, target: '_blank', rel: 'noopener noreferrer' }, icon('link', 18), l.label); }
 
 function tabs(mission, current) {
   const e = mission.mens;
   return subtabs(mission, [
-    { route: 'espace', label: 'Espace', badge: null },
-    { route: 'notam', label: `NOTAM${e.notam.items.length ? ` · ${e.notam.items.length}` : ''}` },
-    { route: 'supaip', label: `SUP AIP${e.supaip.items.length ? ` · ${e.supaip.items.length}` : ''}` }
+    { route: 'espace', label: 'Espace' },
+    { route: 'notam', label: `NOTAM${e.notam.items.length ? ` · ${e.notam.items.length}` : ''}`, badge: !e.notam.fetchedAt ? 'Non vérifié' : null },
+    { route: 'supaip', label: `SUP AIP${e.supaip.items.length ? ` · ${e.supaip.items.length}` : ''}`, badge: !e.supaip.fetchedAt ? 'Non vérifié' : null }
   ], current);
 }
-
 function footer(mission, route) {
-  const nxt = { espace: ['Suivant · NOTAM', 'notam'], notam: ['Suivant · SUP AIP', 'supaip'], supaip: ['Valider · Fiche', 'fiche'] }[route];
+  const nxt = { espace: ['Suivant · NOTAM', 'notam'], notam: ['Suivant · SUP AIP', 'supaip'], supaip: ['Valider MENS · MACLOE', 'macloe'] }[route];
   return ctaBar(ctaButton(nxt[0], () => { location.hash = missionUrl(mission.id, nxt[1]); }));
 }
+function fmtDistance(m) { return !Number.isFinite(m) ? '—' : m < 1000 ? `${Math.round(m)} m` : `${(m/1000).toFixed(m<10000?1:0)} km`; }
 
 export function renderEspace({ mission }) {
   const root = h('main', { class: 'screen scroll' });
   const p = mission.place;
   const es = mission.mens.espace;
-  let loading = false;
   const hasPoint = Number.isFinite(p.lat) && Number.isFinite(p.lon);
+  let loading = false;
+  let importing = false;
+  let meta = null;
+  let local = null;
+  let map = null;
+  let layer = null;
+  let overlay = null;
+  let mapMode = 'oaci';
 
-  async function check() {
+  const TILES = {
+    plan: { url:'https://tile.openstreetmap.org/{z}/{x}/{y}.png', attr:'© OpenStreetMap', max:19 },
+    sat: { url:'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', attr:'Imagerie © Esri', max:19 },
+    oaci: { url:'https://data.geopf.fr/wmts?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER=GEOGRAPHICALGRIDSYSTEMS.MAPS.SCAN-OACI&STYLE=normal&FORMAT=image/jpeg&TILEMATRIXSET=PM&TILEMATRIX={z}&TILEROW={y}&TILECOL={x}', attr:'OACI-VFR © DSNA/SIA · Géoplateforme', max:20, native:11 }
+  };
+
+  async function refreshMeta() {
+    try { meta = await aerodataInfo(); } catch { meta = null; }
+  }
+
+  async function runAnalysis({ feedback = false } = {}) {
+    if (!hasPoint || loading) return;
     loading = true; draw();
-    const r = await fetchRestrictions(p.lat, p.lon);
+    let localResult = null;
+    try {
+      if (meta) localResult = await analyzeAerodata({ lat:p.lat, lon:p.lon, radiusM:p.radiusM || 500, nearest:5 });
+    } catch (e) { console.warn(e); }
+    const wfs = await fetchRestrictions(p.lat, p.lon);
     loading = false;
+    local = localResult;
     mutate(mission, (m) => {
       const e = m.mens.espace;
-      if (r.ok) { e.fetchedAt = r.fetchedAt; e.source = r.source; e.zones = r.data.slice(0, 50); e.error = null; }
-      else { e.error = r.error; e.fetchedAt = null; e.zones = []; }
+      if (wfs.ok) {
+        e.fetchedAt = wfs.fetchedAt; e.source = wfs.source; e.zones = wfs.data.slice(0,50); e.error = null;
+      } else {
+        e.error = wfs.error; e.zones = []; if (!localResult) e.fetchedAt = null;
+      }
+      if (localResult?.meta) {
+        e.localAnalysisAt = new Date().toISOString();
+        e.localDataset = { source:localResult.meta.source, effective:localResult.meta.effective, featureCount:localResult.meta.spaceCount, aerodromeCount:localResult.meta.aerodromeCount };
+        e.localZones = localResult.zones.slice(0,100).map((z)=>({ id:z.id,type:z.type,subType:z.subType,name:z.name,className:z.className,floor:z.floor,ceiling:z.ceiling,schedule:z.schedule,remark:z.remark,pointOnly:z.pointOnly }));
+        e.aerodromes = localResult.aerodromes.map((a)=>({ icao:a.icao,name:a.name,type:a.type,altitudeFt:a.altitudeFt,distanceM:a.distanceM,remark:a.remark,frequencies:a.frequencies,runways:a.runways }));
+        e.controlled = localResult.controlled;
+      }
     });
     draw();
+    if (feedback) toast(localResult ? `${localResult.zones.length} espace(s) détecté(s) dans le rayon · ${localResult.aerodromes.length} aérodrome(s) proche(s)` : 'Restrictions UAS actualisées');
   }
 
-  function result() {
-    if (loading) return h('p', { class: 'note', role: 'status' }, 'Interrogation de la Géoplateforme…');
-    if (es.error) return h('div', { class: 'banner bad', role: 'alert' }, icon('warn'), h('span', {}, `Non vérifié : ${es.error} Consultez la source officielle ci-dessous.`));
-    if (!es.fetchedAt) return h('div', { class: 'banner warn' }, icon('warn'), 'Restrictions UAS non vérifiées pour ce lieu.');
-    const s = summarizeZones(es.zones);
-    const cls = { none: 'go', limited: 'warn', unknown: 'warn', forbidden: 'nogo' }[s.level];
-    const title = { none: 'Aucune restriction UAS cartographiée à ce point', limited: `Hauteur maximale : ${s.maxHeightM} m`, unknown: 'Restriction à interpréter', forbidden: 'Vol interdit à ce point' }[s.level];
-    return h('section', { class: `verdict ${cls}` },
-      h('div', { class: 'v-top' }, h('span', { class: 'eyebrow' }, 'Restrictions UAS'), h('span', { class: 'mono small' }, `maj ${formatClock(es.fetchedAt)}`)),
-      h('div', { class: 'v-title' }, title),
-      es.zones.map((z) => h('p', { class: 'zone' }, h('strong', {}, z.limit), z.remark ? ` — ${z.remark}` : '')),
-      h('p', { class: 'v-src' }, `Source : ${es.source}. Cette couche ne remplace ni les NOTAM, ni les zones contrôlées, ni l'autorisation de vol.`));
+  function datasetCard() {
+    const input = h('input', { type:'file', accept:'.zip,application/zip', hidden:true });
+    input.addEventListener('change', async()=>{
+      const file=input.files?.[0]; input.value=''; if(!file)return;
+      importing=true; draw();
+      try {
+        meta=await importAerodata(file,{onProgress:(msg)=>{const el=root.querySelector('#air-import-progress');if(el)el.textContent=msg;}});
+        toast('Base GeoGM/SIA importée sur cet appareil');
+        local=null; await runAnalysis();
+      } catch(e){ toast(e.message||'Import impossible','bad'); }
+      finally { importing=false; draw(); }
+    });
+    const eff=meta?.effective ? new Date(meta.effective).toLocaleDateString('fr-FR') : null;
+    return h('section',{class:'card-sec aerodata-card'},
+      h('div',{class:'dataset-head'},
+        h('div',{},h('span',{class:'lbl'},'Base locale GeoGM / SIA'),h('strong',{},meta?'Données disponibles':'À importer'),
+          h('p',{class:'note'},meta?`${meta.spaceCount} espaces · ${meta.aerodromeCount} aérodromes${eff?` · effectif ${eff}`:''}`:'Importe ton ZIP GeoGM/SIA. Il restera stocké sur cet appareil.')),
+        h('span',{class:`pill ${meta?'go':'warn'}`},meta?'PRÊTE':'LOCAL')),
+      h('div',{class:'row'},
+        h('button',{class:'btn ghost',disabled:importing,onclick:()=>input.click()},meta?'Mettre à jour':'Importer le ZIP'),
+        h('button',{class:'btn ghost',disabled:!meta||importing,onclick:async()=>{await clearAerodata();meta=null;local=null;mutate(mission,(m)=>{m.mens.espace.localAnalysisAt=null;m.mens.espace.localDataset=null;m.mens.espace.localZones=[];m.mens.espace.aerodromes=[];m.mens.espace.controlled=null;});draw();toast('Base locale supprimée');}},'Supprimer')),
+      input,
+      importing?h('p',{id:'air-import-progress',class:'note',role:'status'},'Import en cours…'):null);
   }
 
-  function controlled() {
-    const opt = (v, label) => h('button', { class: es.controlled === v ? 'on' : '', 'aria-pressed': String(es.controlled === v), onclick: () => { mutate(mission, (m) => { m.mens.espace.controlled = v; }); draw(); } }, label);
-    return h('section', { class: 'card-sec' },
-      h('span', { class: 'lbl' }, 'Zone contrôlée (CTR / TMA) — à vérifier vous-même'),
-      h('p', { class: 'note' }, 'L\'application ne sait pas si le lieu est sous une zone contrôlée. Vérifiez sur une source officielle puis indiquez le résultat.'),
-      h('div', { class: 'seg' }, opt(true, 'Oui'), opt(false, 'Non'), opt(null, 'Inconnu')));
-  }
-
-  function draw() {
-    root.replaceChildren(topbar(mission, 'espace'), h('div', { class: 'body' },
-      tabs(mission, 'espace'),
-      hasPoint ? [result(),
-        h('button', { class: 'btn ghost block', disabled: loading, onclick: check }, es.fetchedAt ? 'Actualiser les restrictions UAS' : 'Vérifier les restrictions UAS'),
-        controlled(),
-        h('section', { class: 'card-sec' }, h('span', { class: 'lbl' }, 'Sources officielles'), OFFICIAL.map(extLink))]
-        : h('div', { class: 'empty' }, h('p', {}, 'Définissez d\'abord le lieu.'), h('a', { class: 'btn primary', href: missionUrl(mission.id, 'lieu') }, 'Choisir le lieu'))),
-      footer(mission, 'espace'));
-  }
-  draw();
-  return { el: root };
-}
-
-function manualList({ mission, route, kind, fields, title, intro, itemView, emptyText }) {
-  const root = h('main', { class: 'screen scroll' });
-  const data = mission.mens[kind];
-  const inputs = {};
-  const add = () => {
-    const item = {};
-    for (const f of fields) item[f.key] = inputs[f.key].value.trim();
-    if (!item[fields[0].key]) { toast(`${fields[0].label} requis`, 'bad'); return; }
-    if (item.url && !/^https?:\/\//i.test(item.url)) { toast('Le lien doit commencer par http:// ou https://', 'bad'); return; }
-    item.addedAt = new Date().toISOString();
-    mutate(mission, (m) => { const d = m.mens[kind]; d.items = [...d.items, item]; d.fetchedAt = d.fetchedAt || item.addedAt; d.source = 'saisie manuelle'; });
-    draw();
-  };
-  function draw() {
-    for (const f of fields) {
-      inputs[f.key] = f.long ? h('textarea', { rows: 3, maxlength: 4000, placeholder: f.placeholder || f.label, 'aria-label': f.label }) : h('input', { placeholder: f.placeholder || f.label, maxlength: 500, 'aria-label': f.label, inputmode: f.key === 'url' ? 'url' : null });
+  function uasResult() {
+    if (loading) return h('p',{class:'note',role:'status'},'Analyse de l’espace aérien…');
+    if (!es.fetchedAt && !es.localAnalysisAt) return h('div',{class:'banner warn'},icon('warn'),h('span',{},'Espace aérien non vérifié pour cette zone.'));
+    const cards=[];
+    if (es.fetchedAt) {
+      const s=summarizeZones(es.zones||[]);
+      const cls={none:'go',limited:'warn',unknown:'warn',forbidden:'nogo'}[s.level];
+      const title={none:'Aucune restriction UAS cartographiée au point',limited:`Restriction UAS · hauteur max ${s.maxHeightM} m`,unknown:'Restriction UAS à interpréter',forbidden:'Restriction UAS · vol interdit au point'}[s.level];
+      cards.push(h('section',{class:`verdict ${cls}`},
+        h('div',{class:'v-top'},h('span',{class:'eyebrow'},'Géoplateforme · point mission'),h('span',{class:'mono small'},`maj ${formatClock(es.fetchedAt)}`)),
+        h('div',{class:'v-title'},title),
+        (es.zones||[]).slice(0,8).map((z)=>h('p',{class:'zone'},h('strong',{},z.limit||'Limite'),z.remark?` — ${z.remark}`:'')),
+        h('p',{class:'v-src'},`Source : ${es.source}. Complément de la base SIA locale.`)));
     }
-    const verified = !!data.fetchedAt;
-    root.replaceChildren(topbar(mission, route), h('div', { class: 'body' },
-      tabs(mission, route),
-      h('div', { class: `banner ${data.items.length || verified ? 'info' : 'warn'}` }, icon(data.items.length || verified ? 'check' : 'warn'), h('span', {},
-        data.items.length ? `${data.items.length} élément(s) saisi(s) à la main. La liste peut être incomplète.` : verified ? 'Consultation notée : rien à signaler (saisi par vous).' : `${title} non vérifiés. L'absence de saisie ne signifie pas l'absence de ${title}.`)),
-      h('p', { class: 'note' }, intro),
-      h('section', { class: 'card-sec' }, h('span', { class: 'lbl' }, 'Sources officielles'), OFFICIAL.map(extLink)),
-      data.items.length ? h('ul', { class: 'items' }, data.items.map((it, i) => h('li', { class: 'item' }, itemView(it), h('button', { class: 'icon-btn', 'aria-label': 'Supprimer cet élément', onclick: () => { mutate(mission, (m) => { m.mens[kind].items = m.mens[kind].items.filter((_, j) => j !== i); }); draw(); } }, icon('trash', 20))))) : h('p', { class: 'note' }, emptyText),
-      h('section', { class: 'card-sec' }, h('span', { class: 'lbl' }, 'Ajouter'), fields.map((f) => inputs[f.key]), h('button', { class: 'btn primary block', onclick: add }, 'Ajouter à la mission')),
-      !data.items.length ? h('button', { class: 'btn ghost block', onclick: () => { mutate(mission, (m) => { m.mens[kind].fetchedAt = new Date().toISOString(); m.mens[kind].source = 'saisie manuelle'; }); draw(); } }, 'J\'ai consulté la source : rien à signaler') : null),
-      footer(mission, route));
+    if (es.error) cards.push(h('div',{class:'banner warn'},icon('warn'),h('span',{},`Géoplateforme : ${es.error}`)));
+    return cards;
   }
+
+  function localZonesCard() {
+    if (!meta) return null;
+    const zones=local?.zones || es.localZones || [];
+    const controlled=(local?.controlled ?? es.controlled);
+    const head=controlled===true
+      ? h('div',{class:'banner warn'},icon('warn'),h('span',{},'Une CTR/TMA/CTA de la base SIA intersecte le rayon de mission.'))
+      : controlled===false
+        ? h('div',{class:'banner info'},icon('check'),h('span',{},'Aucune CTR/TMA/CTA détectée dans le rayon selon la base SIA locale.'))
+        : h('div',{class:'banner warn'},icon('warn'),h('span',{},'Analyse SIA locale à lancer.'));
+    return h('section',{class:'card-sec'},
+      h('span',{class:'lbl'},'Espaces SIA intersectant le rayon'),
+      head,
+      zones.length
+        ? h('div',{class:'air-zone-list'},zones.slice(0,20).map((z)=>{
+            const title=[z.id,z.name].filter(Boolean).join(' · ')||'Espace sans identifiant';
+            const type=[z.type,z.subType].filter(Boolean).join(' · ');
+            return h('details',{class:'air-zone'},
+              h('summary',{},h('span',{},h('strong',{},title),h('small',{},type)),h('span',{class:'pill warn'},z.pointOnly?'POINT':'ZONE')),
+              h('div',{class:'air-zone-body'},
+                h('div',{class:'air-limits'},h('span',{},`Plancher : ${z.floor||'—'}`),h('span',{},`Plafond : ${z.ceiling||'—'}`)),
+                z.className?h('p',{class:'note'},`Classe : ${z.className}`):null,
+                z.schedule?h('p',{class:'note'},`Horaire : ${z.schedule}`):null,
+                z.remark?h('p',{class:'note'},z.remark):null,
+                z.pointOnly?h('div',{class:'banner warn'},icon('warn'),h('span',{},'La source ne fournit pas de contour exploitable pour cet espace : vérification manuelle requise.')):null));
+          }))
+        : h('p',{class:'note'},es.localAnalysisAt?'Aucun espace du jeu SIA n’intersecte le rayon. Ce résultat ne remplace pas les vérifications officielles.':'Analyse non lancée.'));
+  }
+
+  function aerodromeCard() {
+    if (!meta) return null;
+    const ads=local?.aerodromes || es.aerodromes || [];
+    return h('section',{class:'card-sec'},
+      h('span',{class:'lbl'},'Aérodromes proches · VAC'),
+      h('p',{class:'note'},'Distance calculée depuis le point mission. Les fréquences proviennent du GeoJSON SIA importé.'),
+      ads.length?h('div',{class:'ad-list'},ads.map((a)=>h('article',{class:'ad-card'},
+        h('div',{class:'ad-head'},h('div',{},h('strong',{},`${a.icao||'—'} · ${a.name||'Aérodrome'}`),h('small',{},`${fmtDistance(a.distanceM)}${Number.isFinite(a.altitudeFt)?` · ${a.altitudeFt} ft`:''}`))),
+        a.frequencies?.length?h('p',{class:'mono small'},a.frequencies.slice(0,4).join(' · ')):null,
+        a.remark?h('p',{class:'note'},a.remark):null,
+        h('a',{class:'btn ghost small',href:vacSearchUrl(a.icao),target:'_blank',rel:'noopener noreferrer'},'VAC / AIP ↗')
+      ))):h('p',{class:'note'},'Aucun aérodrome disponible dans la base locale.'));
+  }
+
+  function initMiniMap() {
+    const el=root.querySelector('#air-map'); if(!el||!globalThis.L||!hasPoint)return;
+    map?.remove();
+    map=L.map(el,{zoomControl:false,attributionControl:true}).setView([p.lat,p.lon],12);
+    map.attributionControl.setPrefix(false);
+    overlay=L.layerGroup().addTo(map);
+    const setMode=(m)=>{
+      mapMode=m; if(layer)map.removeLayer(layer); const t=TILES[m];
+      layer=L.tileLayer(t.url,{maxZoom:t.max,maxNativeZoom:t.native||t.max,attribution:t.attr,keepBuffer:4}).addTo(map);
+      el.parentElement.querySelectorAll('[data-air-base]').forEach((b)=>b.classList.toggle('on',b.dataset.airBase===m));
+    };
+    el.parentElement.querySelectorAll('[data-air-base]').forEach((b)=>b.onclick=()=>setMode(b.dataset.airBase));
+    setMode(mapMode);
+    L.circle([p.lat,p.lon],{radius:p.radiusM||500,color:getComputedStyle(document.documentElement).getPropertyValue('--acc').trim()||'#2340E8',weight:3,dashArray:'8 6',fillOpacity:.08}).addTo(overlay);
+    L.marker([p.lat,p.lon]).addTo(overlay);
+    for(const z of local?.zones||[]){
+      if(!z.geometry||z.geometry.type==='Point')continue;
+      try{L.geoJSON({type:'Feature',geometry:z.geometry},{style:{color:['P','R','D'].includes(z.type)?'#B3261E':'#8A5200',weight:2,fillOpacity:.08}}).addTo(overlay);}catch{}
+    }
+    for(const a of local?.aerodromes||[]) L.circleMarker([a.lat,a.lon],{radius:5,weight:2,fillOpacity:.8}).bindTooltip(`${a.icao||''} ${a.name||''}`).addTo(overlay);
+    const bounds=L.circle([p.lat,p.lon],{radius:Math.max(1500,p.radiusM||500)}).getBounds();map.fitBounds(bounds,{padding:[16,16],maxZoom:13});
+    setTimeout(()=>map.invalidateSize(),50);
+  }
+
+  function mapCard() {
+    return h('section',{class:'card-sec air-map-card'},
+      h('div',{class:'air-map-title'},h('span',{class:'lbl'},'Carte aéronautique'),h('div',{class:'seg mini-seg'},
+        h('button',{'data-air-base':'plan'},'Plan'),h('button',{'data-air-base':'sat'},'Sat'),h('button',{'data-air-base':'oaci',class:'on'},'OACI'))),
+      h('div',{id:'air-map',class:'air-map','aria-label':'Carte des espaces et aérodromes proches'}));
+  }
+
+  function draw() {
+    root.replaceChildren(topbar(mission,'espace'),h('div',{class:'body'},
+      tabs(mission,'espace'),
+      hasPoint ? [
+        datasetCard(),
+        h('button',{class:'btn primary block',disabled:loading||importing,onclick:()=>runAnalysis({feedback:true})},loading?'Analyse en cours…':'Analyser la zone et le rayon'),
+        mapCard(),
+        localZonesCard(),
+        aerodromeCard(),
+        ...[].concat(uasResult()).filter(Boolean),
+        h('section',{class:'card-sec'},h('span',{class:'lbl'},'Sources officielles'),extLink(OFFICIAL.sia),extLink(OFFICIAL.geo)),
+        h('div',{class:'official-note'},'La détection locale est une aide à la préparation. Toujours confirmer avec les publications SIA, NOTAM, SUP AIP et l’organisme ATS lorsque nécessaire.')
+      ] : h('div',{class:'empty'},h('p',{},'Définis d’abord la zone de mission.'),h('a',{class:'btn primary',href:missionUrl(mission.id,'lieu')},'Choisir la zone')),
+      footer(mission,'espace')));
+    queueMicrotask(initMiniMap);
+  }
+
+  refreshMeta().then(async()=>{ if(meta&&hasPoint){try{local=await analyzeAerodata({lat:p.lat,lon:p.lon,radiusM:p.radiusM||500,nearest:5});}catch{} } draw(); });
   draw();
-  return { el: root };
+  return { el:root, destroy(){map?.remove();} };
 }
 
-export function renderNotam({ mission }) {
-  return manualList({
-    mission, route: 'notam', kind: 'notam', title: 'NOTAM',
-    intro: 'Les NOTAM ne sont pas récupérés automatiquement (pas de source ouverte fiable). Consultez-les et notez ceux qui concernent le lieu et le créneau.',
-    fields: [{ key: 'id', label: 'Numéro', placeholder: 'Numéro (ex. A1234/26)' }, { key: 'text', label: 'Texte', long: true, placeholder: 'Texte ou résumé' }, { key: 'validity', label: 'Validité', placeholder: 'Validité (ex. 06/10 08:00 → 07/10 18:00 UTC)' }],
-    emptyText: 'Aucun NOTAM noté.',
-    itemView: (it) => h('div', {}, h('strong', {}, it.id || '(sans numéro)'), it.validity ? h('div', { class: 'mono small' }, it.validity) : null, it.text ? h('p', {}, it.text) : null)
-  });
+function manualList({ mission, route, kind, fields, title, intro, official, itemView, emptyText }) {
+  const root=h('main',{class:'screen scroll'});const data=mission.mens[kind];const inputs={};
+  const add=()=>{
+    const item={};for(const f of fields)item[f.key]=inputs[f.key].value.trim();
+    if(!item[fields[0].key])return toast(`${fields[0].label} requis`,'bad');
+    if(item.url&&!/^https?:\/\//i.test(item.url))return toast('Le lien doit commencer par http:// ou https://','bad');
+    item.addedAt=new Date().toISOString();
+    mutate(mission,(m)=>{const d=m.mens[kind];d.items=[...d.items,item];d.fetchedAt=item.addedAt;d.source='saisie manuelle après consultation officielle';});draw();
+  };
+  function draw(){
+    for(const f of fields)inputs[f.key]=f.long?h('textarea',{rows:4,maxlength:4000,placeholder:f.placeholder||f.label,'aria-label':f.label}):h('input',{placeholder:f.placeholder||f.label,maxlength:500,'aria-label':f.label,inputmode:f.key==='url'?'url':null});
+    const verified=!!data.fetchedAt;
+    root.replaceChildren(topbar(mission,route),h('div',{class:'body'},
+      tabs(mission,route),
+      h('div',{class:`banner ${verified?'info':'warn'}`},icon(verified?'check':'warn'),h('span',{},verified?`Consultation notée à ${formatClock(data.fetchedAt)} · ${data.items.length} élément(s) conservé(s).`:`${title} non vérifiés. L’absence de saisie ne signifie jamais l’absence de ${title}.`)),
+      h('p',{class:'note'},intro),
+      h('section',{class:'card-sec'},h('span',{class:'lbl'},'Source officielle'),extLink(official)),
+      data.items.length?h('ul',{class:'items'},data.items.map((it,i)=>h('li',{class:'item'},itemView(it),h('button',{class:'icon-btn','aria-label':'Supprimer cet élément',onclick:()=>{mutate(mission,(m)=>{m.mens[kind].items=m.mens[kind].items.filter((_,j)=>j!==i);});draw();}},icon('trash',20))))):h('p',{class:'note'},emptyText),
+      h('section',{class:'card-sec'},h('span',{class:'lbl'},'Reporter un élément'),fields.map((f)=>inputs[f.key]),h('button',{class:'btn primary block',onclick:add},'Ajouter à la mission')),
+      !data.items.length?h('button',{class:'btn ghost block',onclick:()=>{mutate(mission,(m)=>{m.mens[kind].fetchedAt=new Date().toISOString();m.mens[kind].source='consultation officielle · saisie manuelle';});draw();}},'J’ai consulté la source : rien à reporter'):null,
+      footer(mission,route)));
+  }
+  draw();return{el:root};
 }
 
-export function renderSupAip({ mission }) {
-  return manualList({
-    mission, route: 'supaip', kind: 'supaip', title: 'SUP AIP',
-    intro: 'Les suppléments AIP sont à consulter sur le site du SIA. Notez ceux qui concernent le lieu et le créneau.',
-    fields: [{ key: 'id', label: 'Référence', placeholder: 'Référence (ex. SUP AIP 123/26)' }, { key: 'title', label: 'Titre', placeholder: 'Titre' }, { key: 'validity', label: 'Validité', placeholder: 'Validité' }, { key: 'url', label: 'Lien', placeholder: 'Lien https:// (facultatif)' }],
-    emptyText: 'Aucun SUP AIP noté.',
-    itemView: (it) => h('div', {}, h('strong', {}, it.id || '(sans référence)'), it.title ? h('div', {}, it.title) : null, it.validity ? h('div', { class: 'mono small' }, it.validity) : null, it.url ? h('a', { class: 'ext', href: it.url, target: '_blank', rel: 'noopener noreferrer' }, icon('link', 18), 'Ouvrir le lien') : null)
-  });
+export function renderNotam({mission}){
+  return manualList({mission,route:'notam',kind:'notam',title:'NOTAM',
+    intro:'Ouvre SOFIA-Briefing pour la zone et le créneau, puis reporte ici les NOTAM ayant un impact sur la mission.',
+    official:OFFICIAL.sofia,
+    fields:[{key:'id',label:'Numéro',placeholder:'Ex. A1234/26'},{key:'text',label:'Texte / impact',long:true,placeholder:'Résumé, plancher/plafond, rayon, impact sur le vol…'},{key:'validity',label:'Validité',placeholder:'Début → fin (UTC si publié ainsi)'}],
+    emptyText:'Aucun NOTAM reporté.',
+    itemView:(it)=>h('div',{},h('strong',{},it.id||'(sans numéro)'),it.validity?h('div',{class:'mono small'},it.validity):null,it.text?h('p',{},it.text):null)});
+}
+export function renderSupAip({mission}){
+  return manualList({mission,route:'supaip',kind:'supaip',title:'SUP AIP',
+    intro:'Consulte les SUP AIP en vigueur sur le site du SIA et reporte ceux qui concernent la zone et le créneau.',
+    official:OFFICIAL.supaip,
+    fields:[{key:'id',label:'Référence',placeholder:'Ex. SUP AIP 123/26'},{key:'title',label:'Titre',placeholder:'Titre / objet'},{key:'validity',label:'Validité',placeholder:'Période de validité'},{key:'url',label:'Lien',placeholder:'https://… (facultatif)'}],
+    emptyText:'Aucun SUP AIP reporté.',
+    itemView:(it)=>h('div',{},h('strong',{},it.id||'(sans référence)'),it.title?h('div',{},it.title):null,it.validity?h('div',{class:'mono small'},it.validity):null,it.url?h('a',{class:'ext',href:it.url,target:'_blank',rel:'noopener noreferrer'},icon('link',18),'Ouvrir le document'):null)});
 }
