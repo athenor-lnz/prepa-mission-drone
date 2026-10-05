@@ -1,0 +1,9 @@
+{
+  "name":"PrépaMission Drone",
+  "short_name":"PrépaMission",
+  "start_url":"./",
+  "display":"standalone",
+  "background_color":"#07111e",
+  "theme_color":"#07111e",
+  "description":"Préparation mobile de missions drone"
+}
