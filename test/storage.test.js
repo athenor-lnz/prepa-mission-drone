@@ -81,7 +81,9 @@ test('structure d\'une nouvelle mission', () => {
   assert.match(m.id, /^m_20261005_[0-9a-z]{4}$/);
   assert.equal(m.place.radiusM, 500);
   assert.equal(m.mens.meteo.gustLimitMs, 10.3);
-  assert.equal(Object.keys(m.smepp).length, 9);
+  assert.equal(Object.keys(m.smepp).length, 11);
   assert.equal(Object.keys(m.macloe).length, 6);
+  assert.deepEqual(m.validation, { macloe: [], smepp: [] });
+  assert.equal(m.context.capture, 'observation');
   assert.deepEqual(m.admin, { gendrone: 'todo', visualdrone: 'todo' });
 });
