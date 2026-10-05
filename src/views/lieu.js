@@ -5,6 +5,7 @@ import { formatAll } from '../lib/geo.js';
 import { search } from '../services/geocode.js';
 import { micButton } from '../ui/dictate.js';
 import { openTools } from './outils.js';
+import { info as aerodataInfo, analyzeAerodata } from '../services/aerodata.js';
 
 const RADII = [50, 100, 300, 500, 1000];
 const TILES = {
@@ -21,7 +22,7 @@ export function renderLieu({ mission }) {
   const L = globalThis.L;
   const mapEl = h('div', { class: 'map', id: 'map', role: 'application', 'aria-label': 'Carte : touchez pour placer le point' });
   const root = h('main', { class: 'screen lieu' }, mapEl);
-  let map; let marker; let circle; let layer; let mode = 'plan';
+  let map; let marker; let circle; let layer; let airOverlay; let mode = 'plan';
   let fmt = 'dms';
   const p = mission.place;
   const hasPoint = () => Number.isFinite(p.lat) && Number.isFinite(p.lon);
@@ -54,6 +55,7 @@ export function renderLieu({ mission }) {
     });
     drawMarker(recenter);
     refresh();
+    drawAerodataOverlay();
   }
 
   function drawMarker(recenter) {
@@ -83,6 +85,31 @@ export function renderLieu({ mission }) {
     layer.addTo(map);
   }
 
+  async function drawAerodataOverlay() {
+    if (!map || !hasPoint()) return;
+    if (!airOverlay) airOverlay = L.layerGroup().addTo(map);
+    airOverlay.clearLayers();
+    try {
+      const meta = await aerodataInfo();
+      if (!meta) return;
+      const r = await analyzeAerodata({ lat:p.lat, lon:p.lon, radiusM:p.radiusM || 500, nearest:3 });
+      for (const z of r.zones) {
+        if (!z.geometry || z.geometry.type === 'Point') continue;
+        const restrictive = ['P','R','D','CTR','D-OTHER'].includes(z.type);
+        try {
+          L.geoJSON({ type:'Feature', geometry:z.geometry }, { style:{ color:restrictive ? '#B3261E' : '#8A5200', weight:2, fillOpacity:.06, dashArray:z.type==='CTR'?'6 5':null } })
+            .bindTooltip([z.type,z.id,z.name].filter(Boolean).join(' · '))
+            .addTo(airOverlay);
+        } catch {}
+      }
+      for (const a of r.aerodromes.filter((x)=>x.distanceM <= 30000)) {
+        L.circleMarker([a.lat,a.lon],{radius:5,weight:2,fillOpacity:.75})
+          .bindTooltip(`${a.icao || ''} ${a.name || ''}`.trim())
+          .addTo(airOverlay);
+      }
+    } catch (e) { console.warn('Overlay SIA local indisponible', e); }
+  }
+
   async function doSearch(q) {
     results.hidden = true; results.replaceChildren(); searchMsg.textContent = '';
     if (q.trim().length < 2) return;
@@ -109,7 +136,7 @@ export function renderLieu({ mission }) {
     h('div', { class: 'coord-box' }, coordText,
       h('button', { class: 'icon-btn tint', 'aria-label': 'Copier les coordonnées', onclick: () => hasPoint() && copyText(coordText.textContent, 'Coordonnées copiées') }, icon('copy'))),
     h('div', { class: 'radii', role: 'group', 'aria-label': 'Rayon de travail' },
-      RADII.map((r) => h('button', { 'data-r': r, 'aria-pressed': 'false', onclick: () => { mutate(mission, (m) => { m.place.radiusM = r; }); circle?.setRadius(r); fit(); refresh(); } }, r >= 1000 ? `${r / 1000} km` : `${r} m`))));
+      RADII.map((r) => h('button', { 'data-r': r, 'aria-pressed': 'false', onclick: () => { mutate(mission, (m) => { m.place.radiusM = r; }); circle?.setRadius(r); fit(); refresh(); drawAerodataOverlay(); } }, r >= 1000 ? `${r / 1000} km` : `${r} m`))));
 
   // pastilles format : remplace le composant générique pour garder l'état visuel
   const seg = panel.querySelector('.seg'); seg.classList.add('fmt');
@@ -139,8 +166,10 @@ export function renderLieu({ mission }) {
     map = L.map(mapEl, { zoomControl: false, attributionControl: true }).setView(hasPoint() ? [p.lat, p.lon] : [46.6, 2.4], hasPoint() ? 16 : 5);
     map.attributionControl.setPrefix(false);
     setMode(mode);
+    airOverlay = L.layerGroup().addTo(map);
     map.on('click', (e) => setPoint(e.latlng.lat, e.latlng.lng, '', { recenter: false }));
     drawMarker(false);
+    drawAerodataOverlay();
     setTimeout(() => map.invalidateSize(), 50);
     refresh();
   });
