@@ -102,3 +102,38 @@ $('#themeToggle').onclick=()=>{const next=document.documentElement.dataset.theme
 document.documentElement.dataset.theme=localStorage.getItem('pmd-theme')||'dark';
 $$('input,select,textarea').forEach(e=>e.addEventListener('change',refreshHome));
 loadLocal();refreshHome();go('cadre');
+
+
+let deferredInstallPrompt = null;
+
+window.addEventListener('beforeinstallprompt', event => {
+  event.preventDefault();
+  deferredInstallPrompt = event;
+  const btn = $('#installBtn');
+  if (btn) btn.classList.remove('hidden-install');
+});
+
+window.addEventListener('appinstalled', () => {
+  deferredInstallPrompt = null;
+  const btn = $('#installBtn');
+  if (btn) btn.classList.add('hidden-install');
+});
+
+const installBtn = $('#installBtn');
+if (installBtn) {
+  installBtn.addEventListener('click', async () => {
+    if (!deferredInstallPrompt) return;
+    deferredInstallPrompt.prompt();
+    await deferredInstallPrompt.userChoice;
+    deferredInstallPrompt = null;
+    installBtn.classList.add('hidden-install');
+  });
+}
+
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./sw.js').catch(error => {
+      console.warn('Service worker non enregistré :', error);
+    });
+  });
+}
