@@ -2,6 +2,7 @@ const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
 const stepOrder=['cadre','zone','mens','macloe','smepp','synthese'];
 const titles={cadre:'Cadre de mission',zone:'Zone de mission',mens:'MENS',macloe:'MACLOE',smepp:'SMEPP',synthese:'Synthèse'};
 let currentStep='cadre',map,marker,circle,baseLayer;
+let smeppValidated=new Set();
 const layers={};
 
 const macloe=[
@@ -37,8 +38,13 @@ const smepp=[
 ];
 
 function buildGuides(host,items,prefix){
- host.innerHTML=items.map(x=>{
-  const mainHelp=x.h ? `<div class="guide-help">${x.h}</div>` : '';
+ host.innerHTML=items.map(x=>`<article class="guide-item"><div class="guide-head"><span class="badge">${x.badge||x.k}</span><div><b>${x.t}</b><small>${x.d}</small></div><button class="help-btn" type="button">Rappel</button></div><div class="guide-help">${x.h||''}</div><textarea id="${prefix}-${x.k}" placeholder="Saisir ou dicter..."></textarea></article>`).join('');
+ host.querySelectorAll('.help-btn').forEach(b=>b.onclick=()=>b.closest('.guide-item').classList.toggle('open'));
+ host.querySelectorAll('textarea').forEach(t=>t.addEventListener('input',updateProgress));
+}
+
+function buildSmeppAccordion(host){
+ host.innerHTML=smepp.map((x,index)=>{
   const editor=x.subs
    ? `<div class="subfields">${x.subs.map(s=>`
       <section class="subfield">
@@ -48,24 +54,117 @@ function buildGuides(host,items,prefix){
         <button class="sub-help-btn" type="button">Rappel</button>
        </div>
        <div class="sub-help">${s.h||''}</div>
-       <textarea id="${prefix}-${x.k}-${s.k}" data-parent="${x.k}" placeholder="Saisir ou dicter..."></textarea>
+       <textarea id="smepp-${x.k}-${s.k}" data-smepp-parent="${x.k}" placeholder="Saisir ou dicter..."></textarea>
       </section>`).join('')}</div>`
-   : `<textarea id="${prefix}-${x.k}" data-parent="${x.k}" placeholder="Saisir ou dicter..."></textarea>`;
-  return `<article class="guide-item">
-   <div class="guide-head"><span class="badge">${x.badge||x.k}</span><div><b>${x.t}</b><small>${x.d}</small></div>${x.h?'<button class="help-btn" type="button">Rappel</button>':''}</div>
-   ${mainHelp}
-   ${editor}
+   : `<div class="single-smepp-field">
+       <div class="accordion-main-help">${x.h||''}</div>
+       <textarea id="smepp-${x.k}" data-smepp-parent="${x.k}" placeholder="Saisir ou dicter..."></textarea>
+      </div>`;
+
+  return `<article class="smepp-accordion" data-smepp-key="${x.k}">
+    <button class="smepp-accordion-toggle" type="button" aria-expanded="${index===0?'true':'false'}">
+      <span class="smepp-status-icon">○</span>
+      <span class="badge">${x.badge||x.k}</span>
+      <span class="smepp-head-copy"><b>${x.t}</b><small>${x.d}</small></span>
+      <span class="smepp-state-label">À faire</span>
+      <span class="smepp-chevron">⌄</span>
+    </button>
+    <div class="smepp-accordion-body ${index===0?'open':''}">
+      ${editor}
+      <div class="smepp-validation-row">
+        <span class="smepp-validation-hint">Complète la rubrique avant validation.</span>
+        <button class="smepp-validate" data-validate-smepp="${x.k}" type="button" disabled>Valider et continuer</button>
+      </div>
+    </div>
   </article>`;
  }).join('');
- host.querySelectorAll('.help-btn').forEach(b=>b.onclick=()=>b.closest('.guide-item').classList.toggle('open'));
+
+ host.querySelectorAll('.smepp-accordion-toggle').forEach(btn=>btn.addEventListener('click',()=>{
+  const card=btn.closest('.smepp-accordion');
+  const body=card.querySelector('.smepp-accordion-body');
+  const willOpen=!body.classList.contains('open');
+  host.querySelectorAll('.smepp-accordion-body').forEach(b=>b.classList.remove('open'));
+  host.querySelectorAll('.smepp-accordion-toggle').forEach(b=>b.setAttribute('aria-expanded','false'));
+  if(willOpen){
+   body.classList.add('open');
+   btn.setAttribute('aria-expanded','true');
+  }
+  renderSmeppStates();
+ }));
+
  host.querySelectorAll('.sub-help-btn').forEach(b=>b.onclick=()=>{
-   const field=b.closest('.subfield');
-   field.classList.toggle('open');
+  const field=b.closest('.subfield');
+  field.classList.toggle('open-help');
  });
- host.querySelectorAll('textarea').forEach(t=>t.addEventListener('input',updateProgress));
+
+ host.querySelectorAll('textarea').forEach(t=>t.addEventListener('input',()=>{
+  const key=t.dataset.smeppParent;
+  if(smeppValidated.has(key)){
+   smeppValidated.delete(key);
+  }
+  updateProgress();
+  renderSmeppStates();
+ }));
+
+ host.querySelectorAll('[data-validate-smepp]').forEach(btn=>btn.addEventListener('click',()=>{
+  const key=btn.dataset.validateSmepp;
+  const item=smepp.find(x=>x.k===key);
+  if(!itemComplete('smepp',item)) return;
+  smeppValidated.add(key);
+  saveLocal();
+  updateProgress();
+  const index=smepp.findIndex(x=>x.k===key);
+  const next=smepp.slice(index+1).find(x=>!smeppValidated.has(x.k));
+  host.querySelectorAll('.smepp-accordion-body').forEach(b=>b.classList.remove('open'));
+  host.querySelectorAll('.smepp-accordion-toggle').forEach(b=>b.setAttribute('aria-expanded','false'));
+  if(next){
+   const nextCard=host.querySelector('[data-smepp-key="'+next.k+'"]');
+   nextCard.querySelector('.smepp-accordion-body').classList.add('open');
+   nextCard.querySelector('.smepp-accordion-toggle').setAttribute('aria-expanded','true');
+   setTimeout(()=>nextCard.scrollIntoView({behavior:'smooth',block:'start'}),50);
+  }
+  renderSmeppStates();
+ }));
+ renderSmeppStates();
 }
+
+function renderSmeppStates(){
+ const host=$('#smeppFields');
+ if(!host) return;
+ const firstPending=smepp.find(x=>!smeppValidated.has(x.k));
+ smepp.forEach(item=>{
+  const card=host.querySelector('[data-smepp-key="'+item.k+'"]');
+  if(!card) return;
+  const done=smeppValidated.has(item.k);
+  const body=card.querySelector('.smepp-accordion-body');
+  const isOpen=body.classList.contains('open');
+  const complete=itemComplete('smepp',item);
+  const icon=card.querySelector('.smepp-status-icon');
+  const label=card.querySelector('.smepp-state-label');
+  const validate=card.querySelector('.smepp-validate');
+  const hint=card.querySelector('.smepp-validation-hint');
+
+  card.classList.toggle('validated',done);
+  card.classList.toggle('current',!done && isOpen);
+  card.classList.toggle('ready-to-validate',!done && complete);
+
+  icon.textContent=done?'✓':(isOpen?'•':'○');
+  label.textContent=done?'Validé':(isOpen?'En cours':'À faire');
+
+  if(validate){
+   validate.disabled=!complete || done;
+   validate.textContent=done?'Validé ✓':'Valider et continuer';
+  }
+  if(hint){
+   hint.textContent=done?'Rubrique validée.':(complete?'Tout est renseigné : tu peux valider.':'Complète la rubrique avant validation.');
+  }
+ });
+ const progress=smeppValidated.size;
+ if($('#smeppProgress')) $('#smeppProgress').textContent=`${progress}/5`;
+}
+
 buildGuides($('#macloeFields'),macloe,'macloe');
-buildGuides($('#smeppFields'),smepp,'smepp');
+buildSmeppAccordion($('#smeppFields'));
 
 function showMission(step='cadre'){
  $('#homeScreen').classList.remove('active');$('#missionScreen').classList.add('active');go(step);
@@ -119,9 +218,8 @@ function itemComplete(prefix,item){
 }
 function updateProgress(){
  const m=macloe.filter(x=>itemComplete('macloe',x)).length;
- const s=smepp.filter(x=>itemComplete('smepp',x)).length;
  $('#macloeProgress').textContent=`${m}/6`;
- $('#smeppProgress').textContent=`${s}/5`;
+ if($('#smeppProgress')) $('#smeppProgress').textContent=`${smeppValidated.size}/5`;
  refreshHome();
 }
 function collect(){
@@ -131,6 +229,7 @@ function collect(){
   zone:{lat:+$('#lat').value,lng:+$('#lng').value,altitude:+$('#altitude').value,radius:+$('#radius').value,environment:$('#environment').value,base:localStorage.getItem('pmd-base')||'sat'},
   mens:{checks:Object.fromEntries($$('[data-check]').map(x=>[x.dataset.check,x.checked])),notes:$('#mensNotes').value},
   macloe:Object.fromEntries(macloe.map(x=>[x.k,$('#macloe-'+x.k)?.value||''])),
+  smeppValidated:[...smeppValidated],
   smepp:Object.fromEntries(smepp.map(x=>[
    x.k,
    x.subs
@@ -151,9 +250,9 @@ function loadLocal(){try{const d=JSON.parse(localStorage.getItem('pmd-mission')|
   const el=$('#smepp-'+x.k);
   if(el) el.value=(typeof d.smepp?.[x.k]==='string' ? d.smepp?.[x.k] : '') || '';
  }
-});updateProgress()}catch(e){}}
-function refreshHome(){const d=collect(),m=Object.values(d.mens.checks).filter(Boolean).length,ma=Object.values(d.macloe).filter(v=>v.trim()).length,sm=smepp.filter(x=>itemComplete('smepp',x)).length;$('#homeMissionTitle').textContent=d.title||'Mission sans titre';$('#homeMissionMeta').textContent=d.title?`${d.type} · ${d.zone.environment}`:'Aucune mission enregistrée';$('#homeMens').textContent=`MENS ${m}/4`;$('#homeMacloe').textContent=`MACLOE ${ma}/6`;$('#homeSmepp').textContent=`SMEPP ${sm}/5`}
-function renderSummary(){const d=collect(),m=Object.values(d.mens.checks).filter(Boolean).length,ma=Object.values(d.macloe).filter(v=>v.trim()).length,sm=smepp.filter(x=>itemComplete('smepp',x)).length;$('#summary').innerHTML=`
+});smeppValidated=new Set(Array.isArray(d.smeppValidated)?d.smeppValidated:[]);renderSmeppStates();updateProgress()}catch(e){}}
+function refreshHome(){const d=collect(),m=Object.values(d.mens.checks).filter(Boolean).length,ma=Object.values(d.macloe).filter(v=>v.trim()).length,sm=smeppValidated.size;$('#homeMissionTitle').textContent=d.title||'Mission sans titre';$('#homeMissionMeta').textContent=d.title?`${d.type} · ${d.zone.environment}`:'Aucune mission enregistrée';$('#homeMens').textContent=`MENS ${m}/4`;$('#homeMacloe').textContent=`MACLOE ${ma}/6`;$('#homeSmepp').textContent=`SMEPP ${sm}/5`}
+function renderSummary(){const d=collect(),m=Object.values(d.mens.checks).filter(Boolean).length,ma=Object.values(d.macloe).filter(v=>v.trim()).length,sm=smeppValidated.size;$('#summary').innerHTML=`
  <div class="summary-box"><b>Mission</b><p>${esc(d.title||'Sans titre')}\n${esc(d.type)} · ${esc(d.capture)}\n${esc(d.useCases.join(' · ')||'Aucun cas d’usage')}</p></div>
  <div class="summary-box"><b>Zone</b><p>${d.zone.lat.toFixed(6)}, ${d.zone.lng.toFixed(6)}\nAltitude ${d.zone.altitude} m · Rayon ${d.zone.radius} m\n${esc(d.zone.environment)} · ${esc(d.zone.base.toUpperCase())}</p></div>
  <div class="summary-box"><b>Préparation</b><p>MENS ${m}/4 · MACLOE ${ma}/6 · SMEPP ${sm}/5</p></div>`;
