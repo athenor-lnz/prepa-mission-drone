@@ -9,7 +9,12 @@ import { openTools } from './outils.js';
 const RADII = [50, 100, 300, 500, 1000];
 const TILES = {
   plan: { url: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png', attr: '© OpenStreetMap', max: 19 },
-  sat: { url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', attr: 'Imagerie © Esri', max: 19 }
+  sat: { url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', attr: 'Imagerie © Esri', max: 19 },
+  oaci: {
+    url: 'https://data.geopf.fr/wmts?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER=GEOGRAPHICALGRIDSYSTEMS.MAPS.SCAN-OACI&STYLE=normal&FORMAT=image/jpeg&TILEMATRIXSET=PM&TILEMATRIX={z}&TILEROW={y}&TILECOL={x}',
+    attr: 'Carte OACI-VFR © DSNA/SIA · Géoplateforme',
+    max: 20, native: 11
+  }
 };
 
 export function renderLieu({ mission }) {
@@ -25,7 +30,7 @@ export function renderLieu({ mission }) {
   const radiusTag = h('span', { class: 'map-tag' });
   const results = h('ul', { class: 'results', hidden: true });
   const searchMsg = h('p', { class: 'note', 'aria-live': 'polite' });
-  const next = ctaButton('Valider · Météo', () => { location.hash = missionUrl(mission.id, 'meteo'); }, { disabled: !hasPoint() });
+  const next = ctaButton('Valider · MENS / Météo', () => { location.hash = missionUrl(mission.id, 'meteo'); }, { disabled: !hasPoint() });
 
   function refresh() {
     if (hasPoint()) {
@@ -72,7 +77,7 @@ export function renderLieu({ mission }) {
     mode = m;
     if (layer) map.removeLayer(layer);
     const t = TILES[m];
-    layer = L.tileLayer(t.url, { maxZoom: t.max, attribution: t.attr });
+    layer = L.tileLayer(t.url, { maxZoom: t.max, maxNativeZoom: t.native || t.max, attribution: t.attr, keepBuffer: 4 });
     let warned = false;
     layer.on('tileerror', () => { if (!warned) { warned = true; toast('Fond de carte indisponible (réseau).', 'bad'); } });
     layer.addTo(map);
@@ -110,14 +115,17 @@ export function renderLieu({ mission }) {
   const seg = panel.querySelector('.seg'); seg.classList.add('fmt');
   [...seg.children].forEach((b, i) => { b.dataset.v = ['dd', 'ddm', 'dms', 'utm'][i]; });
 
-  const mapBtns = h('div', { class: 'map-ctl' },
+  const mapBtns = h('div', { class: 'map-ctl map-stack' },
     h('button', { class: 'icon-btn float', 'aria-label': 'Ma position', onclick: () => {
       if (!navigator.geolocation) return toast('Position indisponible sur cet appareil.', 'bad');
       navigator.geolocation.getCurrentPosition((pos) => setPoint(pos.coords.latitude, pos.coords.longitude, ''), () => toast('Position refusée ou indisponible.', 'bad'), { enableHighAccuracy: true, timeout: 10000 });
-    } }, icon('locate')));
+    } }, icon('locate')),
+    h('button', { class: 'icon-btn float', 'aria-label': 'Zoom avant', onclick: () => map?.zoomIn() }, icon('plus')),
+    h('button', { class: 'icon-btn float', 'aria-label': 'Zoom arrière', onclick: () => map?.zoomOut() }, icon('minus')));
   const modeSeg = h('div', { class: 'seg float-seg', role: 'group', 'aria-label': 'Fond de carte' },
     h('button', { class: 'on', onclick: (e) => { setMode('plan'); toggle(e); } }, 'Plan'),
-    h('button', { onclick: (e) => { setMode('sat'); toggle(e); } }, 'Satellite'));
+    h('button', { onclick: (e) => { setMode('sat'); toggle(e); } }, 'Satellite'),
+    h('button', { onclick: (e) => { setMode('oaci'); toggle(e); } }, 'OACI'));
   const toggle = (e) => { for (const b of modeSeg.children) b.classList.toggle('on', b === e.currentTarget); };
 
   root.append(
