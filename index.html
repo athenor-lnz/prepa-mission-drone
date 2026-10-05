@@ -154,6 +154,37 @@
               <span id="espaceState" class="tool-state">À vérifier</span>
             </div>
             <div id="airspaceContext" class="airspace-context"></div>
+
+            <section class="sia-dataset-panel">
+              <div class="sia-dataset-head">
+                <div>
+                  <span class="section-eyebrow">BASE LOCALE GEOGM / SIA</span>
+                  <b id="siaDatasetStatus">Base SIA non chargée</b>
+                  <small id="siaDatasetMeta">Importe le ZIP GeoGM/SIA une première fois. Il sera ensuite conservé localement sur ce téléphone.</small>
+                </div>
+                <span id="siaDatasetBadge" class="sia-dataset-badge missing">À importer</span>
+              </div>
+              <div class="sia-dataset-actions">
+                <button id="siaImportBtn" class="secondary" type="button">↥ Importer / mettre à jour</button>
+                <button id="analyzeAirspaceBtn" class="primary" type="button">◎ Analyser la zone</button>
+              </div>
+              <button id="siaClearBtn" class="text-danger-action" type="button">Supprimer la base SIA stockée sur cet appareil</button>
+              <input id="siaZipInput" type="file" accept=".zip,application/zip,application/x-zip-compressed" hidden>
+              <div id="siaImportProgress" class="sia-import-progress"></div>
+            </section>
+
+            <div class="airspace-analysis-head">
+              <div>
+                <span class="section-eyebrow">ESPACES DÉTECTÉS</span>
+                <b id="airspaceAnalysisTitle">Analyse non effectuée</b>
+              </div>
+              <span id="airspaceAnalysisCount" class="airspace-count">—</span>
+            </div>
+            <div id="airspaceResults" class="airspace-results">
+              <div class="tool-placeholder">Charge la base GeoGM/SIA pour détecter automatiquement les espaces qui intersectent le rayon de mission.</div>
+            </div>
+            <div class="official-source-note airspace-disclaimer">Préfiltrage d’aide à la préparation : il ne remplace pas la consultation SIA, les NOTAM, les SUP AIP ni les consignes de l’organisme ATS.</div>
+
             <div class="mens-tool-actions split-actions">
               <button id="openOaciMapBtn" class="primary" type="button">◫ Voir la carte OACI</button>
               <button id="openSiaAipBtn" class="secondary" type="button">SIA / AIP ↗</button>
@@ -255,6 +286,8 @@
   <div id="appToast" class="app-toast" role="status" aria-live="polite"></div>
 </div>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
+<script src="airspace.js"></script>
 <script src="app.js"></script>
 </body>
 </html>
