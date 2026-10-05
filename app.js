@@ -120,7 +120,7 @@ const smepp=[
 function buildGuides(host,items,prefix){
  host.innerHTML=items.map(x=>{
   const tips=(x.tips||[]).map(t=>`<span>${t}</span>`).join('');
-  return `<article class="guide-item">
+  return `<article class="guide-item open">
     <div class="guide-head">
       <span class="badge">${x.badge||x.k}</span>
       <div><b>${x.t}</b><small>${x.d}</small></div>
@@ -273,7 +273,7 @@ function showMission(step='cadre'){
  go(step);
  syncBottomNav(step);
 }
-function showHome(){saveLocal();$('#missionScreen').classList.remove('active');$('#homeScreen').classList.add('active');$('[data-home]').classList.add('active');refreshHome()}
+function showHome(){saveLocal();$('#missionScreen').classList.remove('active');$('#homeScreen').classList.add('active');$('.bottom-nav button').forEach(b=>b.classList.remove('active'));$('[data-home]').classList.add('active');refreshHome()}
 $('#newMissionBtn').onclick=()=>showMission('cadre');$('#resumeBtn').onclick=()=>showMission(currentStep);$('#backHome').onclick=showHome;
 $('[data-home]').onclick=showHome;
 $('[data-open-step]').forEach(b=>b.onclick=()=>showMission(b.dataset.openStep));
