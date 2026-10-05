@@ -76,3 +76,25 @@ La branche `main` reste volontairement minimale tant que la première version mo
 - Cartes VAC / AIP : ouverture de la recherche officielle du **Service de l'Information Aéronautique (SIA)** à partir d'un code ICAO ou d'un identifiant de zone.
 
 Les contacts ajoutés manuellement sont conservés localement sur l'appareil et peuvent accompagner un export de mission.
+
+
+## Analyse locale des espaces aériens GeoGM / SIA
+
+Le bloc **MENS → Espace aérien** peut importer directement un export ZIP GeoGM/SIA, par exemple :
+
+`geogm-sia-tous-territoires-2026-10-01.zip`
+
+Fonctionnement :
+
+1. importer le ZIP une première fois depuis l'application ;
+2. `sortie/TOUT/espaces.geojson` est extrait dans le navigateur ;
+3. les espaces utiles sont indexés et conservés localement dans **IndexedDB** ;
+4. la position, le rayon et l'altitude de mission déclenchent ensuite un préfiltrage automatique ;
+5. les espaces détectés affichent identifiant, type, classe, plancher, plafond, horaires, remarque et un accès SIA ;
+6. les polygones détectés peuvent être visualisés sur la carte Leaflet.
+
+Les zones fournies par la source sous forme de **Point** sans contour/rayon sont signalées comme telles et nécessitent une vérification manuelle.
+
+Cette analyse est une **aide à la préparation**. Elle ne remplace pas la vérification officielle SIA, NOTAM, SUP AIP, les publications temporaires ni les consignes de l'organisme ATS.
+
+La base SIA est stockée uniquement sur l'appareil. Lors d'un nouveau cycle, il suffit d'importer le nouveau ZIP GeoGM/SIA ; aucune mise à jour du code n'est nécessaire.
