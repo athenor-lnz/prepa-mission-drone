@@ -22,7 +22,7 @@ Ordre de préparation :
 
 - Interface pensée en priorité pour smartphone
 - Thèmes clair et sombre
-- Carte Leaflet avec fonds **OSM** et **Satellite**
+- Carte Leaflet avec fonds **OSM**, **Satellite** et **OACI-VFR 2026** (DSNA/SIA via Géoplateforme)
 - Positionnement de la zone de mission
 - Altitude prévue et rayon de travail
 - Choix multiple des cas d'usage
@@ -33,9 +33,14 @@ Ordre de préparation :
   - SUP AIP
 - MACLOE guidé avec rappels
 - SMEPP guidé avec rappels
+- SMEPP en accordéon avec états **À faire / En cours / Validé**
+- Annuaire aéronautique local avec téléphones cliquables, fréquences et association zone/ICAO
+- Recherche rapide **VAC / AIP** sur le site du SIA
 - Synthèse de la mission
 - Enregistrement local dans le navigateur
 - Export JSON
+- Import JSON
+- Partage natif de la mission sur mobile
 
 ## Stockage
 
@@ -62,3 +67,12 @@ mobile-premium-v1
 ```
 
 La branche `main` reste volontairement minimale tant que la première version mobile n'est pas validée.
+
+
+## Sources aéronautiques intégrées
+
+- Export SIA/AIXM fourni pour le cycle du **01/10/2026** : utilisé comme base pour les premiers contacts extraits des remarques de zones.
+- Fond **Carte OACI-VFR 2026** : couche `GEOGRAPHICALGRIDSYSTEMS.MAPS.SCAN-OACI` diffusée via la Géoplateforme.
+- Cartes VAC / AIP : ouverture de la recherche officielle du **Service de l'Information Aéronautique (SIA)** à partir d'un code ICAO ou d'un identifiant de zone.
+
+Les contacts ajoutés manuellement sont conservés localement sur l'appareil et peuvent accompagner un export de mission.
