@@ -266,7 +266,7 @@ buildGuides($('#macloeFields'),macloe,'macloe');
 buildSmeppAccordion($('#smeppFields'));
 
 function syncBottomNav(step){
- $('.bottom-nav button').forEach(b=>b.classList.remove('active'));
+ $$('.bottom-nav button').forEach(b=>b.classList.remove('active'));
  if(step==='zone') $('[data-open-step="zone"]')?.classList.add('active');
  else if(step==='synthese') $('[data-open-step="synthese"]')?.classList.add('active');
  else $('[data-prepa-nav]')?.classList.add('active');
@@ -277,10 +277,10 @@ function showMission(step='cadre'){
  go(step);
  syncBottomNav(step);
 }
-function showHome(){saveLocal();$('#missionScreen').classList.remove('active');$('#homeScreen').classList.add('active');$('.bottom-nav button').forEach(b=>b.classList.remove('active'));$('[data-home]').classList.add('active');refreshHome()}
+function showHome(){saveLocal();$('#missionScreen').classList.remove('active');$('#homeScreen').classList.add('active');$$('.bottom-nav button').forEach(b=>b.classList.remove('active'));$('[data-home]').classList.add('active');refreshHome()}
 $('#newMissionBtn').onclick=()=>showMission('cadre');$('#resumeBtn').onclick=()=>showMission(currentStep);$('#backHome').onclick=showHome;
 $('[data-home]').onclick=showHome;
-$('[data-open-step]').forEach(b=>b.onclick=()=>showMission(b.dataset.openStep));
+$$('[data-open-step]').forEach(b=>b.onclick=()=>showMission(b.dataset.openStep));
 $('[data-prepa-nav]')?.addEventListener('click',()=>showMission(['cadre','mens','macloe','smepp'].includes(currentStep)?currentStep:'cadre'));
 $$('[data-jump]').forEach(b=>b.onclick=()=>showMission(b.dataset.jump));
 
