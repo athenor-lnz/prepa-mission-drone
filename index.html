@@ -77,6 +77,7 @@
         <div class="card">
           <div class="card-title"><span class="num">1</span><div><h3>Cadre de mission</h3><p>Type, captation et cas d'usage</p></div></div>
           <label>Intitulé de la mission<input id="missionTitle" placeholder="Ex. Incendie habitation"></label>
+          <label>Date / heure prévue<input id="missionDateTime" type="datetime-local"></label>
           <label>Type de mission<select id="missionType">
             <option>Observation</option><option>Police judiciaire</option><option>Police administrative</option>
             <option>Sauvegarde de la vie humaine</option><option>Entraînement</option><option>Communication</option><option>Autre</option>
@@ -118,54 +119,105 @@
             <label>Rayon de travail<input id="radius" type="number" value="600"></label>
           </div>
           <label>Environnement<select id="environment"><option>Urbain / Périurbain</option><option>Rural</option><option>Montagne</option><option>Littoral</option></select></label>
-          <div class="action-row"><button id="locateBtn" class="secondary">⌖ Ma position</button><button id="centerBtn" class="primary">Centrer la zone</button></div>
+          <button id="centerBtn" class="primary full-action" type="button">Centrer la zone</button>
         </div>
       </section>
 
       <section class="panel" data-panel="mens">
-        <div class="intro-card"><b>MENS</b><p>Les quatre contrôles incontournables avant d'aller plus loin.</p></div>
-        <div class="check-list">
-          <label><input type="checkbox" data-check="meteo"><span class="letter l1">M</span><span><b>Météo</b><small>Vent, rafales, visibilité, plafond, température, précipitations.</small></span></label>
-          <label><input type="checkbox" data-check="espace"><span class="letter l2">E</span><span><b>Espace aérien</b><small>Zones, classes, hauteurs, aérodromes, restrictions locales.</small></span></label>
-          <label><input type="checkbox" data-check="notam"><span class="letter l3">N</span><span><b>NOTAM</b><small>Activités temporaires, restrictions et informations opérationnelles.</small></span></label>
-          <label><input type="checkbox" data-check="supaip"><span class="letter l4">S</span><span><b>SUP AIP</b><small>Publications temporaires impactant le volume de vol.</small></span></label>
+        <div class="intro-card">
+          <div><b>MENS</b><p>Données automatiques quand c’est possible, validation humaine obligatoire.</p></div>
+          <span id="mensProgress">0/4</span>
         </div>
-        <section class="card aero-directory">
-          <div class="aero-directory-head">
-            <div>
-              <span class="section-eyebrow">ESPACE AÉRIEN</span>
-              <h3>Annuaire & cartes VAC</h3>
-              <p>Téléphones cliquables, fréquences et accès rapide aux cartes SIA.</p>
+
+        <div class="mens-tools">
+          <article class="mens-tool card" data-mens-tool="meteo">
+            <div class="mens-tool-head">
+              <span class="letter l1">M</span>
+              <div><b>Météo</b><small>Prévision à la position et au créneau de mission.</small></div>
+              <span id="meteoState" class="tool-state">À vérifier</span>
             </div>
-            <button id="toggleContactForm" class="small-action" type="button">＋ Contact</button>
-          </div>
-
-          <div class="vac-search-row">
-            <input id="vacIcao" maxlength="8" autocomplete="off" placeholder="ICAO / zone — ex. LFBO">
-            <button id="openVacBtn" class="secondary" type="button">VAC / AIP ↗</button>
-          </div>
-          <small class="source-note">Recherche ouverte sur le SIA. Les cartes VAC sont mises à jour par cycles AIRAC.</small>
-
-          <input id="contactSearch" class="contact-search" placeholder="Rechercher un contact, une zone, une fréquence…">
-          <div id="contactsList" class="contacts-list"></div>
-
-          <div id="contactForm" class="contact-form hidden-contact">
-            <div class="grid2">
-              <label>Nom<input id="contactName" placeholder="Ex. Tour de contrôle Toulouse"></label>
-              <label>Type<select id="contactType"><option>TWR</option><option>APP</option><option>FIC / INFO</option><option>Opérations</option><option>Autorité d'emploi</option><option>Autre</option></select></label>
-              <label>Zone / ICAO<input id="contactZone" placeholder="LFBO, LFR51…"></label>
-              <label>Téléphone<input id="contactPhone" inputmode="tel" placeholder="05 61…"></label>
+            <div class="mens-tool-actions">
+              <button id="fetchWeatherBtn" class="primary" type="button">↻ Actualiser la météo</button>
             </div>
-            <label>Fréquence<input id="contactFreq" placeholder="Ex. TWR 118.100 MHz"></label>
-            <label>Notes<textarea id="contactNotes" rows="3" placeholder="Horaires, conditions d’activation, consignes…"></textarea></label>
-            <div class="action-row">
-              <button id="cancelContactBtn" class="secondary" type="button">Annuler</button>
-              <button id="saveContactBtn" class="primary" type="button">Enregistrer le contact</button>
+            <div id="weatherContext" class="source-note"></div>
+            <div id="weatherResults" class="weather-results">
+              <div class="tool-placeholder">La météo se chargera automatiquement à l’ouverture de MENS.</div>
             </div>
-          </div>
-        </section>
+            <label>Analyse / remarques<textarea id="meteoNotes" rows="4" placeholder="Vent limite, rafales, visibilité, pluie, créneau à décaler…"></textarea></label>
+            <label class="mens-validate"><input type="checkbox" data-check="meteo"> J’ai vérifié la météo pour le créneau de mission.</label>
+          </article>
 
-        <label class="card notes">Notes MENS<textarea id="mensNotes" placeholder="Contraintes, contacts, hauteur, vent, visibilité..."></textarea></label>
+          <article class="mens-tool card" data-mens-tool="espace">
+            <div class="mens-tool-head">
+              <span class="letter l2">E</span>
+              <div><b>Espace aérien</b><small>Carte OACI, contexte de zone et contacts aéronautiques.</small></div>
+              <span id="espaceState" class="tool-state">À vérifier</span>
+            </div>
+            <div id="airspaceContext" class="airspace-context"></div>
+            <div class="mens-tool-actions split-actions">
+              <button id="openOaciMapBtn" class="primary" type="button">◫ Voir la carte OACI</button>
+              <button id="openSiaAipBtn" class="secondary" type="button">SIA / AIP ↗</button>
+            </div>
+            <label>Analyse de l’espace aérien<textarea id="airspaceNotes" rows="5" placeholder="CTR/TMA, zone P/R/D, hauteur, conditions de pénétration, organisme à contacter…"></textarea></label>
+
+            <section class="aero-directory embedded-directory">
+              <div class="aero-directory-head">
+                <div>
+                  <span class="section-eyebrow">ANNUAIRE</span>
+                  <h3>Contacts aéronautiques</h3>
+                  <p>Numéros cliquables, fréquences et accès rapide SIA.</p>
+                </div>
+                <button id="toggleContactForm" class="small-action" type="button">＋ Contact</button>
+              </div>
+              <div class="vac-search-row">
+                <input id="vacIcao" maxlength="8" autocomplete="off" placeholder="ICAO / zone — ex. LFBO">
+                <button id="openVacBtn" class="secondary" type="button">VAC / AIP ↗</button>
+              </div>
+              <input id="contactSearch" class="contact-search" placeholder="Rechercher un contact, une zone, une fréquence…">
+              <div id="contactsList" class="contacts-list"></div>
+              <div id="contactForm" class="contact-form hidden-contact">
+                <div class="grid2">
+                  <label>Nom<input id="contactName" placeholder="Ex. Tour de contrôle Toulouse"></label>
+                  <label>Type<select id="contactType"><option>TWR</option><option>APP</option><option>FIC / INFO</option><option>Opérations</option><option>Autorité d'emploi</option><option>Autre</option></select></label>
+                  <label>Zone / ICAO<input id="contactZone" placeholder="LFBO, LFR51…"></label>
+                  <label>Téléphone<input id="contactPhone" inputmode="tel" placeholder="05 61…"></label>
+                </div>
+                <label>Fréquence<input id="contactFreq" placeholder="Ex. TWR 118.100 MHz"></label>
+                <label>Notes<textarea id="contactNotes" rows="3" placeholder="Horaires, conditions d’activation, consignes…"></textarea></label>
+                <div class="action-row">
+                  <button id="cancelContactBtn" class="secondary" type="button">Annuler</button>
+                  <button id="saveContactBtn" class="primary" type="button">Enregistrer</button>
+                </div>
+              </div>
+            </section>
+
+            <label class="mens-validate"><input type="checkbox" data-check="espace"> J’ai vérifié l’espace aérien et les contraintes applicables.</label>
+          </article>
+
+          <article class="mens-tool card" data-mens-tool="notam">
+            <div class="mens-tool-head">
+              <span class="letter l3">N</span>
+              <div><b>NOTAM</b><small>Consultation officielle sur SOFIA-Briefing.</small></div>
+              <span id="notamState" class="tool-state">À vérifier</span>
+            </div>
+            <div class="official-source-note">La recherche NOTAM reste une validation officielle manuelle : l’application ouvre SOFIA et te laisse consigner ici les NOTAM utiles à la mission.</div>
+            <button id="openSofiaBtn" class="primary full-action" type="button">Ouvrir SOFIA-Briefing ↗</button>
+            <label>NOTAM applicables<textarea id="notamNotes" rows="5" placeholder="Référence, validité, rayon, plancher/plafond, impact sur la mission…"></textarea></label>
+            <label class="mens-validate"><input type="checkbox" data-check="notam"> J’ai consulté les NOTAM pour la zone et le créneau.</label>
+          </article>
+
+          <article class="mens-tool card" data-mens-tool="supaip">
+            <div class="mens-tool-head">
+              <span class="letter l4">S</span>
+              <div><b>SUP AIP</b><small>Dispositifs temporaires, ZRT/ZIT et conditions particulières.</small></div>
+              <span id="supaipState" class="tool-state">À vérifier</span>
+            </div>
+            <div class="official-source-note">Le SIA publie les SUP AIP avec filtres par lieu et dates. Ouvre la liste officielle puis reporte ici ceux qui concernent la mission.</div>
+            <button id="openSupAipBtn" class="primary full-action" type="button">Ouvrir les SUP AIP SIA ↗</button>
+            <label>SUP AIP applicables<textarea id="supaipNotes" rows="5" placeholder="N° SUP AIP, dates/heures, zone temporaire, conditions de pénétration, contact…"></textarea></label>
+            <label class="mens-validate"><input type="checkbox" data-check="supaip"> J’ai vérifié les SUP AIP pour la zone et le créneau.</label>
+          </article>
+        </div>
       </section>
 
       <section class="panel" data-panel="macloe">
@@ -194,12 +246,13 @@
   </main>
 
   <nav class="bottom-nav">
-    <button data-home class="active">⌂<small>Accueil</small></button>
-    <button data-open-step="cadre">＋<small>Mission</small></button>
-    <button data-open-step="zone">⌖<small>Carte</small></button>
-    <button data-open-step="synthese">✓<small>Synthèse</small></button>
+    <button data-home class="active" title="Accueil">⌂<small>Accueil</small></button>
+    <button data-open-step="cadre" title="Préparation de la mission en cours">＋<small>Prépa</small></button>
+    <button data-open-step="zone" title="Zone cartographique de la mission en cours">⌖<small>Zone</small></button>
+    <button data-open-step="synthese" title="Résumé de la mission en cours">✓<small>Résumé</small></button>
   </nav>
   <input id="missionImportFile" type="file" accept=".json,application/json" hidden>
+  <div id="appToast" class="app-toast" role="status" aria-live="polite"></div>
 </div>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="app.js"></script>
