@@ -5,6 +5,31 @@ let currentStep='cadre',map,marker,circle,baseLayer;
 let smeppValidated=new Set();
 const layers={};
 
+const SEEDED_AIR_CONTACTS=[
+ {
+  id:'sia-lfr51',
+  name:'LIMOGES ATS',
+  type:'ATS / zone réglementée',
+  zone:'LFR51',
+  phone:'05 55 48 40 37',
+  freq:'ATIS 128.075 · TWR 118.175 · INFO 124.050',
+  notes:'Activité connue via les services ATS de Limoges.',
+  source:'SIA / AIXM 2026-10-01',
+  locked:true
+ },
+ {
+  id:'sia-lfv6956afp',
+  name:'LE LUC Opérations',
+  type:'Opérations',
+  zone:'LFV6956AFP',
+  phone:'04 98 11 73 55',
+  freq:'',
+  notes:'Contact PPR mentionné dans la remarque de zone.',
+  source:'SIA / AIXM 2026-10-01',
+  locked:true
+ }
+];
+
 const macloe=[
  {k:'M',t:'Mission',d:'Analyse de la mission demandée.',h:'Exemples du cours : APPUYER, RECHERCHER, RECONNAÎTRE…'},
  {k:'A',t:'Allure',d:'Effet recherché.',h:'Exemples du cours : DISCRÉTION, RECHERCHE, POLICE TECHNIQUE, MAINTIEN DE L’ORDRE…'},
@@ -196,6 +221,12 @@ function initMap(){
  L.control.zoom({position:'bottomright'}).addTo(map);
  layers.osm=L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:20,attribution:'© OpenStreetMap'});
  layers.sat=L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',{maxZoom:20,attribution:'© Esri'});
+ layers.oaci=L.tileLayer('https://data.geopf.fr/private/wmts?apikey=ign_scan_ws&Layer=GEOGRAPHICALGRIDSYSTEMS.MAPS.SCAN-OACI&Style=normal&TileMatrixSet=PM&SERVICE=WMTS&REQUEST=GetTile&Version=1.0.0&FORMAT=image/jpeg&TileMatrix={z}&TileCol={x}&TileRow={y}',{
+  minZoom:6,
+  maxNativeZoom:15,
+  maxZoom:20,
+  attribution:'Carte OACI-VFR © DSNA/SIA · diffusion Géoplateforme/IGN'
+ });
  setBase(localStorage.getItem('pmd-base')||'sat');
  marker=L.marker([lat,lng],{draggable:true}).addTo(map);
  circle=L.circle([lat,lng],{radius:+$('#radius').value,color:'#0b78f6',fillOpacity:.18}).addTo(map);
@@ -209,6 +240,100 @@ function setBase(n){if(!map)return;if(baseLayer)map.removeLayer(baseLayer);baseL
 $$('[data-base]').forEach(b=>b.onclick=()=>setBase(b.dataset.base));
 function setPos(lat,lng,center=true){$('#lat').value=lat.toFixed(6);$('#lng').value=lng.toFixed(6);marker.setLatLng([lat,lng]);circle.setLatLng([lat,lng]);if(center)map.setView([lat,lng],15)}
 function syncMap(){setPos(+$('#lat').value,+$('#lng').value,true);circle.setRadius(+$('#radius').value||0)}
+
+function getCustomAirContacts(){
+ try{return JSON.parse(localStorage.getItem('pmd-air-contacts')||'[]')}catch(e){return []}
+}
+function getAirContacts(){
+ return [...SEEDED_AIR_CONTACTS,...getCustomAirContacts()];
+}
+function saveCustomAirContacts(items){
+ localStorage.setItem('pmd-air-contacts',JSON.stringify(items));
+ renderAirContacts();
+}
+function normalizePhone(phone=''){
+ const raw=String(phone).trim();
+ const cleaned=raw.replace(/[^\d+]/g,'');
+ return cleaned.startsWith('0')?'+33'+cleaned.slice(1):cleaned;
+}
+function siaSearchUrl(query=''){
+ const q=String(query).trim().toUpperCase();
+ return 'https://www.sia.aviation-civile.gouv.fr/catalogsearch/result/?q='+encodeURIComponent(q||'VAC')+'&format=pdf';
+}
+function renderAirContacts(){
+ const host=$('#contactsList');
+ if(!host) return;
+ const q=($('#contactSearch')?.value||'').trim().toLowerCase();
+ const contacts=getAirContacts().filter(c=>[c.name,c.type,c.zone,c.phone,c.freq,c.notes].join(' ').toLowerCase().includes(q));
+ if(!contacts.length){
+  host.innerHTML='<div class="empty-contact">Aucun contact correspondant.</div>';
+  return;
+ }
+ host.innerHTML=contacts.map(c=>{
+  const tel=normalizePhone(c.phone);
+  const zone=c.zone?'<span class="contact-zone">'+esc(c.zone)+'</span>':'';
+  const source=c.source?'<small class="contact-source">'+esc(c.source)+'</small>':'';
+  const freq=c.freq?'<div class="contact-frequency">◌ '+esc(c.freq)+'</div>':'';
+  const note=c.notes?'<p>'+esc(c.notes)+'</p>':'';
+  const del=c.locked?'':`<button class="contact-delete" data-delete-contact="${esc(c.id)}" type="button">Supprimer</button>`;
+  return `<article class="contact-card">
+    <div class="contact-top">
+      <div><b>${esc(c.name)}</b><small>${esc(c.type||'Contact')}</small></div>
+      ${zone}
+    </div>
+    ${freq}
+    ${note}
+    <div class="contact-actions">
+      ${tel?`<a class="call-btn" href="tel:${tel}">☎ ${esc(c.phone)}</a>`:''}
+      ${c.zone?`<button class="sia-btn" type="button" data-sia-query="${esc(c.zone)}">SIA ↗</button>`:''}
+      ${del}
+    </div>
+    ${source}
+  </article>`;
+ }).join('');
+ host.querySelectorAll('[data-delete-contact]').forEach(btn=>btn.onclick=()=>{
+  const next=getCustomAirContacts().filter(c=>c.id!==btn.dataset.deleteContact);
+  saveCustomAirContacts(next);
+ });
+ host.querySelectorAll('[data-sia-query]').forEach(btn=>btn.onclick=()=>window.open(siaSearchUrl(btn.dataset.siaQuery),'_blank','noopener'));
+}
+function resetContactForm(){
+ ['contactName','contactZone','contactPhone','contactFreq','contactNotes'].forEach(id=>{if($('#'+id))$('#'+id).value=''});
+ if($('#contactType')) $('#contactType').value='TWR';
+}
+function initAirDirectory(){
+ if(!$('#contactsList')) return;
+ renderAirContacts();
+ $('#contactSearch')?.addEventListener('input',renderAirContacts);
+ $('#toggleContactForm')?.addEventListener('click',()=>$('#contactForm')?.classList.toggle('hidden-contact'));
+ $('#cancelContactBtn')?.addEventListener('click',()=>{resetContactForm();$('#contactForm')?.classList.add('hidden-contact')});
+ $('#saveContactBtn')?.addEventListener('click',()=>{
+  const name=$('#contactName')?.value.trim();
+  const phone=$('#contactPhone')?.value.trim();
+  if(!name || !phone){alert('Renseigne au minimum un nom et un numéro de téléphone.');return}
+  const item={
+   id:'custom-'+Date.now(),
+   name,
+   type:$('#contactType')?.value||'Autre',
+   zone:($('#contactZone')?.value||'').trim().toUpperCase(),
+   phone,
+   freq:($('#contactFreq')?.value||'').trim(),
+   notes:($('#contactNotes')?.value||'').trim(),
+   source:'Ajout personnel',
+   locked:false
+  };
+  const items=getCustomAirContacts();
+  items.push(item);
+  saveCustomAirContacts(items);
+  resetContactForm();
+  $('#contactForm')?.classList.add('hidden-contact');
+ });
+ $('#openVacBtn')?.addEventListener('click',()=>{
+  const q=$('#vacIcao')?.value.trim();
+  window.open(siaSearchUrl(q),'_blank','noopener');
+ });
+ $('#vacIcao')?.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();$('#openVacBtn')?.click()}});
+}
 
 function itemComplete(prefix,item){
  if(item.subs){
@@ -236,10 +361,62 @@ function collect(){
     ? Object.fromEntries(x.subs.map(s=>[s.k,$('#smepp-'+x.k+'-'+s.k)?.value||'']))
     : ($('#smepp-'+x.k)?.value||'')
   ])),
+  airContacts:getCustomAirContacts(),
   updatedAt:new Date().toISOString()
  }
 }
 function saveLocal(){localStorage.setItem('pmd-mission',JSON.stringify(collect()))}
+
+function missionFile(){
+ const d=collect();
+ const safe=(d.title||'mission-drone').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-zA-Z0-9_-]+/g,'-').replace(/^-+|-+$/g,'').toLowerCase()||'mission-drone';
+ const blob=new Blob([JSON.stringify(d,null,2)],{type:'application/json'});
+ return {blob,file:new File([blob],safe+'.json',{type:'application/json'}),name:safe+'.json'};
+}
+function exportMission(){
+ const {blob,name}=missionFile();
+ const a=document.createElement('a');
+ a.href=URL.createObjectURL(blob);
+ a.download=name;
+ a.click();
+ setTimeout(()=>URL.revokeObjectURL(a.href),500);
+}
+async function shareMission(){
+ const {file}=missionFile();
+ try{
+  if(navigator.canShare && navigator.canShare({files:[file]})){
+   await navigator.share({title:'PrépaMission Drone — '+(collect().title||'Mission'),text:'Préparation de mission drone',files:[file]});
+   return;
+  }
+  if(navigator.share){
+   await navigator.share({title:'PrépaMission Drone — '+(collect().title||'Mission'),text:'Préparation de mission drone exportée en JSON.'});
+   exportMission();
+   return;
+  }
+  exportMission();
+  alert('Le partage natif n’est pas disponible : le fichier a été téléchargé.');
+ }catch(err){
+  if(err?.name!=='AbortError') console.warn(err);
+ }
+}
+async function importMissionFile(file){
+ if(!file) return;
+ try{
+  const data=JSON.parse(await file.text());
+  if(!data || typeof data!=='object' || !data.zone || !data.mens) throw new Error('Format invalide');
+  localStorage.setItem('pmd-mission',JSON.stringify(data));
+  if(Array.isArray(data.airContacts)){
+   const existing=getCustomAirContacts();
+   const byKey=new Map(existing.map(c=>[(c.zone||'')+'|'+(c.phone||''),c]));
+   data.airContacts.forEach(c=>{if(c?.phone)byKey.set((c.zone||'')+'|'+c.phone,c)});
+   localStorage.setItem('pmd-air-contacts',JSON.stringify([...byKey.values()]));
+  }
+  alert('Mission importée. L’application va la charger.');
+  location.reload();
+ }catch(err){
+  alert('Impossible d’importer ce fichier de mission.');
+ }
+}
 function loadLocal(){try{const d=JSON.parse(localStorage.getItem('pmd-mission')||'null');if(!d)return;$('#missionTitle').value=d.title||'';$('#missionType').value=d.type||$('#missionType').value;$$('input[name=useCase]').forEach(x=>x.checked=(d.useCases||[]).includes(x.value));if(d.zone){['lat','lng','altitude','radius'].forEach(k=>$('#'+k).value=d.zone[k]??$('#'+k).value);$('#environment').value=d.zone.environment||$('#environment').value}if(d.mens){$$('[data-check]').forEach(x=>x.checked=!!d.mens.checks?.[x.dataset.check]);$('#mensNotes').value=d.mens.notes||''}macloe.forEach(x=>{if($('#macloe-'+x.k))$('#macloe-'+x.k).value=d.macloe?.[x.k]||''});smepp.forEach(x=>{
  if(x.subs){
   x.subs.forEach(s=>{
@@ -259,11 +436,16 @@ function renderSummary(){const d=collect(),m=Object.values(d.mens.checks).filter
  const ready=m===4&&ma===6&&sm===5;$('#readiness').querySelector('b').textContent=ready?'Mission prête':'Mission en préparation';$('#readiness').querySelector('small').textContent=ready?'Toutes les étapes sont complétées.':'Complète les étapes restantes avant validation.'}
 function esc(s=''){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
 $('#saveBtn').onclick=()=>{saveLocal();refreshHome();alert('Mission enregistrée localement.')};$('#saveTop').onclick=saveLocal;
-$('#exportBtn').onclick=()=>{const b=new Blob([JSON.stringify(collect(),null,2)],{type:'application/json'}),a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='prepa-mission-drone.json';a.click();URL.revokeObjectURL(a.href)};
+$('#exportBtn').onclick=exportMission;
+$('#shareBtn')?.addEventListener('click',shareMission);
+const importInput=$('#missionImportFile');
+$('#importBtn')?.addEventListener('click',()=>importInput?.click());
+$('#importHomeBtn')?.addEventListener('click',()=>importInput?.click());
+importInput?.addEventListener('change',async e=>{await importMissionFile(e.target.files?.[0]);e.target.value=''});
 $('#themeToggle').onclick=()=>{const next=document.documentElement.dataset.theme==='dark'?'light':'dark';document.documentElement.dataset.theme=next;localStorage.setItem('pmd-theme',next)};
 document.documentElement.dataset.theme=localStorage.getItem('pmd-theme')||'dark';
 $$('input,select,textarea').forEach(e=>e.addEventListener('change',refreshHome));
-loadLocal();refreshHome();go('cadre');
+initAirDirectory();loadLocal();renderAirContacts();refreshHome();go('cadre');
 
 
 let deferredInstallPrompt = null;
