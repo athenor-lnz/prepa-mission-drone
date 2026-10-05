@@ -1,9 +1,9 @@
 // Stockage des missions dans le navigateur, avec export/import JSON.
-// Tolère l'absence de localStorage (navigation privée, stockage bloqué) : repli en mémoire.
+// Tolère l'absence de localStorage : repli en mémoire.
 
 export const KEY = 'pmd.missions.v1';
 export const EXPORT_FORMAT = 'prepa-mission-drone/missions@1';
-/** 20 kt en m/s : seuil de rafales par défaut (réglable par mission). */
+export const MISSION_EXPORT_FORMAT = 'prepa-mission-drone/mission@1';
 export const DEFAULT_GUST_LIMIT_MS = 10.3;
 const MAX_TEXT = 20000;
 const MAX_ITEMS = 500;
@@ -20,44 +20,75 @@ export function newMission({ now = new Date(), name = 'Nouvelle mission' } = {})
     name,
     createdAt: iso,
     updatedAt: iso,
+    context: { missionType: '', capture: 'observation', useCases: [] },
     place: { label: '', lat: null, lon: null, radiusM: 500 },
     window: { start: '', end: '', tz: 'Europe/Paris' },
     mens: {
       meteo: { gustLimitMs: DEFAULT_GUST_LIMIT_MS, fetchedAt: null, source: null, manual: false, slots: [], hours: [], tz: null, utcOffsetSeconds: 0, kp: null, alerts: [], forPlace: null, kpError: null, kpEntries: null },
-      espace: { fetchedAt: null, source: null, controlled: null, zones: [], error: null },
+      espace: { fetchedAt: null, source: null, controlled: null, zones: [], error: null, localAnalysisAt: null, localDataset: null, localZones: [], aerodromes: [] },
       notam: { fetchedAt: null, source: null, items: [] },
       supaip: { fetchedAt: null, source: null, items: [] }
     },
-    smepp: { S1: '', S2: '', M: '', E1: '', E2: '', E3: '', E4: '', P1: '', P2: '' },
     macloe: { M: '', A: '', C: '', L: '', O: '', E: '' },
+    smepp: { S1: '', S2: '', M: '', E_A: '', E_M: '', E_I: '', E_C: '', E_A2: '', E_L: '', P1: '', P2: '' },
+    validation: { macloe: [], smepp: [] },
     admin: { gendrone: 'todo', visualdrone: 'todo' }
   };
 }
 
-
 const str = (v, max = MAX_TEXT) => (typeof v === 'string' ? v.slice(0, max) : '');
 const numOrNull = (v) => (typeof v === 'number' && Number.isFinite(v) ? v : null);
-const strOrNull = (v) => (typeof v === 'string' ? v.slice(0, 100) : null);
-const list = (v) => (Array.isArray(v) ? v.slice(0, MAX_ITEMS) : []);
+const strOrNull = (v, max = 100) => (typeof v === 'string' ? v.slice(0, max) : null);
+const list = (v, max = MAX_ITEMS) => (Array.isArray(v) ? v.slice(0, max) : []);
+const known = (v, values, fallback = '') => values.includes(v) ? v : fallback;
 
-/**
- * Reconstruit une mission propre à partir d'un objet inconnu (import, ancienne version).
- * Retourne null si l'identifiant ou les dates sont inutilisables. Aucun champ inconnu n'est conservé.
- */
+function cleanZone(z) {
+  return {
+    id: str(z?.id, 100), type: str(z?.type, 40), subType: str(z?.subType ?? z?.sous_type, 60),
+    name: str(z?.name ?? z?.nom, 200), className: str(z?.className ?? z?.classe, 20),
+    floor: str(z?.floor ?? z?.plancher, 100), ceiling: str(z?.ceiling ?? z?.plafond, 100),
+    schedule: str(z?.schedule ?? z?.horaire, 300), remark: str(z?.remark ?? z?.remarque, 1200),
+    vertical: str(z?.vertical, 40), pointOnly: z?.pointOnly === true,
+    limit: str(z?.limit, 200), meters: numOrNull(z?.meters)
+  };
+}
+function cleanAerodrome(a) {
+  return {
+    icao: str(a?.icao, 12), name: str(a?.name ?? a?.nom, 240), type: str(a?.type, 40),
+    altitudeFt: numOrNull(a?.altitudeFt ?? a?.altitude_ft), distanceM: numOrNull(a?.distanceM),
+    remark: str(a?.remark ?? a?.remarque, 1000),
+    frequencies: list(a?.frequencies ?? a?.frequences, 50).map((x) => typeof x === 'string' ? str(x, 200) : JSON.stringify(x).slice(0, 200)),
+    runways: list(a?.runways ?? a?.pistes, 50).map((x) => typeof x === 'string' ? str(x, 300) : JSON.stringify(x).slice(0, 300))
+  };
+}
+
+/** Reconstruit une mission propre depuis un import ou une ancienne version. */
 export function sanitizeMission(raw) {
   if (!raw || typeof raw !== 'object') return null;
   if (typeof raw.id !== 'string' || !/^[\w-]{1,64}$/.test(raw.id)) return null;
   if (typeof raw.updatedAt !== 'string' || Number.isNaN(Date.parse(raw.updatedAt))) return null;
+
   const base = newMission({ now: new Date(raw.updatedAt) });
   const m = { ...base, id: raw.id, name: str(raw.name, 200) || base.name };
   m.createdAt = typeof raw.createdAt === 'string' && !Number.isNaN(Date.parse(raw.createdAt)) ? raw.createdAt : raw.updatedAt;
   m.updatedAt = raw.updatedAt;
+
+  const ctx = raw.context || {};
+  m.context = {
+    missionType: known(ctx.missionType, ['judiciaire','administratif','sauvegarde','entrainement','communication','autre'], ''),
+    capture: known(ctx.capture, ['observation','captation','enregistrement'], 'observation'),
+    useCases: list(ctx.useCases, 20).map((x) => str(x, 60)).filter(Boolean)
+  };
+
   const p = raw.place || {};
   m.place = { label: str(p.label, 300), lat: numOrNull(p.lat), lon: numOrNull(p.lon), radiusM: numOrNull(p.radiusM) ?? 500 };
   if (m.place.lat !== null && (m.place.lat < -90 || m.place.lat > 90)) m.place.lat = null;
   if (m.place.lon !== null && (m.place.lon < -180 || m.place.lon > 180)) m.place.lon = null;
+  m.place.radiusM = Math.max(10, Math.min(10000, m.place.radiusM));
+
   const w = raw.window || {};
   m.window = { start: str(w.start, 16), end: str(w.end, 16), tz: str(w.tz, 60) || 'Europe/Paris' };
+
   const me = raw.mens?.meteo || {};
   const slot = (s) => ({ t: str(s?.t, 16), hour: str(s?.hour, 5), wind: numOrNull(s?.wind), gust: numOrNull(s?.gust), dir: numOrNull(s?.dir), wind80: numOrNull(s?.wind80), temp: numOrNull(s?.temp), pop: numOrNull(s?.pop), vis: numOrNull(s?.vis), cloud: numOrNull(s?.cloud) });
   m.mens.meteo = {
@@ -69,19 +100,46 @@ export function sanitizeMission(raw) {
     forPlace: strOrNull(me.forPlace), kpError: strOrNull(me.kpError),
     kpEntries: Array.isArray(me.kpEntries) ? me.kpEntries.slice(0, 80).map((e) => ({ t: str(e?.t, 19), kp: numOrNull(e?.kp) })).filter((e) => e.t && e.kp !== null) : null
   };
+
   const es = raw.mens?.espace || {};
   m.mens.espace = {
     fetchedAt: strOrNull(es.fetchedAt), source: strOrNull(es.source),
     controlled: typeof es.controlled === 'boolean' ? es.controlled : null,
-    zones: list(es.zones).map((z) => ({ id: str(z?.id, 100), limit: str(z?.limit, 200), remark: str(z?.remark, 500), meters: numOrNull(z?.meters) })),
-    error: strOrNull(es.error)
+    zones: list(es.zones).map(cleanZone),
+    error: strOrNull(es.error, 300),
+    localAnalysisAt: strOrNull(es.localAnalysisAt),
+    localDataset: es.localDataset && typeof es.localDataset === 'object' ? {
+      source: str(es.localDataset.source, 100), effective: str(es.localDataset.effective, 50), featureCount: numOrNull(es.localDataset.featureCount), aerodromeCount: numOrNull(es.localDataset.aerodromeCount)
+    } : null,
+    localZones: list(es.localZones, 100).map(cleanZone),
+    aerodromes: list(es.aerodromes, 30).map(cleanAerodrome)
   };
+
   const nt = raw.mens?.notam || {};
   m.mens.notam = { fetchedAt: strOrNull(nt.fetchedAt), source: strOrNull(nt.source), items: list(nt.items).map((i) => ({ id: str(i?.id, 60), text: str(i?.text), validity: str(i?.validity, 120), addedAt: strOrNull(i?.addedAt) })) };
   const sp = raw.mens?.supaip || {};
   m.mens.supaip = { fetchedAt: strOrNull(sp.fetchedAt), source: strOrNull(sp.source), items: list(sp.items).map((i) => ({ id: str(i?.id, 60), title: str(i?.title, 300), validity: str(i?.validity, 120), url: /^https?:\/\//i.test(i?.url) ? str(i.url, 500) : '', addedAt: strOrNull(i?.addedAt) })) };
-  for (const k of Object.keys(m.smepp)) m.smepp[k] = str(raw.smepp?.[k]);
+
   for (const k of Object.keys(m.macloe)) m.macloe[k] = str(raw.macloe?.[k]);
+
+  // Migration de l'ancien SMEPP (E1..E4) vers AMICAL complet.
+  const rs = raw.smepp || {};
+  m.smepp.S1 = str(rs.S1); m.smepp.S2 = str(rs.S2); m.smepp.M = str(rs.M);
+  m.smepp.E_A = str(rs.E_A ?? rs.E1);
+  m.smepp.E_M = str(rs.E_M ?? rs.E2);
+  m.smepp.E_I = str(rs.E_I);
+  m.smepp.E_C = str(rs.E_C ?? rs.E3);
+  m.smepp.E_A2 = str(rs.E_A2 ?? rs.E4);
+  m.smepp.E_L = str(rs.E_L);
+  m.smepp.P1 = str(rs.P1); m.smepp.P2 = str(rs.P2);
+
+  const val = raw.validation || {};
+  const validIds = (xs, allowed) => list(xs, 20).map(String).filter((x) => allowed.includes(x));
+  m.validation = {
+    macloe: validIds(val.macloe, ['M','A','C','L','O','E']),
+    smepp: validIds(val.smepp, ['S','M','E','P1','P2'])
+  };
+
   const g = raw.admin?.gendrone;
   const v = raw.admin?.visualdrone;
   m.admin = { gendrone: ['todo', 'sent', 'validated'].includes(g) ? g : 'todo', visualdrone: ['todo', 'declared'].includes(v) ? v : 'todo' };
@@ -96,71 +154,72 @@ export function createMissionStore(storage = globalThis.localStorage, clock = ()
     if (!persistent) return memory;
     try {
       const raw = storage.getItem(KEY);
-      const list = raw ? JSON.parse(raw) : [];
-      return Array.isArray(list) ? list.map((m) => sanitizeMission(m) ?? m) : [];
+      const parsed = raw ? JSON.parse(raw) : [];
+      if (!Array.isArray(parsed)) return [];
+      return parsed.map(sanitizeMission).filter(Boolean);
     } catch {
       persistent = false;
       return memory;
     }
   }
-  function write(list) {
-    memory = list;
+  function write(items) {
+    memory = items;
     if (!persistent) return;
-    try {
-      storage.setItem(KEY, JSON.stringify(list));
-    } catch {
-      persistent = false;
-    }
+    try { storage.setItem(KEY, JSON.stringify(items)); }
+    catch { persistent = false; }
   }
-
   const byRecent = (a, b) => (a.updatedAt < b.updatedAt ? 1 : a.updatedAt > b.updatedAt ? -1 : 0);
 
+  function mergeMission(list, mission) {
+    const i = list.findIndex((x) => x.id === mission.id);
+    if (i < 0) { list.push(mission); return 'added'; }
+    if (list[i].updatedAt < mission.updatedAt) { list[i] = mission; return 'updated'; }
+    return 'skipped';
+  }
+
   return {
-    /** false si le stockage est indisponible (à signaler à l'utilisateur). */
     get isPersistent() { return persistent; },
     list() { return [...read()].sort(byRecent); },
     get(id) { return read().find((m) => m.id === id) ?? null; },
     create(opts) {
       const m = newMission({ now: clock(), ...opts });
-      write([...read(), m]);
-      return m;
+      write([...read(), m]); return m;
     },
     save(mission) {
-      const updated = { ...mission, updatedAt: clock().toISOString() };
-      const list = read();
-      const i = list.findIndex((m) => m.id === updated.id);
-      if (i >= 0) { list[i] = updated; write([...list]); } else write([...list, updated]);
-      return updated;
+      const updated = sanitizeMission({ ...mission, updatedAt: clock().toISOString() });
+      if (!updated) throw new Error('Mission invalide.');
+      const items = read();
+      const i = items.findIndex((m) => m.id === updated.id);
+      if (i >= 0) items[i] = updated; else items.push(updated);
+      write([...items]); return updated;
     },
     remove(id) { write(read().filter((m) => m.id !== id)); },
     duplicate(id) {
-      const src = this.get(id);
-      if (!src) return null;
+      const src = this.get(id); if (!src) return null;
       const now = clock();
-      const copy = { ...structuredClone(src), id: newId(now), name: `${src.name} (copie)`, createdAt: now.toISOString(), updatedAt: now.toISOString() };
-      write([...read(), copy]);
-      return copy;
+      const copy = structuredClone(src);
+      copy.id = newId(now); copy.name = `${src.name} (copie)`; copy.createdAt = now.toISOString(); copy.updatedAt = now.toISOString();
+      write([...read(), copy]); return copy;
     },
-    exportJSON() {
-      return JSON.stringify({ format: EXPORT_FORMAT, exportedAt: clock().toISOString(), missions: read() }, null, 2);
+    exportJSON() { return JSON.stringify({ format: EXPORT_FORMAT, exportedAt: clock().toISOString(), missions: read() }, null, 2); },
+    exportMission(id) {
+      const mission = this.get(id); if (!mission) throw new Error('Mission introuvable.');
+      return JSON.stringify({ format: MISSION_EXPORT_FORMAT, exportedAt: clock().toISOString(), mission }, null, 2);
     },
-    /** Fusion par identifiant : la version la plus récente l'emporte. Retourne { added, updated, skipped }. */
     importJSON(text) {
-      let data;
-      try { data = JSON.parse(text); } catch { throw new Error('Fichier illisible (JSON invalide).'); }
-      if (!data || data.format !== EXPORT_FORMAT || !Array.isArray(data.missions)) throw new Error('Fichier non reconnu.');
-      const list = read();
+      let data; try { data = JSON.parse(text); } catch { throw new Error('Fichier illisible (JSON invalide).'); }
+      const items = read();
       const res = { added: 0, updated: 0, skipped: 0 };
-      for (const raw of data.missions.slice(0, 2000)) {
+      let incoming = [];
+      if (data?.format === EXPORT_FORMAT && Array.isArray(data.missions)) incoming = data.missions.slice(0, 2000);
+      else if (data?.format === MISSION_EXPORT_FORMAT && data.mission) incoming = [data.mission];
+      else throw new Error('Fichier non reconnu.');
+      for (const raw of incoming) {
         const m = sanitizeMission(raw);
         if (!m) { res.skipped++; continue; }
-        const i = list.findIndex((x) => x.id === m.id);
-        if (i < 0) { list.push(m); res.added++; }
-        else if (list[i].updatedAt < m.updatedAt) { list[i] = m; res.updated++; }
-        else res.skipped++;
+        res[mergeMission(items, m)]++;
       }
-      write([...list]);
-      return res;
+      write([...items]); return res;
     }
   };
 }
