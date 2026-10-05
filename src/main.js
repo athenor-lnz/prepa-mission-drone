@@ -1,5 +1,5 @@
 // Point d'entrée : verrou, routeur par hash, rendu des vues.
-import { verifier } from './config.js';
+import { verifier, gateEnabled } from './config.js';
 import { isUnlocked, setUnlocked } from './lib/gate.js';
 import { store, applyTheme, flush } from './state.js';
 import { renderConnexion } from './views/connexion.js';
@@ -28,10 +28,11 @@ const ID_RE = /^[\w-]{1,64}$/;
 const MISSION_ROUTES = { lieu: renderLieu, meteo: renderMeteo, espace: renderEspace, notam: renderNotam, supaip: renderSupAip, fiche: renderFiche, smepp: renderForm, macloe: renderForm };
 
 function lock() { setUnlocked(false); route(); }
+const onLock = gateEnabled ? lock : null;
 
 function route() {
   flush();
-  if (!verifier || !isUnlocked()) { mount(renderConnexion({ onUnlocked: route })); return; }
+  if (gateEnabled && (!verifier || !isUnlocked())) { mount(renderConnexion({ onUnlocked: route })); return; }
   const parts = location.hash.replace(/^#\/?/, '').split('/').filter(Boolean);
   if (parts[0] === 'mission' && ID_RE.test(parts[1] || '')) {
     const mission = store.get(parts[1]);
@@ -40,7 +41,7 @@ function route() {
     location.hash = mission ? `#/mission/${mission.id}/lieu` : '#/';
     return;
   }
-  mount(renderAccueil({ onLock: lock }));
+  mount(renderAccueil({ onLock }));
 }
 
 addEventListener('hashchange', route);

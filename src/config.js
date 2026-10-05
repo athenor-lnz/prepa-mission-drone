@@ -1,4 +1,6 @@
 // Configuration. `verifier` : voir scripts/make-verifier.mjs (docs/06). Le mot de passe n'est jamais dans le dépôt.
+// Verrou désactivé pour l'instant : passer à true pour le réactiver (le vérificateur ci-dessous reste valable).
+export const gateEnabled = false;
 export const verifier = {
   "salt": "a6e28a56fa4af409322b101731033fb9",
   "iterations": 200000,

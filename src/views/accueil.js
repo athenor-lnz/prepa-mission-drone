@@ -62,7 +62,7 @@ function settings(rerender, onLock) {
       h('button', { class: 'btn ghost block', onclick: () => exportAll() }, 'Exporter les missions (JSON)'),
       h('button', { class: 'btn ghost block', onclick: () => file.click() }, 'Importer un fichier'), file,
       h('p', { class: 'note' }, 'Les missions ne sont que dans ce navigateur : exportez avant de vider le cache ou de changer d\'appareil.')),
-    h('button', { class: 'btn ghost block', onclick: () => { sh.close(); onLock(); } }, 'Verrouiller')));
+    onLock ? h('button', { class: 'btn ghost block', onclick: () => { sh.close(); onLock(); } }, 'Verrouiller') : null));
 }
 
 function exportAll() {
