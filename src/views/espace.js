@@ -1,10 +1,11 @@
-import { h, icon, toast } from '../ui/dom.js';
+import { h, icon, toast, sheet } from '../ui/dom.js';
 import { topbar, ctaBar, ctaButton, subtabs, missionUrl } from '../ui/layout.js';
 import { mutate } from '../state.js';
 import { fetchRestrictions } from '../services/airspace.js';
 import { summarizeZones } from '../lib/airspace.js';
 import { formatClock } from '../lib/time.js';
 import { importAerodata, info as aerodataInfo, clearAerodata, analyzeAerodata, vacSearchUrl, SIA_URL, SOFIA_URL, SUPAIP_URL } from '../services/aerodata.js';
+import { listContacts, addContact, removeContact, telHref, phonesInText } from '../services/contacts.js';
 
 const OFFICIAL = {
   sia: { label: 'SIA — information aéronautique', url: SIA_URL },
@@ -147,9 +148,44 @@ export function renderEspace({ mission }) {
                 z.className?h('p',{class:'note'},`Classe : ${z.className}`):null,
                 z.schedule?h('p',{class:'note'},`Horaire : ${z.schedule}`):null,
                 z.remark?h('p',{class:'note'},z.remark):null,
+                z.remark&&phonesInText(z.remark).length?h('div',{class:'detected-phones'},
+                  h('span',{class:'lbl'},'Téléphone détecté dans la remarque SIA'),
+                  phonesInText(z.remark).map((phone)=>h('a',{class:'btn contact-call small',href:telHref(phone)},`☎ ${phone}`))):null,
                 z.pointOnly?h('div',{class:'banner warn'},icon('warn'),h('span',{},'La source ne fournit pas de contour exploitable pour cet espace : vérification manuelle requise.')):null));
           }))
         : h('p',{class:'note'},es.localAnalysisAt?'Aucun espace du jeu SIA n’intersecte le rayon. Ce résultat ne remplace pas les vérifications officielles.':'Analyse non lancée.'));
+  }
+
+  function contactDirectoryCard() {
+    const contacts=listContacts();
+    const openAdd=()=>{
+      const name=h('input',{placeholder:'Nom du contact',maxlength:160,'aria-label':'Nom du contact'});
+      const type=h('input',{placeholder:'Type : TWR, APP, opérations…',maxlength:80,'aria-label':'Type de contact'});
+      const zone=h('input',{placeholder:'Zone / ICAO',maxlength:40,'aria-label':'Zone ou ICAO'});
+      const phone=h('input',{placeholder:'Téléphone',inputmode:'tel',maxlength:40,'aria-label':'Téléphone'});
+      const freq=h('input',{placeholder:'Fréquence (facultatif)',maxlength:160,'aria-label':'Fréquence'});
+      const notes=h('textarea',{rows:3,placeholder:'Notes / horaires / consignes',maxlength:600,'aria-label':'Notes'});
+      let sh;
+      const save=()=>{
+        try{
+          addContact({name:name.value,type:type.value,zone:zone.value,phone:phone.value,frequency:freq.value,notes:notes.value});
+          sh.close();toast('Contact ajouté');draw();
+        }catch(e){toast(e.message,'bad');}
+      };
+      sh=sheet('Ajouter un contact aéronautique',h('div',{class:'stack'},name,type,zone,phone,freq,notes,h('button',{class:'btn primary block',onclick:save},'Enregistrer')));
+    };
+    return h('section',{class:'card-sec'},
+      h('div',{class:'dataset-head'},
+        h('div',{},h('span',{class:'lbl'},'Annuaire aéronautique'),h('p',{class:'note'},'Contacts personnels stockés uniquement sur cet appareil. Les numéros sont directement appelables.')),
+        h('button',{class:'btn ghost small',onclick:openAdd},'＋ Contact')),
+      contacts.length?h('div',{class:'contact-list'},contacts.map((x)=>h('article',{class:'contact-card'},
+        h('div',{class:'contact-main'},h('strong',{},x.name),h('small',{},[x.type,x.zone].filter(Boolean).join(' · '))),
+        x.frequency?h('p',{class:'mono small'},x.frequency):null,
+        x.notes?h('p',{class:'note'},x.notes):null,
+        h('div',{class:'contact-actions'},
+          h('a',{class:'btn contact-call',href:telHref(x.phone)},`☎ ${x.phone}`),
+          h('button',{class:'btn ghost small','aria-label':`Supprimer ${x.name}`,onclick:()=>{removeContact(x.id);draw();}},icon('trash',18)))))))
+        :h('p',{class:'note'},'Aucun contact personnel enregistré.'));
   }
 
   function aerodromeCard() {
@@ -206,6 +242,7 @@ export function renderEspace({ mission }) {
         mapCard(),
         localZonesCard(),
         aerodromeCard(),
+        contactDirectoryCard(),
         ...[].concat(uasResult()).filter(Boolean),
         h('section',{class:'card-sec'},h('span',{class:'lbl'},'Sources officielles'),extLink(OFFICIAL.sia),extLink(OFFICIAL.geo)),
         h('div',{class:'official-note'},'La détection locale est une aide à la préparation. Toujours confirmer avec les publications SIA, NOTAM, SUP AIP et l’organisme ATS lorsque nécessaire.')
