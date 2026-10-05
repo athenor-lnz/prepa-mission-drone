@@ -1,6 +1,6 @@
 # Écrans et parcours — direction B « une main »
 
-Références visuelles : `design/previews/` (9 écrans × clair/sombre) et `design/screens/` (sources). Les maquettes utilisent des **données d'exemple** : ne pas les recopier comme vraies données.
+Références visuelles : `design/previews/` (12 écrans × clair/sombre) et `design/screens/` (sources). Les maquettes utilisent des **données d'exemple** : ne pas les recopier comme vraies données.
 
 ## Parcours principal
 
@@ -27,7 +27,7 @@ Moitié haute : identité (radar décoratif, logo, nom). Moitié basse : champ m
 
 ## 02 Accueil (`Accueil`)
 
-Titre « Missions », compteur, filtres (Toutes · À préparer · Prêtes). Cartes de mission : nom, date · créneau · lieu, pastille de verdict (GO / LIMITE / À PRÉPARER), 4 segments de progression (Lieu, Météo, Espace, Fiche), pastilles GENDRONE et Visu@ldrone. En bas : « Nouvelle mission » (principal) et import/export. Actions de carte à prévoir : renommer, dupliquer, supprimer (appui long ou menu). État vide à dessiner.
+Titre « Missions », compteur, filtres (Toutes · À préparer · Prêtes). Cartes de mission : nom, date · créneau · lieu, pastille de verdict (GO / LIMITE / À PRÉPARER), 4 segments de progression (Lieu, Météo, Espace, Fiche), pastilles GENDRONE et Visu@ldrone. En bas : « Nouvelle mission » (principal) et import/export. Actions de carte à prévoir : renommer, dupliquer, supprimer (appui long ou menu). État vide : écran `AccueilVide` (invitation « Prêt pour une première mission », rappel que le cache peut être vidé, « Importer une sauvegarde » et « Nouvelle mission »).
 
 ## 03 Lieu (`Lieu`)
 
@@ -42,7 +42,7 @@ Titre « Missions », compteur, filtres (Toutes · À préparer · Prêtes). Car
 - Graphique des rafales heure par heure : créneau surligné, seuil en tirets, barres colorées par statut.
 - Alerte (vigilance) : fond d'avertissement, avec précision « dans / hors créneau ».
 - Bas : réglage Début et Fin par pas de 30 minutes, puis « Valider · Espace aérien ».
-- Seuil de rafales réglable (non dessiné : à placer dans la carte du graphique).
+- **Seuil de rafales réglable** dans l'en-tête du graphique (− / + par pas de 1 nœud) ; le verdict et les couleurs des barres se recalculent.
 
 ## 05 Météo indisponible (`MeteoHS`)
 
@@ -54,7 +54,14 @@ Carte rouge « Météo indisponible, aucune valeur n'est inventée » + « Rées
 - Mini-carte des zones (CTR en ambre pointillé, zone restreinte en rouge).
 - Carte de lignes : CTR (oui/non), hauteur maximale, aérodrome le plus proche (distance) ; pied « Source … données récupérées à hh:mm ».
 - Carte à bord pointillé « NOTAM · SUP AIP : non vérifiés » tant qu'aucune source n'est branchée : **jamais « rien à signaler » sans source**.
-- Segments Zones · NOTAM · SUP AIP au-dessus du bouton principal. Écrans NOTAM et SUP AIP à dessiner (liste, collage du texte, lien vers le SIA).
+- Segments Zones · NOTAM · SUP AIP au-dessus du bouton principal. Les onglets NOTAM et SUP AIP ouvrent les écrans `Notam` et `SupAip`, ci-dessous.
+
+### 06 bis NOTAM (`Notam`) et SUP AIP (`SupAip`)
+
+- Carte à bord pointillé « non vérifiés » tant qu'aucune source n'est branchée ; rappel que l'absence de texte ne signifie pas « rien à signaler ».
+- **NOTAM** : étape 1 « Ouvrir le service NOTAM du SIA » (lien externe), étape 2 « copier le texte de la zone et le coller » ; zone de texte monospace, bouton « Enregistrer le texte » ; chaque texte enregistré affiche son identifiant, la pastille « Saisi à la main · hh:mm » et la validité.
+- **SUP AIP** : lien vers le site du SIA ; formulaire Identifiant · Validité · Titre, bouton « Ajouter » ; chaque entrée affiche identifiant, titre, validité, pastille « Saisi à la main · hh:mm » et « Ouvrir le document ».
+- Toujours indiquer la source (ici « saisie manuelle ») et l'heure d'enregistrement.
 
 ## 07 Fiche mission (`Fiche`)
 

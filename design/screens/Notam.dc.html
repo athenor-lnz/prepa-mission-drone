@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>NOTAM de la zone</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Sora:wght@600;700&family=Manrope:wght@500;600;700&family=JetBrains+Mono:wght@500&display=swap">
+<style>
+body{margin:0}
+.pb *{box-sizing:border-box}
+.pb button{font-family:inherit;cursor:pointer}
+.pb .ibtn{width:48px;height:48px;border-radius:16px;border:0;background:var(--surf);color:var(--ink);display:flex;align-items:center;justify-content:center;box-shadow:var(--shadow)}
+.pb .step{width:30px;height:30px;border-radius:99px;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;background:var(--surf2);color:var(--mute)}
+.pb .lbl{font-size:12px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--mute)}
+.pb .card{background:var(--surf);border-radius:24px;box-shadow:var(--shadow);padding:14px 16px}
+.pb .num{width:28px;height:28px;border-radius:99px;background:var(--accSoft);color:var(--acc);font-weight:700;font-size:13px;display:flex;align-items:center;justify-content:center;flex:none}
+</style>
+</helmet>
+<div class="pb" style="position:relative;width:390px;height:844px;overflow:hidden;background:var(--bg);color:var(--ink);font-family:'Manrope',system-ui,sans-serif;font-size:15px;{{vars}}">
+
+<div style="position:absolute;left:20px;right:20px;top:24px;display:flex;gap:10px;align-items:center">
+<button class="ibtn" aria-label="Retour à la météo"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg></button>
+<div style="flex:1;height:48px;border-radius:16px;background:var(--surf);box-shadow:var(--shadow);display:flex;align-items:center;gap:6px;padding:0 9px">
+<span class="step" style="background:var(--go);color:var(--bg)">✓</span>
+<span class="step" style="background:var(--go);color:var(--bg)">✓</span>
+<span class="step" style="background:var(--acc);color:var(--accInk)">3</span>
+<span style="font-family:'Sora',sans-serif;font-weight:600;font-size:15px;margin:0 6px 0 2px">NOTAM</span>
+<span class="step">4</span>
+</div>
+</div>
+
+<div style="position:absolute;left:20px;right:20px;top:88px;display:flex;flex-direction:column;gap:10px">
+
+<div style="border:2px dashed var(--field-line);border-radius:24px;padding:14px 16px;display:flex;flex-direction:column;gap:12px">
+<div style="display:flex;align-items:center;gap:12px">
+<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="var(--warn)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="flex:none"><path d="M12 3l10 18H2z"/><path d="M12 10v5M12 18h.01"/></svg>
+<div><div style="font-family:'Sora',sans-serif;font-weight:700;font-size:18px;letter-spacing:-.01em">NOTAM non vérifiés</div>
+<div style="font-size:13px;font-weight:600;color:var(--mute);margin-top:2px">Aucune source automatique : l'absence de texte ne veut pas dire « rien à signaler ».</div></div>
+</div>
+<div style="display:flex;align-items:center;gap:12px"><span class="num">1</span><span style="flex:1;font-weight:700;font-size:14px">Ouvrir le service NOTAM du SIA</span>
+<button style="height:48px;padding:0 16px;border-radius:14px;border:2px solid var(--acc);background:transparent;color:var(--acc);font-weight:700;font-size:14px;display:flex;align-items:center;gap:6px">Ouvrir<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17L17 7M9 7h8v8"/></svg></button></div>
+<div style="display:flex;align-items:center;gap:12px"><span class="num">2</span><span style="flex:1;font-weight:700;font-size:14px">Copier le texte de la zone, puis le coller ci-dessous</span></div>
+</div>
+
+<div class="card" style="display:flex;flex-direction:column;gap:10px">
+<label for="coll" class="lbl">Texte collé</label>
+<textarea id="coll" placeholder="Coller le texte des NOTAM…" style="width:100%;height:96px;resize:none;border:2px solid var(--field-line);border-radius:16px;background:var(--surf2);color:var(--ink);font-family:'JetBrains Mono',monospace;font-size:14px;padding:12px;outline:none"></textarea>
+<button style="height:52px;border-radius:16px;border:0;background:var(--ink);color:var(--surf);font-weight:700;font-size:15px">Enregistrer le texte</button>
+</div>
+
+<div class="card" style="display:flex;flex-direction:column;gap:8px">
+<div style="display:flex;justify-content:space-between;align-items:center;gap:8px">
+<span style="font-family:'JetBrains Mono',monospace;font-weight:500;font-size:16px">A0000/26</span>
+<span style="display:inline-flex;align-items:center;height:28px;padding:0 12px;border-radius:99px;background:var(--warnSoft);color:var(--warn);font-size:12px;font-weight:700">Saisi à la main · 14:40</span>
+</div>
+<div style="font-family:'JetBrains Mono',monospace;font-size:13px;line-height:1.5;color:var(--ink)">Texte d'exemple collé par l'utilisateur. Validité 06/10 08:00 → 06/10 18:00.</div>
+</div>
+
+</div>
+
+<div style="position:absolute;left:0;right:0;bottom:0;height:150px;background:var(--bg)"></div>
+<div style="position:absolute;left:20px;right:20px;bottom:24px;display:flex;flex-direction:column;gap:12px">
+<div style="display:flex;background:var(--surf);border-radius:20px;padding:4px;gap:4px;box-shadow:var(--shadow)">
+<button style="flex:1;height:48px;border:0;border-radius:16px;background:transparent;color:var(--mute);font-weight:700;font-size:14px">Zones</button>
+<button style="flex:1;height:48px;border:0;border-radius:16px;background:var(--ink);color:var(--surf);font-weight:700;font-size:14px">NOTAM</button>
+<button style="flex:1;height:48px;border:0;border-radius:16px;background:transparent;color:var(--mute);font-weight:700;font-size:14px">SUP AIP</button>
+</div>
+<button style="height:64px;border-radius:22px;border:0;background:var(--acc);color:var(--accInk);font-family:'Sora',sans-serif;font-weight:700;font-size:17px;display:flex;align-items:center;justify-content:center;gap:10px">Valider · Fiche mission<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button>
+</div>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"theme":{"editor":"enum","options":["light","dark"],"default":"light"},"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const dark = this.props.theme === 'dark';
+    const base = dark
+      ? '--bg:#090D12;--surf:#131A22;--surf2:#1B242E;--line:#2A3541;--field-line:#6B7C8E;--ink:#EEF3F7;--mute:#9AA9B8;--acc:#B9F23A;--accInk:#0B1304;--accSoft:#232F0C;--go:#3EE58C;--goSoft:#0F2E1E;--warn:#FFB020;--warnSoft:#34260A;--bad:#FF7A6E;--badSoft:#3A1814;--shadow:0 6px 24px rgba(0,0,0,.45);'
+      : '--bg:#EEF0EA;--surf:#FFFFFF;--surf2:#F2F4EE;--line:#DDE1D6;--field-line:#7B8576;--ink:#0D1218;--mute:#566170;--acc:#2340E8;--accInk:#FFFFFF;--accSoft:#E3E8FF;--go:#0D7A40;--goSoft:#D8F1E1;--warn:#8A5200;--warnSoft:#FBE9C6;--bad:#B3261E;--badSoft:#F9DAD6;--shadow:0 6px 24px rgba(13,18,24,.10);';
+    return { vars: base };
+  }
+}
+</script>
+</body>
+</html>

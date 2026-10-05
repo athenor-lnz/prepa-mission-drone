@@ -2,7 +2,7 @@
 
 Application web **mobile d'abord, utilisable d'une main**, d'aide à la préparation d'une mission drone, pour un usage en unité de gendarmerie. Cette branche est **indépendante** de `main` (aucun historique commun) : elle porte la direction de design B et un dossier de transfert complet pour une IA de développement ou un développeur.
 
-> Statut : **maquettes B dessinées** (9 écrans, thèmes clair et sombre) ; code applicatif à écrire. Seuls des modules utilitaires testés sont fournis (`src/lib/`, 32 tests).
+> Statut : **maquettes B dessinées** (12 écrans, thèmes clair et sombre) ; code applicatif à écrire. Seuls des modules utilitaires testés sont fournis (`src/lib/`, 32 tests).
 
 ## Ordre de lecture
 
@@ -21,8 +21,8 @@ Application web **mobile d'abord, utilisable d'une main**, d'aide à la prépara
 |---|---|
 | `docs/` | Spécifications en français |
 | `design/tokens.css` | Variables CSS des thèmes clair et sombre (prêtes à utiliser) |
-| `design/previews/` | 18 captures PNG : 9 écrans × clair/sombre |
-| `design/screens/` | Sources des 9 écrans (format `.dc.html`, voir `design/README.md`) |
+| `design/previews/` | 24 captures PNG : 12 écrans × clair/sombre |
+| `design/screens/` | Sources des 12 écrans (format `.dc.html`, voir `design/README.md`) |
 | `src/lib/` | Modules JS purs et testés : coordonnées, unités, verdict météo, stockage des missions, verrou par mot de passe |
 | `test/` | Tests (`node --test`) |
 | `index.html`, `src/main.js` | Coquille de démarrage : verrou + page d'accueil minimale |

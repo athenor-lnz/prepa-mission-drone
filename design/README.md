@@ -5,12 +5,12 @@ Conception mobile d'abord : navigation et actions dans la zone du pouce (bas de 
 | Dossier | Contenu |
 |---|---|
 | `tokens.css` | Variables CSS clair/sombre. **À utiliser directement.** |
-| `previews/` | 18 captures PNG (9 écrans × clair/sombre, 390 × 844, ×2). **Référence visuelle rapide.** |
-| `screens/` | Sources des 9 écrans (`.dc.html`), chacun avec une propriété `theme` (`light` ou `dark`). |
+| `previews/` | 24 captures PNG (12 écrans × clair/sombre, 390 × 844, ×2). **Référence visuelle rapide.** |
+| `screens/` | Sources des 12 écrans (`.dc.html`), chacun avec une propriété `theme` (`light` ou `dark`). |
 
-## Les 9 écrans
+## Les 12 écrans
 
-`Connexion` · `Accueil` · `Lieu` · `Meteo` · `MeteoHS` (météo indisponible, saisie manuelle) · `Espace` (espace aérien, NOTAM, SUP AIP) · `Fiche` · `Smepp` (dictée) · `Outils` (tiroir de conversion).
+`Connexion` · `Accueil` · `AccueilVide` · `Lieu` · `Meteo` (avec seuil de rafales réglable) · `MeteoHS` (météo indisponible, saisie manuelle) · `Espace` (zones) · `Notam` (collage manuel) · `SupAip` (saisie manuelle) · `Fiche` · `Smepp` (dictée) · `Outils` (tiroir de conversion).
 
 ## Format `.dc.html`
 
@@ -26,4 +26,4 @@ Les captures et sources font foi pour l'apparence ; `docs/03-ecrans-et-parcours.
 
 ## Ce qui n'est pas encore dessiné
 
-NOTAM et SUP AIP en détail (liste, collage du texte), accueil vide, import/export, état hors ligne, tablette et poste de travail (la mise en page B est pensée pour téléphone ; sur grand écran, centrer la colonne mobile ou prévoir une version à deux colonnes).
+Onglet Coordonnées des Outils, menu d'actions d'une mission (renommer, dupliquer, supprimer), import/export en détail, état hors ligne, tablette et poste de travail (la mise en page B est pensée pour téléphone ; sur grand écran, centrer la colonne mobile ou prévoir une version à deux colonnes).
