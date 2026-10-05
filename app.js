@@ -54,7 +54,7 @@ $('#nextBtn').onclick=()=>{const i=stepOrder.indexOf(currentStep);if(i<stepOrder
 function initMap(){
  if(map){map.invalidateSize();return}
  const lat=+$('#lat').value,lng=+$('#lng').value;
- map=L.map('map',{zoomControl:true}).setView([lat,lng],14);
+ map=L.map('map',{zoomControl:false}).setView([lat,lng],14);\n L.control.zoom({position:'bottomright'}).addTo(map);
  layers.osm=L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:20,attribution:'© OpenStreetMap'});
  layers.sat=L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',{maxZoom:20,attribution:'© Esri'});
  setBase(localStorage.getItem('pmd-base')||'sat');
