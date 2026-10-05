@@ -261,15 +261,23 @@ function renderSmeppStates(){
 buildGuides($('#macloeFields'),macloe,'macloe');
 buildSmeppAccordion($('#smeppFields'));
 
+function syncBottomNav(step){
+ $('.bottom-nav button').forEach(b=>b.classList.remove('active'));
+ if(step==='zone') $('[data-open-step="zone"]')?.classList.add('active');
+ else if(step==='synthese') $('[data-open-step="synthese"]')?.classList.add('active');
+ else $('[data-prepa-nav]')?.classList.add('active');
+}
 function showMission(step='cadre'){
- $('#homeScreen').classList.remove('active');$('#missionScreen').classList.add('active');go(step);
- $$('.bottom-nav button').forEach(b=>b.classList.remove('active'));
- $$('[data-open-step]').forEach(b=>b.classList.toggle('active',b.dataset.openStep===step));
+ $('#homeScreen').classList.remove('active');
+ $('#missionScreen').classList.add('active');
+ go(step);
+ syncBottomNav(step);
 }
 function showHome(){saveLocal();$('#missionScreen').classList.remove('active');$('#homeScreen').classList.add('active');$('[data-home]').classList.add('active');refreshHome()}
 $('#newMissionBtn').onclick=()=>showMission('cadre');$('#resumeBtn').onclick=()=>showMission(currentStep);$('#backHome').onclick=showHome;
 $('[data-home]').onclick=showHome;
-$$('[data-open-step]').forEach(b=>b.onclick=()=>showMission(b.dataset.openStep));
+$('[data-open-step]').forEach(b=>b.onclick=()=>showMission(b.dataset.openStep));
+$('[data-prepa-nav]')?.addEventListener('click',()=>showMission(['cadre','mens','macloe','smepp'].includes(currentStep)?currentStep:'cadre'));
 $$('[data-jump]').forEach(b=>b.onclick=()=>showMission(b.dataset.jump));
 
 function go(step){
@@ -281,6 +289,7 @@ function go(step){
  if(step==='zone')setTimeout(initMap,50);
  if(step==='mens'){updateMensProgress();setTimeout(()=>fetchWeather(false),80);}
  if(step==='synthese')renderSummary();
+ syncBottomNav(step);
 }
 $$('.stepbar button').forEach(b=>b.onclick=()=>go(b.dataset.step));
 $('#prevBtn').onclick=()=>{const i=stepOrder.indexOf(currentStep);if(i>0)go(stepOrder[i-1])};
@@ -389,7 +398,7 @@ async function fetchWeather(force=true){
  if($('#weatherContext')) $('#weatherContext').textContent=`Position ${lat.toFixed(5)}, ${lng.toFixed(5)} · créneau ${target.toLocaleString('fr-FR')}`;
  try{
   const params=new URLSearchParams({
-   latitude:String(lat),longitude:String(lng),timezone:'auto',forecast_days:'7',
+   latitude:String(lat),longitude:String(lng),timezone:'auto',forecast_days:'16',
    current:'temperature_2m,weather_code,cloud_cover,wind_speed_10m,wind_direction_10m,wind_gusts_10m',
    hourly:'temperature_2m,precipitation_probability,weather_code,cloud_cover,visibility,wind_speed_10m,wind_direction_10m,wind_gusts_10m'
   });
@@ -425,7 +434,7 @@ function updateAirspaceContext(){
 }
 function initMensTools(){
  if($('#missionDateTime')&&!$('#missionDateTime').value){
-  const d=new Date(Date.now()+60*60*1000);
+  const d=new Date();
   const local=new Date(d.getTime()-d.getTimezoneOffset()*60000).toISOString().slice(0,16);
   $('#missionDateTime').value=local;
  }
@@ -586,6 +595,7 @@ function exportMission(){
  a.download=name;
  a.click();
  setTimeout(()=>URL.revokeObjectURL(a.href),500);
+ showToast('Mission exportée : '+name,'success');
 }
 async function shareMission(){
  const {file}=missionFile();
