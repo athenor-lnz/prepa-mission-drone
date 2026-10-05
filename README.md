@@ -1,51 +1,74 @@
-# Prépa Mission Drone — branche `design-b-mobile`
+# Prépa Mission Drone — `design-b-mobile`
 
-Application web **mobile d'abord, utilisable d'une main**, d'aide à la préparation d'une mission drone, pour un usage en unité de gendarmerie. Cette branche est **indépendante** de `main` (aucun historique commun) : elle porte la direction de design B et un dossier de transfert complet pour une IA de développement ou un développeur.
+Application web **mobile-first**, pensée pour une utilisation à une main sur smartphone, pour préparer une mission drone de gendarmerie.
 
-> Statut : **maquettes B dessinées** (12 écrans, thèmes clair et sombre) ; code applicatif à écrire. Seuls des modules utilitaires testés sont fournis (`src/lib/`, 32 tests).
+Cette branche conserve la direction visuelle **B** mais intègre le parcours et les fonctions métier validés :
 
-## Ordre de lecture
+**Cadre → Zone → MENS → MACLOE → SMEPP → Synthèse**
 
-1. `docs/PROMPT-IA.md` : consigne prête à coller dans l'IA qui va développer.
-2. `docs/01-cahier-des-charges.md` : ce que fait l'application, module par module, avec critères d'acceptation.
-3. `docs/03-ecrans-et-parcours.md` : chaque écran, ses états, ses comportements (direction B).
-4. `docs/04-design-system.md` + `design/tokens.css` + `design/previews/` : zone du pouce, couleurs, typographies, composants (clair et sombre).
-5. `docs/02-architecture.md` : stack, arborescence, modèle de données, stockage.
-6. `docs/05-sources-de-donnees.md` : météo, espace aérien, NOTAM, SUP AIP, cartes, géocodage (statut de vérification de chaque source).
-7. `docs/06-securite-et-confidentialite.md` : mot de passe commun, dépôt GitHub, dictée vocale.
-8. `docs/07-feuille-de-route.md` : phases de livraison.
+## État actuel
 
-## Contenu
+- design clair/sombre mobile-first ;
+- carte Leaflet : **Plan OSM / Satellite / OACI-VFR** ;
+- géolocalisation + zoom intégrés dans la carte ;
+- météo automatique via **Open-Meteo** + indice **Kp NOAA** ;
+- restrictions UAS via Géoplateforme ;
+- import local du ZIP **GeoGM/SIA** :
+  - `espaces.geojson`,
+  - `aerodromes.geojson`,
+  - métadonnées AIRAC ;
+- détection des espaces qui intersectent le **rayon de mission** ;
+- affichage des aérodromes proches, fréquences et accès **VAC / AIP** ;
+- NOTAM : consultation **SOFIA-Briefing** + saisie contrôlée ;
+- SUP AIP : consultation SIA + saisie contrôlée ;
+- MACLOE guidé avec rappels, exemples et validation **M → A → C → L → O → E** ;
+- SMEPP guidé avec validation **S → M → E → P → P** et **AMICAL complet** dans Exécution ;
+- export / import JSON ;
+- partage natif d'une mission sur mobile ;
+- PWA avec cache de la coque applicative ;
+- aucune télémétrie.
 
-| Dossier | Rôle |
-|---|---|
-| `docs/` | Spécifications en français |
-| `design/tokens.css` | Variables CSS des thèmes clair et sombre (prêtes à utiliser) |
-| `design/previews/` | 24 captures PNG : 12 écrans × clair/sombre |
-| `design/screens/` | Sources des 12 écrans (format `.dc.html`, voir `design/README.md`) |
-| `src/lib/` | Modules JS purs et testés : coordonnées, unités, verdict météo, stockage des missions, verrou par mot de passe |
-| `test/` | Tests (`node --test`) |
-| `index.html`, `src/main.js` | Coquille de démarrage : verrou + page d'accueil minimale |
+## Pas de mot de passe
 
-## Démarrer
+Le verrou par mot de passe a été **retiré entièrement** de cette branche.
+
+Les missions restent stockées localement dans le navigateur. Le dépôt et l'hébergement ne doivent donc pas être considérés comme un système de protection de données sensibles.
+
+## Données aéronautiques locales
+
+Dans **MENS → Espace aérien**, importer une fois le ZIP GeoGM/SIA, par exemple :
+
+`geogm-sia-tous-territoires-2026-10-01.zip`
+
+L'application extrait côté navigateur les jeux `TOUT/espaces.geojson` et `TOUT/aerodromes.geojson`, puis les conserve dans **IndexedDB** sur l'appareil.
+
+Lors d'un nouveau cycle AIRAC, il suffit d'importer le nouveau ZIP.
+
+L'analyse locale est une **aide à la préparation** : elle ne remplace pas les publications officielles SIA, les NOTAM, les SUP AIP ni les consignes d'un organisme ATS.
+
+## Développement
 
 ```bash
-# tests des modules
-node --test
-
-# servir en local (HTTPS ou localhost obligatoire pour le verrou : Web Crypto)
-python3 -m http.server 8000
+npm test
 ```
 
-Aucune étape de build n'est requise : modules ES natifs, déployable tel quel sur GitHub Pages.
+Aucun build n'est requis : HTML, CSS et modules ES natifs.
 
-## Maquettes en ligne
+La CI de la branche vérifie :
+- la syntaxe de tous les fichiers JS ;
+- les tests unitaires.
 
-Canevas de design de la direction B : https://claude.ai/artifact/QcA6Up6UCAnqx4oKZYhB53 (privé, lisible seulement par son propriétaire). Les captures et sources sont dans `design/`.
+## Architecture
 
-## Points à confirmer par le porteur
+- `src/views/` : écrans et parcours ;
+- `src/lib/` : logique pure et testable ;
+- `src/services/` : météo, géocodage, restrictions UAS, GeoGM/SIA, dictée ;
+- `src/ui/` : composants DOM, navigation, toasts, modales ;
+- `design/` : direction artistique B et références visuelles ;
+- `test/` : tests unitaires.
 
-- **MENS** : interprété comme **M**étéo, **E**space aérien, **N**OTAM, **S**UP AIP.
-- Source des NOTAM et SUP AIP (aucune API ouverte évidente en France, voir `docs/05`).
-- Nom définitif de l'application et du dépôt.
-- **Dépôt public** : n'y mettre aucune donnée de mission, aucun document interne, aucun secret (voir `docs/06`). Passer le dépôt en privé dès que possible.
+## Déploiement
+
+Branche cible : **`design-b-mobile`**.
+
+Pour GitHub Pages : publier la racine de cette branche en HTTPS.
