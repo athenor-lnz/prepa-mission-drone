@@ -5,19 +5,19 @@ let currentStep='cadre',map,marker,circle,baseLayer;
 const layers={};
 
 const macloe=[
- {k:'M',t:'Mission',d:"Verbe missionnel : observer, renseigner, reconnaître, appuyer, prendre des vues…",h:"Action demandée, bénéficiaire, effet attendu. Ex. Observer la zone afin d'identifier les points chauds."},
- {k:'A',t:'Allure / effet recherché',d:'Vitesse, discrétion, nature de l’action et effet recherché.',h:'Précise le rythme du vol, la discrétion, l’altitude ou le type d’effet recherché.'},
- {k:'C',t:'Cheminement',d:'Itinéraire, zone de décollage, zones sensibles, obstacles, dégagements.',h:'Décris le trajet prévu, les zones à éviter et les solutions de dégagement.'},
- {k:'L',t:'Ligne de débouché',d:'Ligne ou zone à partir de laquelle la mission ou captation devient utile.',h:'Indique le seuil spatial où l’action commence réellement.'},
- {k:'O',t:'Objectif',d:'Résultat concret attendu de l’action.',h:'Distingue-le de la Mission : ici, précise ce qui doit être obtenu ou constaté.'},
- {k:'E',t:'Esquive',d:'Retour, urgence, zone de repli ou interruption.',h:'Prévois l’atterrissage de sécurité, le repli et les cas d’arrêt.'}
+ {k:'M',t:'Mission',d:'Analyse de la mission demandée.',h:'Exemples du cours : APPUYER, RECHERCHER, RECONNAÎTRE…'},
+ {k:'A',t:'Allure',d:'Effet recherché.',h:'Exemples du cours : DISCRÉTION, RECHERCHE, POLICE TECHNIQUE, MAINTIEN DE L’ORDRE…'},
+ {k:'C',t:'Cheminement',d:'Itinéraire : comment ? par où ?',h:'À prendre en compte : zone de décollage / atterrissage, zone sensible, zone de survol, zone de dégagement.'},
+ {k:'L',t:'Ligne de débouché',d:'Ligne à partir de laquelle l’action plus sensible commence / zone de captation.',h:'À apprécier : vue par l’adversaire, risque pour la mission, réalisation de la mission.'},
+ {k:'O',t:'Objectif',d:'Réalisation concrète de la mission.',h:'Pour l’acquisition d’images : légalité, exploitation, photo / vidéo, déporté.'},
+ {k:'E',t:'Esquive',d:'Préparation du retour et de l’urgence.',h:'À définir : itinéraire de retour et itinéraire d’urgence.'}
 ];
 const smepp=[
  {k:'S',badge:'S',t:'Situation',d:'Situation générale puis situation particulière.',h:'GÉNÉRALE : présentation de la mission, cadre juridique…\nPARTICULIÈRE : contexte actuel, amis, adversaire, population, géolocalisation.'},
  {k:'M',badge:'M',t:'Mission',d:'Formulation claire de la mission confiée.',h:'Verbes proposés dans le cours : APPUYER, PRENDRE DES VUES, FAIRE DIVERSION, RECONNAÎTRE, OBSERVER, RENSEIGNER.'},
  {k:'E',badge:'E',t:'Exécution',d:'Articulation au sol / en vol et conduite de la mission.',h:'Articulation au sol / en vol ; mission du télépilote et de l’observateur d’aéronef ; conduite à tenir (synchronisation avec l’autorité d’emploi, cheminement, ligne de débouché, rappel de sécurité…) ; amis sur place / renfort ; liaison avec l’autorité d’emploi, OCT, compte rendu.'},
  {k:'PP',badge:'P',t:'Points particuliers',d:'Contraintes ou éléments spécifiques à garder à l’esprit.',h:'URBAIN / RURAL ; POPULATION ; LIMITE DANS LE TEMPS ; ESPACE AÉRIEN ; MÉTÉO.'},
- {k:'PC',badge:'P',t:'Place du chef',d:'Position et rôle du chef pendant la mission.',h:'Précise où se place le chef et comment il conserve la capacité de commander, suivre la manœuvre et coordonner l’action.'}
+ {k:'PC',badge:'P',t:'Place du chef',d:'Cinquième rubrique du SMEPP.',h:'Le support de cours identifie « Place du chef » comme rubrique du SMEPP mais ne détaille pas davantage son contenu sur cette diapositive. Renseigne la place du chef prévue pour la mission.'}
 ];
 
 function buildGuides(host,items,prefix){
