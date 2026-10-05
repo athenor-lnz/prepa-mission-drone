@@ -13,16 +13,55 @@ const macloe=[
  {k:'E',t:'Esquive',d:'Préparation du retour et de l’urgence.',h:'À définir : itinéraire de retour et itinéraire d’urgence.'}
 ];
 const smepp=[
- {k:'S',badge:'S',t:'Situation',d:'Situation générale puis situation particulière.',h:'GÉNÉRALE : présentation de la mission, cadre juridique…\nPARTICULIÈRE : contexte actuel, amis, adversaire, population, géolocalisation.'},
+ {
+  k:'S',badge:'S',t:'Situation',d:'Situation générale puis situation particulière.',
+  subs:[
+   {k:'generale',badge:'G',t:'Situation générale',d:'Présentation de la mission, cadre juridique…',h:'Présente le contexte global de la mission et le cadre juridique applicable.'},
+   {k:'particuliere',badge:'P',t:'Situation particulière',d:'Contexte actuel, amis, adversaire, population, géolocalisation.',h:'Décris la situation locale et les éléments concrets qui peuvent influencer la mission.'}
+  ]
+ },
  {k:'M',badge:'M',t:'Mission',d:'Formulation claire de la mission confiée.',h:'Verbes proposés dans le cours : APPUYER, PRENDRE DES VUES, FAIRE DIVERSION, RECONNAÎTRE, OBSERVER, RENSEIGNER.'},
- {k:'E',badge:'E',t:'Exécution',d:'Articulation au sol / en vol et conduite de la mission.',h:'Articulation au sol / en vol ; mission du télépilote et de l’observateur d’aéronef ; conduite à tenir (synchronisation avec l’autorité d’emploi, cheminement, ligne de débouché, rappel de sécurité…) ; amis sur place / renfort ; liaison avec l’autorité d’emploi, OCT, compte rendu.'},
+ {
+  k:'E',badge:'E',t:'Exécution',d:'AMICAL — déroulement détaillé de la mission.',
+  subs:[
+   {k:'A1',badge:'A',t:'Articulation',d:'Articulation au sol / en vol.',h:'Précise l’organisation du dispositif au sol et en vol.'},
+   {k:'M1',badge:'M',t:'Mission TP / observateur',d:'Mission du télépilote / observateur d’aéronef.',h:'Répartis clairement les rôles entre télépilote et observateur.'},
+   {k:'I',badge:'I',t:'Itinéraire / cheminement',d:'Cheminement prévu pour la mission.',h:'Sous-rubrique ajoutée pour matérialiser le I de AMICAL ; le cours cite le cheminement dans la conduite à tenir.'},
+   {k:'C',badge:'C',t:'Conduite à tenir',d:'Synchronisation, cheminement, ligne de débouché, rappels de sécurité…',h:'Décris la conduite de mission et les règles à appliquer pendant l’action.'},
+   {k:'A2',badge:'A',t:'Amis / renforts',d:'Amis sur place, renfort…',h:'Identifie les personnels ou unités amies présents et les renforts mobilisables.'},
+   {k:'L',badge:'L',t:'Liaison',d:'Autorité d’emploi, OCT, compte rendu.',h:'Précise les liaisons et modalités de compte rendu avec l’autorité d’emploi et l’OCT.'}
+  ]
+ },
  {k:'PP',badge:'P',t:'Points particuliers',d:'Contraintes ou éléments spécifiques à garder à l’esprit.',h:'URBAIN / RURAL ; POPULATION ; LIMITE DANS LE TEMPS ; ESPACE AÉRIEN ; MÉTÉO.'},
  {k:'PC',badge:'P',t:'Place du chef',d:'Cinquième rubrique du SMEPP.',h:'Le support de cours identifie « Place du chef » comme rubrique du SMEPP mais ne détaille pas davantage son contenu sur cette diapositive. Renseigne la place du chef prévue pour la mission.'}
 ];
 
 function buildGuides(host,items,prefix){
- host.innerHTML=items.map(x=>`<article class="guide-item"><div class="guide-head"><span class="badge">${x.badge||x.k}</span><div><b>${x.t}</b><small>${x.d}</small></div><button class="help-btn" type="button">Rappel</button></div><div class="guide-help">${x.h}</div><textarea id="${prefix}-${x.k}" placeholder="Saisir ou dicter..."></textarea></article>`).join('');
+ host.innerHTML=items.map(x=>{
+  const mainHelp=x.h ? `<div class="guide-help">${x.h}</div>` : '';
+  const editor=x.subs
+   ? `<div class="subfields">${x.subs.map(s=>`
+      <section class="subfield">
+       <div class="subfield-head">
+        <span class="sub-badge">${s.badge||''}</span>
+        <div><b>${s.t}</b><small>${s.d}</small></div>
+        <button class="sub-help-btn" type="button">Rappel</button>
+       </div>
+       <div class="sub-help">${s.h||''}</div>
+       <textarea id="${prefix}-${x.k}-${s.k}" data-parent="${x.k}" placeholder="Saisir ou dicter..."></textarea>
+      </section>`).join('')}</div>`
+   : `<textarea id="${prefix}-${x.k}" data-parent="${x.k}" placeholder="Saisir ou dicter..."></textarea>`;
+  return `<article class="guide-item">
+   <div class="guide-head"><span class="badge">${x.badge||x.k}</span><div><b>${x.t}</b><small>${x.d}</small></div>${x.h?'<button class="help-btn" type="button">Rappel</button>':''}</div>
+   ${mainHelp}
+   ${editor}
+  </article>`;
+ }).join('');
  host.querySelectorAll('.help-btn').forEach(b=>b.onclick=()=>b.closest('.guide-item').classList.toggle('open'));
+ host.querySelectorAll('.sub-help-btn').forEach(b=>b.onclick=()=>{
+   const field=b.closest('.subfield');
+   field.classList.toggle('open');
+ });
  host.querySelectorAll('textarea').forEach(t=>t.addEventListener('input',updateProgress));
 }
 buildGuides($('#macloeFields'),macloe,'macloe');
@@ -72,9 +111,18 @@ $$('[data-base]').forEach(b=>b.onclick=()=>setBase(b.dataset.base));
 function setPos(lat,lng,center=true){$('#lat').value=lat.toFixed(6);$('#lng').value=lng.toFixed(6);marker.setLatLng([lat,lng]);circle.setLatLng([lat,lng]);if(center)map.setView([lat,lng],15)}
 function syncMap(){setPos(+$('#lat').value,+$('#lng').value,true);circle.setRadius(+$('#radius').value||0)}
 
+function itemComplete(prefix,item){
+ if(item.subs){
+  return item.subs.every(s=>$('#'+prefix+'-'+item.k+'-'+s.k)?.value.trim());
+ }
+ return !!$('#'+prefix+'-'+item.k)?.value.trim();
+}
 function updateProgress(){
- const m=macloe.filter(x=>$('#macloe-'+x.k)?.value.trim()).length,s=smepp.filter(x=>$('#smepp-'+x.k)?.value.trim()).length;
- $('#macloeProgress').textContent=`${m}/6`;$('#smeppProgress').textContent=`${s}/5`;refreshHome()
+ const m=macloe.filter(x=>itemComplete('macloe',x)).length;
+ const s=smepp.filter(x=>itemComplete('smepp',x)).length;
+ $('#macloeProgress').textContent=`${m}/6`;
+ $('#smeppProgress').textContent=`${s}/5`;
+ refreshHome();
 }
 function collect(){
  return {
@@ -83,14 +131,29 @@ function collect(){
   zone:{lat:+$('#lat').value,lng:+$('#lng').value,altitude:+$('#altitude').value,radius:+$('#radius').value,environment:$('#environment').value,base:localStorage.getItem('pmd-base')||'sat'},
   mens:{checks:Object.fromEntries($$('[data-check]').map(x=>[x.dataset.check,x.checked])),notes:$('#mensNotes').value},
   macloe:Object.fromEntries(macloe.map(x=>[x.k,$('#macloe-'+x.k)?.value||''])),
-  smepp:Object.fromEntries(smepp.map(x=>[x.k,$('#smepp-'+x.k)?.value||''])),
+  smepp:Object.fromEntries(smepp.map(x=>[
+   x.k,
+   x.subs
+    ? Object.fromEntries(x.subs.map(s=>[s.k,$('#smepp-'+x.k+'-'+s.k)?.value||'']))
+    : ($('#smepp-'+x.k)?.value||'')
+  ])),
   updatedAt:new Date().toISOString()
  }
 }
 function saveLocal(){localStorage.setItem('pmd-mission',JSON.stringify(collect()))}
-function loadLocal(){try{const d=JSON.parse(localStorage.getItem('pmd-mission')||'null');if(!d)return;$('#missionTitle').value=d.title||'';$('#missionType').value=d.type||$('#missionType').value;$$('input[name=useCase]').forEach(x=>x.checked=(d.useCases||[]).includes(x.value));if(d.zone){['lat','lng','altitude','radius'].forEach(k=>$('#'+k).value=d.zone[k]??$('#'+k).value);$('#environment').value=d.zone.environment||$('#environment').value}if(d.mens){$$('[data-check]').forEach(x=>x.checked=!!d.mens.checks?.[x.dataset.check]);$('#mensNotes').value=d.mens.notes||''}macloe.forEach(x=>{if($('#macloe-'+x.k))$('#macloe-'+x.k).value=d.macloe?.[x.k]||''});smepp.forEach(x=>{if($('#smepp-'+x.k))$('#smepp-'+x.k).value=d.smepp?.[x.k]||''});updateProgress()}catch(e){}}
-function refreshHome(){const d=collect(),m=Object.values(d.mens.checks).filter(Boolean).length,ma=Object.values(d.macloe).filter(v=>v.trim()).length,sm=Object.values(d.smepp).filter(v=>v.trim()).length;$('#homeMissionTitle').textContent=d.title||'Mission sans titre';$('#homeMissionMeta').textContent=d.title?`${d.type} · ${d.zone.environment}`:'Aucune mission enregistrée';$('#homeMens').textContent=`MENS ${m}/4`;$('#homeMacloe').textContent=`MACLOE ${ma}/6`;$('#homeSmepp').textContent=`SMEPP ${sm}/5`}
-function renderSummary(){const d=collect(),m=Object.values(d.mens.checks).filter(Boolean).length,ma=Object.values(d.macloe).filter(v=>v.trim()).length,sm=Object.values(d.smepp).filter(v=>v.trim()).length;$('#summary').innerHTML=`
+function loadLocal(){try{const d=JSON.parse(localStorage.getItem('pmd-mission')||'null');if(!d)return;$('#missionTitle').value=d.title||'';$('#missionType').value=d.type||$('#missionType').value;$$('input[name=useCase]').forEach(x=>x.checked=(d.useCases||[]).includes(x.value));if(d.zone){['lat','lng','altitude','radius'].forEach(k=>$('#'+k).value=d.zone[k]??$('#'+k).value);$('#environment').value=d.zone.environment||$('#environment').value}if(d.mens){$$('[data-check]').forEach(x=>x.checked=!!d.mens.checks?.[x.dataset.check]);$('#mensNotes').value=d.mens.notes||''}macloe.forEach(x=>{if($('#macloe-'+x.k))$('#macloe-'+x.k).value=d.macloe?.[x.k]||''});smepp.forEach(x=>{
+ if(x.subs){
+  x.subs.forEach(s=>{
+   const el=$('#smepp-'+x.k+'-'+s.k);
+   if(el) el.value=(typeof d.smepp?.[x.k]==='object' ? d.smepp?.[x.k]?.[s.k] : '') || '';
+  });
+ }else{
+  const el=$('#smepp-'+x.k);
+  if(el) el.value=(typeof d.smepp?.[x.k]==='string' ? d.smepp?.[x.k] : '') || '';
+ }
+});updateProgress()}catch(e){}}
+function refreshHome(){const d=collect(),m=Object.values(d.mens.checks).filter(Boolean).length,ma=Object.values(d.macloe).filter(v=>v.trim()).length,sm=smepp.filter(x=>itemComplete('smepp',x)).length;$('#homeMissionTitle').textContent=d.title||'Mission sans titre';$('#homeMissionMeta').textContent=d.title?`${d.type} · ${d.zone.environment}`:'Aucune mission enregistrée';$('#homeMens').textContent=`MENS ${m}/4`;$('#homeMacloe').textContent=`MACLOE ${ma}/6`;$('#homeSmepp').textContent=`SMEPP ${sm}/5`}
+function renderSummary(){const d=collect(),m=Object.values(d.mens.checks).filter(Boolean).length,ma=Object.values(d.macloe).filter(v=>v.trim()).length,sm=smepp.filter(x=>itemComplete('smepp',x)).length;$('#summary').innerHTML=`
  <div class="summary-box"><b>Mission</b><p>${esc(d.title||'Sans titre')}\n${esc(d.type)} · ${esc(d.capture)}\n${esc(d.useCases.join(' · ')||'Aucun cas d’usage')}</p></div>
  <div class="summary-box"><b>Zone</b><p>${d.zone.lat.toFixed(6)}, ${d.zone.lng.toFixed(6)}\nAltitude ${d.zone.altitude} m · Rayon ${d.zone.radius} m\n${esc(d.zone.environment)} · ${esc(d.zone.base.toUpperCase())}</p></div>
  <div class="summary-box"><b>Préparation</b><p>MENS ${m}/4 · MACLOE ${ma}/6 · SMEPP ${sm}/5</p></div>`;
