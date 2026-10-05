@@ -14,3 +14,14 @@ html[data-theme="light"]{--bg:#eff4fa;--panel:#fff;--panel2:#f1f5f9;--text:#0f17
   backdrop-filter:blur(10px);
 }
 .hidden-install{display:none!important}
+
+.subfields{display:grid;gap:10px;margin-top:12px}
+.subfield{padding:12px;border-radius:16px;background:var(--panel2);border:1px solid var(--line)}
+.subfield-head{display:grid;grid-template-columns:36px 1fr auto;gap:10px;align-items:center}
+.sub-badge{width:34px;height:34px;border-radius:11px;display:grid;place-items:center;background:linear-gradient(135deg,#1e88ff,#68b9ff);color:#fff;font-size:12px;font-weight:900}
+.subfield-head b,.subfield-head small{display:block}
+.subfield-head small{margin-top:3px;color:var(--muted);line-height:1.35}
+.sub-help-btn{border:0;background:none;color:#59aaff;font-weight:800;font-size:10px;padding:6px}
+.sub-help{display:none;margin:10px 0;padding:10px;border-radius:12px;background:color-mix(in srgb,var(--panel) 60%,transparent);color:var(--muted);font-size:12px;line-height:1.45}
+.subfield.open .sub-help{display:block}
+.subfield textarea{min-height:92px;margin-top:10px;background:var(--panel)}
