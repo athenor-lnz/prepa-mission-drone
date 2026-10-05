@@ -55,7 +55,7 @@ async function unzipSelected(file,wanted,onProgress){
     const localOffset=view.getUint32(p+42,true);
     const name=DECODER.decode(new Uint8Array(buf,p+46,nameLen));
     const key=Object.keys(wanted).find((k)=>wanted[k](name));
-    if(key){
+    if(key && !(key in out)){
       onProgress?.(`Lecture de ${name.split('/').pop()}…`);
       if(view.getUint32(localOffset,true)!==0x04034b50)throw new Error('ZIP invalide : entrée locale illisible.');
       const ln=view.getUint16(localOffset+26,true),le=view.getUint16(localOffset+28,true);
