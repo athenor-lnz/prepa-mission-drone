@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { inUasCoverage, restrictionsUrl, inPolygon, inGeometry, limitToMeters, zonesAtPoint, summarizeZones } from '../src/lib/airspace.js';
-import { SMEPP, MACLOE, progress, sectionProgress, toText, appendDictation, allFields } from '../src/lib/forms.js';
+import { SMEPP, MACLOE, progress, sectionProgress, sectionComplete, validatedProgress, formValidated, toText, appendDictation, allFields } from '../src/lib/forms.js';
 import { newMission, sanitizeMission, createMissionStore, DEFAULT_GUST_LIMIT_MS } from '../src/lib/storage.js';
 import { buildRecap, espaceLine } from '../src/lib/recap.js';
 
@@ -56,12 +56,15 @@ test('summarizeZones : aucune, limitée, interdite, indéterminée', () => {
   assert.equal(summarizeZones([{ meters: 60 }, { meters: null }]).level, 'unknown');
 });
 
-test('SMEPP : 9 champs, MACLOE : 6 champs, progression par section', () => {
-  assert.equal(allFields(SMEPP).length, 9);
+test('SMEPP AMICAL : 11 champs, MACLOE : 6 champs, validation par section', () => {
+  assert.equal(allFields(SMEPP).length, 11);
   assert.equal(allFields(MACLOE).length, 6);
-  const v = { S1: 'x', E1: '  ', E2: 'y' };
-  assert.deepEqual(progress(SMEPP, v), { done: 2, total: 9 });
-  assert.deepEqual(sectionProgress(SMEPP.sections[2], v), { done: 1, total: 4 });
+  const v = { S1: 'générale', S2: 'particulière', E_A: 'articulation', E_M: 'mission', E_I: 'itinéraire' };
+  assert.deepEqual(progress(SMEPP, v), { done: 5, total: 11 });
+  assert.deepEqual(sectionProgress(SMEPP.sections[0], v), { done: 2, total: 2 });
+  assert.equal(sectionComplete(SMEPP.sections[0], v), true);
+  assert.deepEqual(validatedProgress(SMEPP, ['S','M']), { done: 2, total: 5 });
+  assert.equal(formValidated(MACLOE, ['M','A','C','L','O','E']), true);
 });
 
 test('toText signale les champs vides au lieu de les inventer', () => {
@@ -113,11 +116,11 @@ test('recap : n\'affiche que ce qui existe, signale NOTAM et SUP AIP non vérifi
   const m = newMission({ now: new Date('2026-10-06T10:00:00Z') });
   m.name = 'Test';
   let r = buildRecap(m);
-  assert.match(r, /Lieu : non défini/);
+  assert.match(r, /Zone : non définie/);
   assert.match(r, /Météo : non évaluée/);
   assert.match(r, /NOTAM : non vérifiés/);
   assert.match(r, /SUP AIP : non vérifiés/);
-  assert.match(r, /SMEPP : 0 \/ 9/);
+  assert.match(r, /SMEPP : 0 \/ 5 parties validées/);
   m.place = { label: 'Place test', lat: 43.6045, lon: 1.4442, radiusM: 300 };
   m.window = { start: '2026-10-06T14:00', end: '2026-10-06T16:30', tz: 'Europe/Paris' };
   m.mens.meteo.slots = [{ hour: '14:00', wind: 4, gust: 6 }, { hour: '15:00', wind: 4, gust: 7 }];
@@ -126,7 +129,7 @@ test('recap : n\'affiche que ce qui existe, signale NOTAM et SUP AIP non vérifi
   r = buildRecap(m);
   assert.match(r, /N 43° 36′ 16\.20″/);
   assert.match(r, /Météo : GO/);
-  assert.match(r, /NOTAM : 1 saisi\(s\) à la main/);
+  assert.match(r, /NOTAM : 1 reporté\(s\)/);
   assert.match(r, /A0000\/26/);
 });
 
