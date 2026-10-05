@@ -562,7 +562,7 @@ function collect(){
   useCases:$$('input[name=useCase]:checked').map(x=>x.value),
   zone:{lat:+$('#lat').value,lng:+$('#lng').value,altitude:+$('#altitude').value,radius:+$('#radius').value,environment:$('#environment').value,base:localStorage.getItem('pmd-base')||'sat'},
   mens:{
-   checks:Object.fromEntries($('[data-check]').map(x=>[x.dataset.check,x.checked])),
+   checks:Object.fromEntries(Array.from(document.querySelectorAll('[data-check]')).map(x=>[x.dataset.check,x.checked])),
    meteoNotes:$('#meteoNotes')?.value||'',
    airspaceNotes:$('#airspaceNotes')?.value||'',
    notamNotes:$('#notamNotes')?.value||'',
