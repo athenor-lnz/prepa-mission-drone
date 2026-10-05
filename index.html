@@ -1,0 +1,293 @@
+<!doctype html>
+<html lang="fr" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#07111e">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="PrépaMission">
+  <title>PrépaMission Drone</title>
+  <link rel="preconnect" href="https://unpkg.com">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+  <link rel="stylesheet" href="styles.css">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="apple-touch-icon" href="icons/icon-192.png">
+</head>
+<body>
+<div id="app">
+  <header class="appbar">
+    <div class="brand"><span class="brand-icon">✦</span><div><b>PrépaMission</b><small>DRONE</small></div></div>
+    <button id="themeToggle" class="icon-btn" aria-label="Thème">◐</button>
+  </header>
+
+  <main>
+    <section id="homeScreen" class="screen active">
+      <div class="hero">
+        <div class="hero-overlay"></div>
+        <div class="hero-content">
+          <span class="eyebrow">ASSISTANT TERRAIN</span>
+          <h1>Préparer.<br>Sécuriser.<br>Missionner.</h1>
+          <p>Une préparation drone guidée, pensée d'abord pour le téléphone.</p>
+          <button id="newMissionBtn" class="cta">＋ Nouvelle mission</button>
+          <button id="installBtn" class="install-cta hidden-install" type="button">⇩ Installer l’application</button>
+          <button id="importHomeBtn" class="hero-secondary-btn" type="button">↥ Importer une mission</button>
+        </div>
+      </div>
+
+      <div class="quick-grid">
+        <button class="quick-card" data-jump="mens"><b>MENS</b><small>Météo · Espace aérien · NOTAM · SUP AIP</small></button>
+        <button class="quick-card" data-jump="macloe"><b>MACLOE</b><small>Prépa opérationnelle guidée</small></button>
+        <button class="quick-card" data-jump="smepp"><b>SMEPP</b><small>Situation · Mission · Exécution · Points particuliers · Place du chef</small></button>
+      </div>
+
+      <div class="section-title"><div><span>MISSIONS</span><h2>Dernière préparation</h2></div><button class="text-btn" id="resumeBtn">Reprendre</button></div>
+      <article class="mission-card">
+        <div class="mission-thumb"></div>
+        <div class="mission-body">
+          <b id="homeMissionTitle">Mission sans titre</b>
+          <span id="homeMissionMeta">Aucune mission enregistrée</span>
+          <div class="status-row">
+            <span class="status-chip" id="homeMens">MENS 0/4</span>
+            <span class="status-chip" id="homeMacloe">MACLOE 0/6</span>
+            <span class="status-chip" id="homeSmepp">SMEPP 0/5</span>
+          </div>
+        </div>
+      </article>
+    </section>
+
+    <section id="missionScreen" class="screen">
+      <div class="mission-head">
+        <button id="backHome" class="ghost-btn">←</button>
+        <div><span id="stepCounter">Étape 1/6</span><h2 id="stepTitle">Cadre de mission</h2></div>
+        <button id="saveTop" class="ghost-btn">✓</button>
+      </div>
+
+      <nav class="stepbar">
+        <button data-step="cadre" class="active"><span>1</span><small>Cadre</small></button>
+        <button data-step="zone"><span>2</span><small>Zone</small></button>
+        <button data-step="mens"><span>3</span><small>MENS</small></button>
+        <button data-step="macloe"><span>4</span><small>MACLOE</small></button>
+        <button data-step="smepp"><span>5</span><small>SMEPP</small></button>
+        <button data-step="synthese"><span>6</span><small>Synthèse</small></button>
+      </nav>
+
+      <section class="panel active" data-panel="cadre">
+        <div class="card">
+          <div class="card-title"><span class="num">1</span><div><h3>Cadre de mission</h3><p>Type, captation et cas d'usage</p></div></div>
+          <label>Intitulé de la mission<input id="missionTitle" placeholder="Ex. Incendie habitation"></label>
+          <label>Date / heure prévue<input id="missionDateTime" type="datetime-local"></label>
+          <label>Type de mission<select id="missionType">
+            <option>Observation</option><option>Police judiciaire</option><option>Police administrative</option>
+            <option>Sauvegarde de la vie humaine</option><option>Entraînement</option><option>Communication</option><option>Autre</option>
+          </select></label>
+
+          <div class="subhead">Captation</div>
+          <div class="segmented">
+            <label><input type="radio" name="capture" value="Observation" checked><span>Observation</span></label>
+            <label><input type="radio" name="capture" value="Sans conservation"><span>Sans conservation</span></label>
+            <label><input type="radio" name="capture" value="Enregistrement"><span>Enregistrement</span></label>
+          </div>
+
+          <div class="subhead">Cas d'usage <small>choix multiple</small></div>
+          <div class="choice-list">
+            <label><input type="checkbox" name="useCase" value="Catégorie ouverte AE"><span><b>Catégorie ouverte AE</b><small>Vol relevant de la catégorie ouverte</small></span></label>
+            <label><input type="checkbox" name="useCase" value="En vue — STS GN 01.1"><span><b>En vue — STS GN 01.1</b><small>Mini-drone, vol à vue</small></span></label>
+            <label><input type="checkbox" name="useCase" value="Hors vue — 1 km maximum"><span><b>Hors vue — 1 km</b><small>BVLOS avec observateur</small></span></label>
+            <label><input type="checkbox" name="useCase" value="Hors vue — 2 km maximum"><span><b>Hors vue — 2 km</b><small>BVLOS longue distance</small></span></label>
+          </div>
+        </div>
+      </section>
+
+      <section class="panel" data-panel="zone">
+        <div class="map-card">
+          <div id="map"></div>
+          <div class="map-search">⌕ <input placeholder="Rechercher un lieu, une adresse..."></div>
+          <div class="basemap">
+            <button data-base="osm">OSM</button>
+            <button data-base="sat" class="active">Satellite</button>
+            <button data-base="oaci">OACI</button>
+          </div>
+        </div>
+        <div class="sheet card">
+          <div class="card-title"><span class="num">2</span><div><h3>Zone de mission</h3><p>Position et volume de travail</p></div></div>
+          <div class="grid2">
+            <label>Latitude<input id="lat" type="number" step="0.000001" value="43.604652"></label>
+            <label>Longitude<input id="lng" type="number" step="0.000001" value="1.444209"></label>
+            <label>Altitude max<input id="altitude" type="number" value="80"></label>
+            <label>Rayon de travail<input id="radius" type="number" value="600"></label>
+          </div>
+          <label>Environnement<select id="environment"><option>Urbain / Périurbain</option><option>Rural</option><option>Montagne</option><option>Littoral</option></select></label>
+          <button id="centerBtn" class="primary full-action" type="button">Centrer la zone</button>
+        </div>
+      </section>
+
+      <section class="panel" data-panel="mens">
+        <div class="intro-card">
+          <div><b>MENS</b><p>Données automatiques quand c’est possible, validation humaine obligatoire.</p></div>
+          <span id="mensProgress">0/4</span>
+        </div>
+
+        <div class="mens-tools">
+          <article class="mens-tool card" data-mens-tool="meteo">
+            <div class="mens-tool-head">
+              <span class="letter l1">M</span>
+              <div><b>Météo</b><small>Prévision à la position et au créneau de mission.</small></div>
+              <span id="meteoState" class="tool-state">À vérifier</span>
+            </div>
+            <div class="mens-tool-actions">
+              <button id="fetchWeatherBtn" class="primary" type="button">↻ Actualiser la météo</button>
+            </div>
+            <div id="weatherContext" class="source-note"></div>
+            <div id="weatherResults" class="weather-results">
+              <div class="tool-placeholder">La météo se chargera automatiquement à l’ouverture de MENS.</div>
+            </div>
+            <label>Analyse / remarques<textarea id="meteoNotes" rows="4" placeholder="Vent limite, rafales, visibilité, pluie, créneau à décaler…"></textarea></label>
+            <label class="mens-validate"><input type="checkbox" data-check="meteo"> J’ai vérifié la météo pour le créneau de mission.</label>
+          </article>
+
+          <article class="mens-tool card" data-mens-tool="espace">
+            <div class="mens-tool-head">
+              <span class="letter l2">E</span>
+              <div><b>Espace aérien</b><small>Carte OACI, contexte de zone et contacts aéronautiques.</small></div>
+              <span id="espaceState" class="tool-state">À vérifier</span>
+            </div>
+            <div id="airspaceContext" class="airspace-context"></div>
+
+            <section class="sia-dataset-panel">
+              <div class="sia-dataset-head">
+                <div>
+                  <span class="section-eyebrow">BASE LOCALE GEOGM / SIA</span>
+                  <b id="siaDatasetStatus">Base SIA non chargée</b>
+                  <small id="siaDatasetMeta">Importe le ZIP GeoGM/SIA une première fois. Il sera ensuite conservé localement sur ce téléphone.</small>
+                </div>
+                <span id="siaDatasetBadge" class="sia-dataset-badge missing">À importer</span>
+              </div>
+              <div class="sia-dataset-actions">
+                <button id="siaImportBtn" class="secondary" type="button">↥ Importer / mettre à jour</button>
+                <button id="analyzeAirspaceBtn" class="primary" type="button">◎ Analyser la zone</button>
+              </div>
+              <button id="siaClearBtn" class="text-danger-action" type="button">Supprimer la base SIA stockée sur cet appareil</button>
+              <input id="siaZipInput" type="file" accept=".zip,application/zip,application/x-zip-compressed" hidden>
+              <div id="siaImportProgress" class="sia-import-progress"></div>
+            </section>
+
+            <div class="airspace-analysis-head">
+              <div>
+                <span class="section-eyebrow">ESPACES DÉTECTÉS</span>
+                <b id="airspaceAnalysisTitle">Analyse non effectuée</b>
+              </div>
+              <span id="airspaceAnalysisCount" class="airspace-count">—</span>
+            </div>
+            <div id="airspaceResults" class="airspace-results">
+              <div class="tool-placeholder">Charge la base GeoGM/SIA pour détecter automatiquement les espaces qui intersectent le rayon de mission.</div>
+            </div>
+            <div class="official-source-note airspace-disclaimer">Préfiltrage d’aide à la préparation : il ne remplace pas la consultation SIA, les NOTAM, les SUP AIP ni les consignes de l’organisme ATS.</div>
+
+            <div class="mens-tool-actions split-actions">
+              <button id="openOaciMapBtn" class="primary" type="button">◫ Voir la carte OACI</button>
+              <button id="openSiaAipBtn" class="secondary" type="button">SIA / AIP ↗</button>
+            </div>
+            <label>Analyse de l’espace aérien<textarea id="airspaceNotes" rows="5" placeholder="CTR/TMA, zone P/R/D, hauteur, conditions de pénétration, organisme à contacter…"></textarea></label>
+
+            <section class="aero-directory embedded-directory">
+              <div class="aero-directory-head">
+                <div>
+                  <span class="section-eyebrow">ANNUAIRE</span>
+                  <h3>Contacts aéronautiques</h3>
+                  <p>Numéros cliquables, fréquences et accès rapide SIA.</p>
+                </div>
+                <button id="toggleContactForm" class="small-action" type="button">＋ Contact</button>
+              </div>
+              <div class="vac-search-row">
+                <input id="vacIcao" maxlength="8" autocomplete="off" placeholder="ICAO / zone — ex. LFBO">
+                <button id="openVacBtn" class="secondary" type="button">VAC / AIP ↗</button>
+              </div>
+              <input id="contactSearch" class="contact-search" placeholder="Rechercher un contact, une zone, une fréquence…">
+              <div id="contactsList" class="contacts-list"></div>
+              <div id="contactForm" class="contact-form hidden-contact">
+                <div class="grid2">
+                  <label>Nom<input id="contactName" placeholder="Ex. Tour de contrôle Toulouse"></label>
+                  <label>Type<select id="contactType"><option>TWR</option><option>APP</option><option>FIC / INFO</option><option>Opérations</option><option>Autorité d'emploi</option><option>Autre</option></select></label>
+                  <label>Zone / ICAO<input id="contactZone" placeholder="LFBO, LFR51…"></label>
+                  <label>Téléphone<input id="contactPhone" inputmode="tel" placeholder="05 61…"></label>
+                </div>
+                <label>Fréquence<input id="contactFreq" placeholder="Ex. TWR 118.100 MHz"></label>
+                <label>Notes<textarea id="contactNotes" rows="3" placeholder="Horaires, conditions d’activation, consignes…"></textarea></label>
+                <div class="action-row">
+                  <button id="cancelContactBtn" class="secondary" type="button">Annuler</button>
+                  <button id="saveContactBtn" class="primary" type="button">Enregistrer</button>
+                </div>
+              </div>
+            </section>
+
+            <label class="mens-validate"><input type="checkbox" data-check="espace"> J’ai vérifié l’espace aérien et les contraintes applicables.</label>
+          </article>
+
+          <article class="mens-tool card" data-mens-tool="notam">
+            <div class="mens-tool-head">
+              <span class="letter l3">N</span>
+              <div><b>NOTAM</b><small>Consultation officielle sur SOFIA-Briefing.</small></div>
+              <span id="notamState" class="tool-state">À vérifier</span>
+            </div>
+            <div class="official-source-note">La recherche NOTAM reste une validation officielle manuelle : l’application ouvre SOFIA et te laisse consigner ici les NOTAM utiles à la mission.</div>
+            <button id="openSofiaBtn" class="primary full-action" type="button">Ouvrir SOFIA-Briefing ↗</button>
+            <label>NOTAM applicables<textarea id="notamNotes" rows="5" placeholder="Référence, validité, rayon, plancher/plafond, impact sur la mission…"></textarea></label>
+            <label class="mens-validate"><input type="checkbox" data-check="notam"> J’ai consulté les NOTAM pour la zone et le créneau.</label>
+          </article>
+
+          <article class="mens-tool card" data-mens-tool="supaip">
+            <div class="mens-tool-head">
+              <span class="letter l4">S</span>
+              <div><b>SUP AIP</b><small>Dispositifs temporaires, ZRT/ZIT et conditions particulières.</small></div>
+              <span id="supaipState" class="tool-state">À vérifier</span>
+            </div>
+            <div class="official-source-note">Le SIA publie les SUP AIP avec filtres par lieu et dates. Ouvre la liste officielle puis reporte ici ceux qui concernent la mission.</div>
+            <button id="openSupAipBtn" class="primary full-action" type="button">Ouvrir les SUP AIP SIA ↗</button>
+            <label>SUP AIP applicables<textarea id="supaipNotes" rows="5" placeholder="N° SUP AIP, dates/heures, zone temporaire, conditions de pénétration, contact…"></textarea></label>
+            <label class="mens-validate"><input type="checkbox" data-check="supaip"> J’ai vérifié les SUP AIP pour la zone et le créneau.</label>
+          </article>
+        </div>
+      </section>
+
+      <section class="panel" data-panel="macloe">
+        <div class="intro-card"><div><b>MACLOE</b><p>Traite puis valide chaque rubrique dans l’ordre M → A → C → L → O → E.</p></div><span id="macloeProgress">0/6</span></div>
+        <div id="macloeFields" class="guide-list"></div>
+      </section>
+
+      <section class="panel" data-panel="smepp">
+        <div class="intro-card"><div><b>SMEPP</b><p>Mettre le groupe dans l’ambiance de la mission et transmettre les informations utiles à sa réalisation.</p></div><span id="smeppProgress">0/5</span></div>
+        <div id="smeppFields" class="guide-list"></div>
+      </section>
+
+      <section class="panel" data-panel="synthese">
+        <div id="readiness" class="ready-card"><span>✓</span><div><b>Mission en préparation</b><small>Complète les étapes restantes avant validation.</small></div></div>
+        <div id="summary" class="summary-list"></div>
+        <div class="mission-transfer">
+          <button id="importBtn" class="secondary" type="button">↥ Importer</button>
+          <button id="shareBtn" class="secondary" type="button">↗ Envoyer</button>
+          <button id="exportBtn" class="secondary" type="button">⇩ Exporter</button>
+          <button id="saveBtn" class="primary" type="button">✓ Enregistrer</button>
+        </div>
+      </section>
+
+      <div class="nav-actions"><button id="prevBtn" class="secondary">← Précédent</button><button id="nextBtn" class="primary">Suivant →</button></div>
+    </section>
+  </main>
+
+  <nav class="bottom-nav">
+    <button data-home class="active" title="Accueil">⌂<small>Accueil</small></button>
+    <button data-prepa-nav title="Reprendre la préparation de la mission en cours">＋<small>Prépa</small></button>
+    <button data-open-step="zone" title="Zone cartographique de la mission en cours">⌖<small>Zone</small></button>
+    <button data-open-step="synthese" title="Résumé de la mission en cours">✓<small>Résumé</small></button>
+  </nav>
+  <input id="missionImportFile" type="file" accept=".json,application/json" hidden>
+  <div id="appToast" class="app-toast" role="status" aria-live="polite"></div>
+</div>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
+<script src="airspace.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
