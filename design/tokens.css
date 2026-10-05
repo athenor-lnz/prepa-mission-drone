@@ -1,0 +1,82 @@
+/* Prépa Mission Drone — direction B « une main » — jetons de design (source de vérité des couleurs).
+   Utilisation : <html data-theme="light|dark"> ; sans attribut, suit prefers-color-scheme. */
+
+:root,
+:root[data-theme="light"] {
+  --bg: #EEF0EA;
+  --surf: #FFFFFF;
+  --surf2: #F2F4EE;
+  --line: #DDE1D6;        /* séparateurs décoratifs uniquement ; bordure de champ : voir --field-line */
+  --field-line: #7B8576;  /* bordure des champs et contrôles (contraste >= 3:1) */
+  --ink: #0D1218;
+  --mute: #566170;
+  --acc: #2340E8;
+  --accInk: #FFFFFF;
+  --accSoft: #E3E8FF;
+  --go: #0D7A40;
+  --goSoft: #D8F1E1;
+  --warn: #8A5200;
+  --warnSoft: #FBE9C6;
+  --bad: #B3261E;
+  --badInk: #FFFFFF;
+  --badSoft: #F9DAD6;
+  --shadow: 0 6px 24px rgba(13,18,24,.10);
+  --scrim: rgba(13,18,24,.35);
+  /* carte (plan) */
+  --mLand: #E9E6DC; --mGreen: #CFE3C2; --mGreen2: #C3DAB4; --mWater: #A9CDE8; --mRoad: #FFFFFF; --mCase: #D2CDBF; --mBldg: #D8D3C6;
+  color-scheme: light;
+}
+
+:root[data-theme="dark"] {
+  --bg: #090D12;
+  --surf: #131A22;
+  --surf2: #1B242E;
+  --line: #2A3541;
+  --field-line: #6B7C8E;
+  --ink: #EEF3F7;
+  --mute: #9AA9B8;
+  --acc: #B9F23A;
+  --accInk: #0B1304;
+  --accSoft: #232F0C;
+  --go: #3EE58C;
+  --goSoft: #0F2E1E;
+  --warn: #FFB020;
+  --warnSoft: #34260A;
+  --bad: #FF7A6E;
+  --badInk: #2A0A07;
+  --badSoft: #3A1814;
+  --shadow: 0 6px 24px rgba(0,0,0,.45);
+  --scrim: rgba(0,0,0,.55);
+  /* carte (satellite) */
+  --mLand: #26341F; --mGreen: #2E4326; --mGreen2: #1E2B18; --mWater: #16293A; --mRoad: #7C8A78; --mCase: #141C11; --mBldg: #4B5148;
+  color-scheme: dark;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme]) {
+    --bg: #090D12; --surf: #131A22; --surf2: #1B242E; --line: #2A3541; --field-line: #6B7C8E;
+    --ink: #EEF3F7; --mute: #9AA9B8; --acc: #B9F23A; --accInk: #0B1304; --accSoft: #232F0C;
+    --go: #3EE58C; --goSoft: #0F2E1E; --warn: #FFB020; --warnSoft: #34260A;
+    --bad: #FF7A6E; --badInk: #2A0A07; --badSoft: #3A1814;
+    --shadow: 0 6px 24px rgba(0,0,0,.45); --scrim: rgba(0,0,0,.55);
+    --mLand: #26341F; --mGreen: #2E4326; --mGreen2: #1E2B18; --mWater: #16293A; --mRoad: #7C8A78; --mCase: #141C11; --mBldg: #4B5148;
+    color-scheme: dark;
+  }
+}
+
+:root {
+  --font-display: 'Sora', system-ui, sans-serif;
+  --font-body: 'Manrope', system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, monospace;
+
+  --r-card: 24px; --r-ctl: 16px; --r-cta: 22px; --r-sheet: 32px; --r-pill: 99px;
+  --tap: 48px;      /* cible tactile minimale */
+  --cta-h: 64px;    /* bouton principal, en bas d'écran */
+
+  /* alias de compatibilité avec la coquille de démarrage (direction A) */
+  --panel: var(--surf); --panel2: var(--surf2);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * { animation: none !important; transition: none !important; }
+}

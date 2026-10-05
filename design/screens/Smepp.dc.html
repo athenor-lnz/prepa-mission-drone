@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>SMEPP en dictée</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Sora:wght@600;700&family=Manrope:wght@500;600;700&family=JetBrains+Mono:wght@500&display=swap">
+<style>
+body{margin:0}
+.pb *{box-sizing:border-box}
+.pb button{font-family:inherit;cursor:pointer}
+.pb .ibtn{width:48px;height:48px;border-radius:16px;border:0;background:var(--surf);color:var(--ink);display:flex;align-items:center;justify-content:center;box-shadow:var(--shadow)}
+.pb .lbl{font-size:12px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--mute)}
+.pb .rail{width:56px;height:52px;border-radius:16px;border:0;font-family:'Sora',sans-serif;font-weight:700;font-size:18px;display:flex;align-items:center;justify-content:center;background:var(--surf);color:var(--mute);box-shadow:var(--shadow)}
+.pb .w{width:5px;border-radius:99px;background:var(--bad)}
+.pb .side{width:68px;height:68px;border-radius:24px;border:0;background:var(--surf);color:var(--ink);box-shadow:var(--shadow);display:flex;align-items:center;justify-content:center}
+@keyframes pulse{0%{transform:scale(1);opacity:.5}100%{transform:scale(1.5);opacity:0}}
+.pb .ring{position:absolute;inset:0;border-radius:99px;background:var(--bad);animation:pulse 1.6s ease-out infinite}
+@media (prefers-reduced-motion: reduce){.pb .ring{animation:none;opacity:.2;transform:scale(1.25)}}
+</style>
+</helmet>
+<div class="pb" style="position:relative;width:390px;height:844px;overflow:hidden;background:var(--bg);color:var(--ink);font-family:'Manrope',system-ui,sans-serif;font-size:15px;{{vars}}">
+
+<div style="position:absolute;left:20px;right:20px;top:24px;display:flex;gap:10px;align-items:center">
+<button class="ibtn" aria-label="Retour à la fiche mission"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg></button>
+<div style="flex:1;height:48px;border-radius:16px;background:var(--surf);box-shadow:var(--shadow);display:flex;flex-direction:column;justify-content:center;gap:5px;padding:0 14px">
+<div style="display:flex;justify-content:space-between;align-items:baseline"><span style="font-family:'Sora',sans-serif;font-weight:700;font-size:15px">SMEPP</span><span style="font-family:'JetBrains Mono',monospace;font-size:13px;color:var(--mute)">3 / 9 champs</span></div>
+<div style="height:5px;border-radius:99px;background:var(--surf2)"><div style="width:33%;height:100%;border-radius:99px;background:var(--acc)"></div></div>
+</div>
+</div>
+
+<div style="position:absolute;left:20px;right:20px;top:88px;display:flex;justify-content:space-between">
+<button class="rail" aria-label="S, Situation, terminé" style="background:var(--goSoft);color:var(--go)">S</button>
+<button class="rail" aria-label="M, Mission, terminé" style="background:var(--goSoft);color:var(--go)">M</button>
+<button class="rail" aria-label="E, Exécution, en cours" aria-current="step" style="background:var(--acc);color:var(--accInk)">E</button>
+<button class="rail" aria-label="P, Points particuliers">P</button>
+<button class="rail" aria-label="P, Place du chef">P</button>
+</div>
+
+<div style="position:absolute;left:20px;right:20px;top:156px;height:468px;background:var(--surf);border-radius:28px;box-shadow:var(--shadow);padding:18px 20px;display:flex;flex-direction:column;gap:10px;overflow:hidden">
+<div style="display:flex;justify-content:space-between;align-items:center">
+<span class="lbl">E · Exécution · 1 / 4</span>
+<span style="display:inline-flex;align-items:center;gap:6px;height:28px;padding:0 12px;border-radius:99px;background:var(--badSoft);color:var(--bad);font-size:12px;font-weight:700"><span style="width:8px;height:8px;border-radius:99px;background:var(--bad)"></span>Écoute 00:12</span>
+</div>
+<h2 style="margin:0;font-family:'Sora',sans-serif;font-weight:700;font-size:25px;letter-spacing:-.02em;line-height:1.15">Articulation du dispositif</h2>
+<div style="font-size:14px;font-weight:600;color:var(--mute);line-height:1.4">Qui fait quoi, où, avec quels moyens.</div>
+<div style="height:1px;background:var(--line);margin:4px 0"></div>
+<label for="dictee" style="position:absolute;left:-9999px">Articulation du dispositif</label>
+<div id="dictee" style="font-size:19px;font-weight:600;line-height:1.5;color:var(--ink)">Un télépilote et un observateur au point de décollage, drone en vol à vue au-dessus de la zone, liaison radio sur le canal opérationnel <span style="color:var(--mute)">puis retour au point de</span><span style="display:inline-block;width:2px;height:22px;background:var(--bad);vertical-align:text-bottom;margin-left:2px"></span></div>
+</div>
+
+<div style="position:absolute;left:20px;right:20px;bottom:24px;display:flex;flex-direction:column;align-items:center;gap:12px">
+<div style="display:flex;align-items:center;gap:5px;height:36px" aria-hidden="true">
+<span class="w" style="height:8px"></span><span class="w" style="height:14px"></span><span class="w" style="height:22px"></span><span class="w" style="height:30px"></span><span class="w" style="height:18px"></span><span class="w" style="height:26px"></span><span class="w" style="height:34px"></span><span class="w" style="height:20px"></span><span class="w" style="height:12px"></span><span class="w" style="height:24px"></span><span class="w" style="height:32px"></span><span class="w" style="height:16px"></span><span class="w" style="height:10px"></span><span class="w" style="height:22px"></span><span class="w" style="height:28px"></span><span class="w" style="height:14px"></span><span class="w" style="height:8px"></span>
+</div>
+<div style="display:flex;align-items:center;justify-content:space-between;width:100%">
+<button class="side" aria-label="Champ précédent"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg></button>
+<div style="position:relative;width:96px;height:96px">
+<span class="ring"></span>
+<button aria-label="Arrêter la dictée" style="position:relative;width:96px;height:96px;border-radius:99px;border:0;background:var(--bad);color:var(--badInk);display:flex;align-items:center;justify-content:center"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="3" width="6" height="12" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg></button>
+</div>
+<button class="side" aria-label="Champ suivant" style="background:var(--acc);color:var(--accInk)"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5l7 7-7 7"/></svg></button>
+</div>
+<div style="font-size:12px;font-weight:600;color:var(--mute);text-align:center">Touchez pour arrêter · audio traité par le service de dictée du navigateur</div>
+</div>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"theme":{"editor":"enum","options":["light","dark"],"default":"light"},"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const dark = this.props.theme === 'dark';
+    const base = dark
+      ? '--bg:#090D12;--surf:#131A22;--surf2:#1B242E;--line:#2A3541;--ink:#EEF3F7;--mute:#9AA9B8;--acc:#B9F23A;--accInk:#0B1304;--accSoft:#232F0C;--go:#3EE58C;--goSoft:#0F2E1E;--warn:#FFB020;--warnSoft:#34260A;--bad:#FF7A6E;--badInk:#2A0A07;--badSoft:#3A1814;--shadow:0 6px 24px rgba(0,0,0,.45);'
+      : '--bg:#EEF0EA;--surf:#FFFFFF;--surf2:#F2F4EE;--line:#DDE1D6;--ink:#0D1218;--mute:#566170;--acc:#2340E8;--accInk:#FFFFFF;--accSoft:#E3E8FF;--go:#0D7A40;--goSoft:#D8F1E1;--warn:#8A5200;--warnSoft:#FBE9C6;--bad:#B3261E;--badInk:#FFFFFF;--badSoft:#F9DAD6;--shadow:0 6px 24px rgba(13,18,24,.10);';
+    return { vars: base };
+  }
+}
+</script>
+</body>
+</html>

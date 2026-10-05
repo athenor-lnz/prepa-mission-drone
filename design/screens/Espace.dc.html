@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Espace aérien</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Sora:wght@600;700&family=Manrope:wght@500;600;700&family=JetBrains+Mono:wght@500&display=swap">
+<style>
+body{margin:0}
+.pb *{box-sizing:border-box}
+.pb button{font-family:inherit;cursor:pointer}
+.pb .ibtn{width:48px;height:48px;border-radius:16px;border:0;background:var(--surf);color:var(--ink);display:flex;align-items:center;justify-content:center;box-shadow:var(--shadow)}
+.pb .step{width:30px;height:30px;border-radius:99px;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;background:var(--surf2);color:var(--mute)}
+.pb .lbl{font-size:12px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--mute)}
+.pb .row{display:flex;align-items:center;gap:12px;padding:12px 16px;min-height:62px}
+.pb .ico{width:40px;height:40px;border-radius:14px;display:flex;align-items:center;justify-content:center;flex:none}
+.pb .rt{font-weight:700;font-size:15px;line-height:1.2}
+.pb .rs{font-size:13px;font-weight:600;color:var(--mute);margin-top:2px}
+.pb .val{font-family:'JetBrains Mono',monospace;font-weight:500;font-size:18px}
+</style>
+</helmet>
+<div class="pb" style="position:relative;width:390px;height:844px;overflow:hidden;background:var(--bg);color:var(--ink);font-family:'Manrope',system-ui,sans-serif;font-size:15px;{{vars}}">
+
+<div style="position:absolute;left:20px;right:20px;top:24px;display:flex;gap:10px;align-items:center">
+<button class="ibtn" aria-label="Retour à la météo"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg></button>
+<div style="flex:1;height:48px;border-radius:16px;background:var(--surf);box-shadow:var(--shadow);display:flex;align-items:center;gap:6px;padding:0 9px">
+<span class="step" style="background:var(--go);color:var(--bg)">✓</span>
+<span class="step" style="background:var(--go);color:var(--bg)">✓</span>
+<span class="step" style="background:var(--acc);color:var(--accInk)">3</span>
+<span style="font-family:'Sora',sans-serif;font-weight:600;font-size:15px;margin:0 6px 0 2px">Espace</span>
+<span class="step">4</span>
+</div>
+</div>
+
+<div style="position:absolute;left:20px;right:20px;top:88px;display:flex;flex-direction:column;gap:10px">
+
+<div style="background:var(--warnSoft);color:var(--warn);border-radius:26px;padding:16px 18px;display:flex;align-items:center;gap:14px">
+<div style="flex:1">
+<div class="lbl" style="color:var(--warn)">Votre position</div>
+<div style="font-family:'Sora',sans-serif;font-weight:700;font-size:26px;letter-spacing:-.02em;line-height:1.1;margin-top:4px">Zone contrôlée</div>
+<div style="font-size:14px;font-weight:600;margin-top:4px;color:var(--ink)">CTR Toulouse-Blagnac · accord requis</div>
+</div>
+<svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex:none"><path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/><path d="M12 8v5M12 16h.01"/></svg>
+</div>
+
+<div style="border-radius:24px;overflow:hidden;box-shadow:var(--shadow);height:140px">
+<svg width="350" height="140" viewBox="0 0 350 140" aria-label="Carte des zones" role="img" style="display:block">
+<rect width="350" height="140" fill="var(--mLand)"/>
+<polygon points="0,0 90,0 70,60 0,80" fill="var(--mGreen)"/>
+<path d="M-10 110 C 80 90, 160 130, 260 100 S 340 90, 360 100" stroke="var(--mWater)" stroke-width="22" fill="none"/>
+<path d="M0 60 L 350 30" stroke="var(--mRoad)" stroke-width="6" fill="none"/>
+<path d="M170 -5 L 150 145" stroke="var(--mRoad)" stroke-width="5" fill="none"/>
+<circle cx="285" cy="40" r="96" fill="var(--warn)" fill-opacity=".16" stroke="var(--warn)" stroke-width="2.5" stroke-dasharray="7 6"/>
+<circle cx="285" cy="40" r="46" fill="var(--bad)" fill-opacity=".14" stroke="var(--bad)" stroke-width="2.5"/>
+<circle cx="285" cy="40" r="5" fill="var(--bad)"/>
+<circle cx="168" cy="72" r="10" fill="var(--acc)" stroke="var(--surf)" stroke-width="4"/>
+</svg>
+</div>
+
+<div style="background:var(--surf);border-radius:24px;box-shadow:var(--shadow);overflow:hidden">
+<div class="row">
+<div class="ico" style="background:var(--warnSoft);color:var(--warn)"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></div>
+<div style="flex:1"><div class="rt">Zone contrôlée (CTR)</div><div class="rs">Vol soumis à accord</div></div>
+<span class="val" style="color:var(--warn);font-size:14px;font-weight:700;font-family:'Manrope',sans-serif">OUI</span>
+</div>
+<div style="height:1px;background:var(--line);margin:0 16px"></div>
+<div class="row">
+<div class="ico" style="background:var(--accSoft);color:var(--acc)"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20V6M7 11l5-5 5 5M5 20h14"/></svg></div>
+<div style="flex:1"><div class="rt">Hauteur maximale</div><div class="rs">Restriction UAS</div></div>
+<span class="val">50 m</span>
+</div>
+<div style="height:1px;background:var(--line);margin:0 16px"></div>
+<div class="row">
+<div class="ico" style="background:var(--surf2);color:var(--ink)"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16v-2l-8-5V3.5a1.5 1.5 0 0 0-3 0V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5z"/></svg></div>
+<div style="flex:1"><div class="rt">Aérodrome le plus proche</div><div class="rs">LFBO</div></div>
+<span class="val">4,2 km</span>
+</div>
+<div style="padding:8px 16px 12px;font-size:12px;font-weight:600;color:var(--mute);background:var(--surf2)">Source Géoplateforme · données récupérées à 14:32</div>
+</div>
+
+<div style="border:2px dashed var(--line);border-radius:22px;padding:12px 16px;display:flex;align-items:center;gap:12px;min-height:64px">
+<div class="ico" style="background:var(--surf2);color:var(--mute)"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 8h.01M11 12h1v4h1"/></svg></div>
+<div style="flex:1"><div class="rt">NOTAM · SUP AIP : non vérifiés</div><div class="rs">Source non connectée : ne pas conclure à leur absence</div></div>
+</div>
+
+</div>
+
+<div style="position:absolute;left:0;right:0;bottom:0;height:150px;background:var(--bg)"></div>
+<div style="position:absolute;left:20px;right:20px;bottom:24px;display:flex;flex-direction:column;gap:12px">
+<div style="display:flex;background:var(--surf);border-radius:20px;padding:4px;gap:4px;box-shadow:var(--shadow)">
+<button style="flex:1;height:48px;border:0;border-radius:16px;background:var(--ink);color:var(--surf);font-weight:700;font-size:14px">Zones</button>
+<button style="flex:1;height:48px;border:0;border-radius:16px;background:transparent;color:var(--mute);font-weight:700;font-size:14px">NOTAM</button>
+<button style="flex:1;height:48px;border:0;border-radius:16px;background:transparent;color:var(--mute);font-weight:700;font-size:14px">SUP AIP</button>
+</div>
+<button style="height:64px;border-radius:22px;border:0;background:var(--acc);color:var(--accInk);font-family:'Sora',sans-serif;font-weight:700;font-size:17px;display:flex;align-items:center;justify-content:center;gap:10px">Valider · Fiche mission<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button>
+</div>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"theme":{"editor":"enum","options":["light","dark"],"default":"light"},"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const dark = this.props.theme === 'dark';
+    const base = dark
+      ? '--bg:#090D12;--surf:#131A22;--surf2:#1B242E;--line:#2A3541;--ink:#EEF3F7;--mute:#9AA9B8;--acc:#B9F23A;--accInk:#0B1304;--accSoft:#232F0C;--go:#3EE58C;--goSoft:#0F2E1E;--warn:#FFB020;--warnSoft:#34260A;--bad:#FF7A6E;--badSoft:#3A1814;--shadow:0 6px 24px rgba(0,0,0,.45);--mLand:#26341F;--mGreen:#2E4326;--mWater:#16293A;--mRoad:#7C8A78;'
+      : '--bg:#EEF0EA;--surf:#FFFFFF;--surf2:#F2F4EE;--line:#DDE1D6;--ink:#0D1218;--mute:#566170;--acc:#2340E8;--accInk:#FFFFFF;--accSoft:#E3E8FF;--go:#0D7A40;--goSoft:#D8F1E1;--warn:#8A5200;--warnSoft:#FBE9C6;--bad:#B3261E;--badSoft:#F9DAD6;--shadow:0 6px 24px rgba(13,18,24,.10);--mLand:#E9E6DC;--mGreen:#CFE3C2;--mWater:#A9CDE8;--mRoad:#FFFFFF;';
+    return { vars: base };
+  }
+}
+</script>
+</body>
+</html>
