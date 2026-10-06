@@ -1269,3 +1269,63 @@ button, .btn, .cta { font: inherit; cursor: pointer; }
   .drone-spec-row{grid-template-columns:1fr;gap:4px}
   .drone-detail-highlights{grid-template-columns:1fr 1fr}
 }
+
+
+/* --- Police judiciaire : assistant juridique mission --- */
+.judicial-card{gap:16px}
+.judicial-title{display:flex;align-items:center;gap:12px}
+.judicial-title-icon{
+  width:50px;height:50px;border-radius:16px;background:var(--accSoft);display:grid;place-items:center;
+  font-size:24px;flex:none
+}
+.judicial-title h2{font-size:22px}
+.judicial-step{display:flex;flex-direction:column;gap:10px}
+.judicial-step-head{display:flex;align-items:center;gap:9px}
+.judicial-step-head strong{font-family:var(--font-display);font-size:17px}
+.judicial-step-num{
+  width:28px;height:28px;border-radius:10px;background:var(--acc);color:var(--accInk);
+  display:grid;place-items:center;font-family:var(--font-display);font-size:13px;font-weight:800;flex:none
+}
+.judicial-place-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.judicial-place,.judicial-option,.judicial-check{
+  border:2px solid var(--line);background:var(--surf2);color:var(--ink);border-radius:16px;
+  text-align:left;font:inherit
+}
+.judicial-place{
+  min-height:150px;padding:14px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;text-align:center
+}
+.judicial-place.on,.judicial-option.on,.judicial-check.on{border-color:var(--acc);background:var(--accSoft)}
+.judicial-place-icon{font-size:31px;line-height:1}
+.judicial-place strong{font-family:var(--font-display);font-size:17px}
+.judicial-place small{font-size:13px;line-height:1.35;color:var(--mute)}
+.judicial-options{display:flex;flex-direction:column;gap:8px}
+.judicial-option{padding:12px 14px;display:flex;flex-direction:column;gap:3px;min-height:66px}
+.judicial-option strong{font-size:15px;line-height:1.35}
+.judicial-option small{font-size:13px;line-height:1.4;color:var(--mute)}
+.judicial-authority{
+  padding:14px;border-radius:16px;background:color-mix(in srgb,#1976D2 12%,var(--surf2));
+  border:1px solid color-mix(in srgb,#1976D2 35%,var(--line));
+  display:flex;flex-direction:column;gap:4px
+}
+.judicial-authority strong{font-family:var(--font-display);font-size:18px;color:#5FA8FF}
+.judicial-authority>span:not(.lbl){font-size:15px;font-weight:800}
+.judicial-authority small{font-size:13px;line-height:1.4;color:var(--mute)}
+.judicial-check{
+  width:100%;min-height:64px;padding:10px 12px;display:flex;align-items:center;gap:10px
+}
+.judicial-check-copy{display:flex;flex-direction:column;gap:2px;min-width:0}
+.judicial-check-copy strong{font-size:15px;line-height:1.35}
+.judicial-check-copy small{font-size:13px;line-height:1.35;color:var(--mute)}
+.judicial-recording{padding-top:4px}
+.judicial-reminders{display:flex;flex-direction:column;border:1px solid var(--line);border-radius:16px;overflow:hidden}
+.judicial-reminders>div{
+  padding:11px 12px;border-bottom:1px solid var(--line);display:grid;grid-template-columns:92px 1fr;gap:10px
+}
+.judicial-reminders>div:last-child{border-bottom:0}
+.judicial-reminders strong{font-size:14px}
+.judicial-reminders span{font-size:14px;line-height:1.45;color:var(--mute)}
+@media(max-width:390px){
+  .judicial-place-grid{grid-template-columns:1fr}
+  .judicial-place{min-height:112px}
+  .judicial-reminders>div{grid-template-columns:1fr;gap:3px}
+}
