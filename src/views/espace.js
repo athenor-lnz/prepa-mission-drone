@@ -40,6 +40,8 @@ export function renderEspace({ mission }) {
   let overlay = null;
   let mapMode = 'oaci';
   let zoneFilter = 'ALL';
+  let zoneLayers = new Map();
+  let pendingFlashType = null;
 
   const TILES = {
     plan: { url:'https://tile.openstreetmap.org/{z}/{x}/{y}.png', attr:'© OpenStreetMap', max:19 },
@@ -116,16 +118,48 @@ export function renderEspace({ mission }) {
     const zones=zoneSource();
     return zoneFilter==='ALL'?zones:zones.filter((z)=>z.type===zoneFilter);
   }
+  function zoneKey(z){
+    return [z.id||'',z.name||'',z.type||'',z.subType||''].join('|');
+  }
+  function flashLayers(layers){
+    const targets=layers.filter(Boolean);
+    if(!targets.length)return;
+    const normal=(z)=>({color:['P','R','D'].includes(z.type)?'#B3261E':'#8A5200',weight:2,fillOpacity:.08});
+    let step=0;
+    const tick=()=>{
+      const on=step%2===0;
+      for(const {layer,z} of targets){
+        try{
+          layer.bringToFront?.();
+          layer.setStyle(on
+            ? {color:'#FFD54A',weight:6,fillColor:'#FFD54A',fillOpacity:.28,opacity:1}
+            : normal(z));
+        }catch{}
+      }
+      step++;
+      if(step<7)setTimeout(tick,220);
+      else for(const {layer,z} of targets){try{layer.setStyle(normal(z));}catch{}}
+    };
+    tick();
+  }
+  function flashZone(z){
+    const item=zoneLayers.get(zoneKey(z));
+    if(item)flashLayers([item]);
+  }
+  function flashType(type){
+    flashLayers([...zoneLayers.values()].filter((x)=>x.z.type===type));
+  }
+
   function zoneFilterBar(){
     const types=zoneTypes();
     if(types.length<2)return null;
     return h('div',{class:'air-filter-wrap'},
       h('div',{class:'air-filter-head'},h('span',{class:'lbl'},'Filtrer les zones'),h('span',{class:'mono small'},`${filteredZones().length}/${zoneSource().length}`)),
       h('div',{class:'air-filters'},
-        h('button',{class:`air-filter ${zoneFilter==='ALL'?'on':''}`,onclick:()=>{zoneFilter='ALL';draw();}},'Toutes'),
+        h('button',{class:`air-filter ${zoneFilter==='ALL'?'on':''}`,onclick:()=>{zoneFilter='ALL';pendingFlashType=null;draw();}},'Toutes'),
         types.map((type)=>{
           const count=zoneSource().filter((z)=>z.type===type).length;
-          return h('button',{class:`air-filter ${zoneFilter===type?'on':''}`,onclick:()=>{zoneFilter=type;draw();}},`${type} · ${count}`);
+          return h('button',{class:`air-filter ${zoneFilter===type?'on':''}`,onclick:()=>{zoneFilter=type;pendingFlashType=type;draw();}},`${type} · ${count}`);
         })
       )
     );
@@ -149,7 +183,7 @@ export function renderEspace({ mission }) {
             const title=[z.id,z.name].filter(Boolean).join(' · ')||'Espace sans identifiant';
             const type=[z.type,z.subType].filter(Boolean).join(' · ');
             return h('details',{class:'air-zone'},
-              h('summary',{},h('span',{},h('strong',{},title),h('small',{},type)),h('span',{class:'pill warn'},z.pointOnly?'POINT':'ZONE')),
+              h('summary',{onclick:()=>flashZone(z)},h('span',{},h('strong',{},title),h('small',{},type)),h('span',{class:'pill warn'},z.pointOnly?'POINT':'ZONE')),
               h('div',{class:'air-zone-body'},
                 h('div',{class:'air-limits'},h('span',{},`Plancher : ${z.floor||'—'}`),h('span',{},`Plafond : ${z.ceiling||'—'}`)),
                 z.className?h('p',{class:'note'},`Classe : ${z.className}`):null,
@@ -260,6 +294,7 @@ export function renderEspace({ mission }) {
     map=L.map(el,{zoomControl:false,attributionControl:true}).setView([p.lat,p.lon],12);
     map.attributionControl.setPrefix(false);
     overlay=L.layerGroup().addTo(map);
+    zoneLayers=new Map();
     const setMode=(m)=>{
       mapMode=m; if(layer)map.removeLayer(layer); const t=TILES[m];
       layer=L.tileLayer(t.url, { minZoom: t.min, maxZoom: t.max, maxNativeZoom: t.native || t.max, attribution: t.attr, keepBuffer: 4 }).addTo(map);
@@ -271,7 +306,15 @@ export function renderEspace({ mission }) {
     L.marker([p.lat,p.lon]).addTo(overlay);
     for(const z of filteredZones()){
       if(!z.geometry||z.geometry.type==='Point')continue;
-      try{L.geoJSON({type:'Feature',geometry:z.geometry},{style:{color:['P','R','D'].includes(z.type)?'#B3261E':'#8A5200',weight:2,fillOpacity:.08}}).addTo(overlay);}catch{}
+      try{
+        const geo=L.geoJSON({type:'Feature',geometry:z.geometry},{
+          style:{color:['P','R','D'].includes(z.type)?'#B3261E':'#8A5200',weight:2,fillOpacity:.08}
+        }).addTo(overlay);
+        const label=[z.type,z.id,z.name].filter(Boolean).join(' · ');
+        if(label)geo.bindTooltip(label,{sticky:true});
+        geo.on('click',()=>flashZone(z));
+        zoneLayers.set(zoneKey(z),{layer:geo,z});
+      }catch{}
     }
     for(const a of local?.aerodromes||[]){
       const marker=L.circleMarker([a.lat,a.lon],{radius:6,weight:2,fillOpacity:.9}).addTo(overlay);
@@ -284,7 +327,10 @@ export function renderEspace({ mission }) {
       marker.bindPopup(popup);
     }
     const bounds=L.circle([p.lat,p.lon],{radius:Math.max(1500,p.radiusM||500)}).getBounds();map.fitBounds(bounds,{padding:[16,16],maxZoom:13});
-    setTimeout(()=>map.invalidateSize(),50);
+    setTimeout(()=>{
+      map.invalidateSize();
+      if(pendingFlashType){const type=pendingFlashType;pendingFlashType=null;flashType(type);}
+    },80);
   }
 
   function mapCard() {
