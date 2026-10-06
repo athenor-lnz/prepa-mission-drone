@@ -253,6 +253,7 @@ export function renderMensMap({mission,current='espace'}){
   }
   function drawHud(){
     const hud=root.querySelector('.mens-map-hud');if(!hud)return;
+    const sourceLink=root.querySelector('[data-mens-official]');if(sourceLink)sourceLink.href=OFFICIAL[current].url;
     const c=counts();
     hud.replaceChildren(
       h('div',{class:'mens-map-tabs'},
@@ -283,7 +284,7 @@ export function renderMensMap({mission,current='espace'}){
       h('header',{class:'mens-map-head'},
         h('button',{class:'icon-btn',onclick:()=>location.hash=missionUrl(mission.id,'etapes'),'aria-label':'Retour'},icon('back')),
         h('div',{},h('span',{class:'eyebrow'},mission.name),h('strong',{},'MENS · Carte aéronautique')),
-        h('a',{class:'icon-btn',href:OFFICIAL[current].url,target:'_blank',rel:'noopener noreferrer','aria-label':'Source officielle'},'?')),
+        h('a',{class:'icon-btn',href:OFFICIAL[current].url,target:'_blank',rel:'noopener noreferrer','aria-label':'Source officielle','data-mens-official':'1'},'?')),
       h('div',{class:'mens-map-hud'})
     );
     map=L.map('mens-full-map',{zoomControl:false,attributionControl:true}).setView([mission.place.lat,mission.place.lon],12);
