@@ -989,3 +989,14 @@ button, .btn, .cta { font: inherit; cursor: pointer; }
   .pdf-block,.pdf-form-part,.pdf-item{break-inside:avoid;page-break-inside:avoid}
   .leaflet-control-container{display:none!important}
 }
+
+
+/* --- Carte finale : POI et exports tablette --- */
+.final-map-actions{display:grid;grid-template-columns:1.4fr 1fr 1fr;gap:7px}
+.final-poi-row{width:100%;border:0;text-align:left;color:var(--ink);font:inherit}
+.final-poi-row>svg{margin-left:auto;color:var(--mute)}
+.pdf-leg-swatch.point{width:14px;height:14px;border-radius:50%;border:2px solid #fff;box-shadow:0 0 0 1px #777}
+@media(max-width:390px){
+  .final-map-actions{grid-template-columns:1fr 1fr}
+  .final-map-actions .btn:first-child{grid-column:1/-1}
+}
