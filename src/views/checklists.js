@@ -1,6 +1,6 @@
 import { h, icon } from '../ui/dom.js';
 import { mutate } from '../state.js';
-import { CHECKLISTS, checklistById, checklistProgress } from '../lib/checklists.js';
+import { CHECKLISTS, checklistById, checklistProgress, isOptionalChecklistItem } from '../lib/checklists.js';
 import { missionUrl } from '../ui/layout.js';
 
 const checklistUrl = (missionId,id='') => `#/mission/${missionId}/checklists${id?'/'+id:''}`;
@@ -32,7 +32,7 @@ export function renderChecklists({mission}){
                 h('strong',{},def.title),
                 h('span',{},def.subtitle),
                 h('div',{class:'check-progress'},h('i',{style:`width:${p.pct}%`}))),
-              h('div',{class:'check-card-count mono'},`${p.done}/${p.total}`),
+              h('div',{class:'check-card-count mono'},`${p.done}/${p.total}`, p.optionalTotal ? h('small',{},` + ${p.optionalTotal} facult.`) : null),
               icon('arrow',18));
           })
         )
@@ -63,21 +63,28 @@ export function renderChecklistDetail({mission, checklistId}){
       h('div',{class:'body checklist-body'},
         h('div',{class:'check-detail-summary'},
           h('div',{},h('span',{class:'eyebrow'},def.subtitle),h('strong',{class:'check-detail-title'},def.title)),
-          h('div',{class:'check-ring mono','aria-label':`${p.done} sur ${p.total}`},`${p.done}/${p.total}`)),
-        def.sections.map((sec,si)=>h('section',{class:'check-section'},
-          h('div',{class:'check-section-title'},h('span',{},`${si+1}. ${sec.title}`),
-            h('span',{class:'mono small'},`${sec.items.filter(([id])=>state[id]===true).length}/${sec.items.length}`)),
-          sec.items.map(([id,label,hint])=>{
-            const done=state[id]===true;
-            return h('button',{class:`check-row ${done?'done':''}`,'aria-pressed':String(done),onclick:()=>toggle(id)},
-              h('span',{class:'check-circle'},done?icon('check',17):''),
-              h('span',{class:'check-row-copy'},h('strong',{},label),hint?h('small',{},hint):null),
-              done?h('span',{class:'check-ok'},'OK'):null);
-          })
-        )),
+          h('div',{class:'check-ring mono','aria-label':`${p.done} sur ${p.total} obligatoires`},`${p.done}/${p.total}`)),
+        def.sections.map((sec,si)=>{
+          const required = sec.items.filter(([, , hint])=>!isOptionalChecklistItem(hint));
+          const requiredDone = required.filter(([id])=>state[id]===true).length;
+          return h('section',{class:'check-section'},
+            h('div',{class:'check-section-title'},h('span',{},`${si+1}. ${sec.title}`),
+              h('span',{class:'mono small'},`${requiredDone}/${required.length}`)),
+            sec.items.map(([id,label,hint])=>{
+              const done=state[id]===true;
+              const optional=isOptionalChecklistItem(hint);
+              return h('button',{class:`check-row ${done?'done':''} ${optional?'optional':''}`,'aria-pressed':String(done),onclick:()=>toggle(id)},
+                h('span',{class:'check-circle'},done?icon('check',17):''),
+                h('span',{class:'check-row-copy'},
+                  h('span',{class:'check-row-title'},h('strong',{},label),optional?h('em',{class:'optional-badge'},'Facultatif'):null),
+                  hint?h('small',{},hint):null),
+                done?h('span',{class:'check-ok'},'OK'):null);
+            })
+          );
+        }),
         h('div',{class:'check-footer-actions'},
           h('a',{class:'btn ghost',href:checklistUrl(mission.id)},'Toutes les check-lists'),
-          h('button',{class:'btn primary',disabled:p.done!==p.total,onclick:()=>{location.hash=checklistUrl(mission.id);}},p.done===p.total?'✓ Check-list complète':'Tout valider pour terminer')
+          h('button',{class:'btn primary',disabled:!p.complete,onclick:()=>{location.hash=checklistUrl(mission.id);}},p.complete?'✓ Obligatoires validés':'Valider les points obligatoires')
         )
       )
     );
