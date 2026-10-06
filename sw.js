@@ -1,5 +1,5 @@
 // PWA : cache de la coque applicative. Les API et tuiles externes restent réseau uniquement.
-const VERSION = 'pmd-design-b-v35';
+const VERSION = 'pmd-design-b-v36';
 const SHELL = [
   './','index.html','css/app.css','design/tokens.css','manifest.webmanifest','icons/icon.svg','icons/icon-maskable.svg','icons/drone-logo.svg',
   'src/main.js','src/state.js',
