@@ -75,6 +75,7 @@ function legend(mission){
   data.lLines.forEach((x)=>items.push([x.color||'#C2185B',x.name||'Ligne de débouché','line']));
   data.eLines.forEach((x)=>items.push([x.color||'#F57C00',x.name||'Ligne d’esquive','line']));
   data.zones.forEach((x)=>items.push([x.color||'#43A047',x.name||'Zone de dégagement','zone']));
+  data.pois.forEach((x)=>items.push([x.color||'#CDB23A',x.name||'POI','point']));
   if(data.radiusM)items.push(['#1976D2','Zone mission · '+(data.radiusM>=1000?(data.radiusM/1000)+' km':data.radiusM+' m'),'dash']);
   return h('div',{class:'pdf-legend'},...items.map(([c,n,k])=>h('div',{},h('span',{class:'pdf-leg-swatch '+k,style:'--swatch:'+c}),h('span',{},n))));
 }
