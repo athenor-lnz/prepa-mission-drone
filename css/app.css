@@ -869,3 +869,123 @@ button, .btn, .cta { font: inherit; cursor: pointer; }
   background:color-mix(in srgb,var(--surf) 90%,transparent);border:2px solid var(--label-color);
   color:var(--ink);font-size:10px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis
 }
+
+
+/* --- Carte finale de mission --- */
+.final-map-panel{max-height:50dvh}
+.final-layer-list{display:flex;flex-direction:column;gap:7px}
+.final-layer-row{
+  min-height:46px;padding:7px 9px;border-radius:13px;background:var(--surf2);
+  display:flex;align-items:center;gap:10px
+}
+.final-layer-swatch{display:inline-block;flex:none}
+.final-layer-swatch.point{
+  width:18px;height:18px;border-radius:50%;background:#1976D2;border:3px solid #fff
+}
+.final-layer-swatch.line{width:32px;height:5px;border-radius:99px;background:var(--swatch)}
+.final-layer-swatch.zone{width:30px;height:22px;border-radius:6px;background:color-mix(in srgb,var(--swatch) 28%,transparent);border:2px solid var(--swatch)}
+.final-layer-copy{display:flex;flex-direction:column;gap:1px;min-width:0}
+.final-layer-copy strong{font-family:var(--font-display);font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.final-layer-copy small{font-size:9px;color:var(--mute)}
+.final-label-icon{background:transparent!important;border:0!important}
+.final-label-icon span{
+  display:inline-flex;max-width:160px;padding:4px 7px;border-radius:8px;
+  background:color-mix(in srgb,var(--surf) 92%,transparent);border:2px solid var(--label-color);
+  color:var(--ink);font-size:10px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis
+}
+
+/* --- Synthèse : carte finale et PDF --- */
+.final-summary-card{gap:12px}
+.final-summary-head{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.final-summary-head>div{display:flex;flex-direction:column;gap:2px}
+.final-summary-head strong{font-family:var(--font-display);font-size:15px}
+.final-summary-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+
+/* --- Aperçu PDF mission --- */
+.pdf-view{
+  min-height:100%;background:#0b1016;color:#111;padding-bottom:calc(96px + env(safe-area-inset-bottom))
+}
+.pdf-appbar{
+  position:sticky;top:0;z-index:500;display:grid;grid-template-columns:48px 1fr auto;align-items:center;gap:10px;
+  padding:calc(10px + env(safe-area-inset-top)) 12px 10px;background:rgba(11,16,22,.94);
+  -webkit-backdrop-filter:blur(16px);backdrop-filter:blur(16px);color:#fff
+}
+.pdf-appbar>div{display:flex;flex-direction:column;gap:1px;min-width:0}
+.pdf-appbar>div strong{font-family:var(--font-display);font-size:16px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pdf-document{max-width:760px;margin:14px auto;display:flex;flex-direction:column;gap:14px;padding:0 10px}
+.pdf-page{
+  background:#fff;color:#111;border-radius:5px;padding:24px;box-shadow:0 12px 32px rgba(0,0,0,.3);
+  min-height:760px
+}
+.pdf-doc-head{
+  display:flex;align-items:flex-start;justify-content:space-between;gap:14px;
+  padding-bottom:12px;border-bottom:2px solid #222;margin-bottom:18px
+}
+.pdf-doc-head>div{display:flex;flex-direction:column;gap:2px}
+.pdf-doc-head strong{font-size:17px;letter-spacing:.03em}
+.pdf-doc-head span{font-size:11px;color:#555}
+.pdf-doc-mark{font-family:var(--font-display);font-size:13px!important;font-weight:800;color:#111!important}
+.pdf-section-title{font-size:18px;margin:16px 0 10px}
+.pdf-kv-grid{border:1px solid #cfd4da;border-radius:6px;overflow:hidden}
+.pdf-kv{display:grid;grid-template-columns:150px 1fr;border-bottom:1px solid #dfe3e8;min-height:32px}
+.pdf-kv:last-child{border-bottom:0}
+.pdf-kv strong,.pdf-kv span{padding:7px 9px;font-size:11px}
+.pdf-kv strong{background:#f4f6f8}
+.pdf-map{height:420px;border:1px solid #cfd4da;border-radius:4px;overflow:hidden;background:#e8ecef}
+.pdf-legend{
+  display:grid;grid-template-columns:1fr 1fr;gap:7px 14px;padding:10px;border:1px solid #cfd4da;border-top:0;
+  border-radius:0 0 4px 4px
+}
+.pdf-legend>div{display:flex;align-items:center;gap:8px;font-size:10px;min-width:0}
+.pdf-leg-swatch{display:inline-block;flex:none;background:var(--swatch)}
+.pdf-leg-swatch.line{width:28px;height:4px;border-radius:99px}
+.pdf-leg-swatch.zone{width:26px;height:17px;border:2px solid var(--swatch);background:color-mix(in srgb,var(--swatch) 25%,transparent);border-radius:4px}
+.pdf-leg-swatch.dash{width:27px;height:17px;border:2px dashed var(--swatch);background:transparent;border-radius:10px}
+.pdf-block{border:1px solid #d7dce1;border-radius:6px;padding:12px;margin-bottom:12px}
+.pdf-block h3,.pdf-form-part h3{font-size:13px;margin:0 0 8px}
+.pdf-note{font-size:11px;line-height:1.45;margin:4px 0}
+.pdf-item{padding:8px 0;border-bottom:1px solid #e4e7ea}
+.pdf-item:last-child{border-bottom:0}
+.pdf-item strong{font-size:11px}.pdf-item p{font-size:10px;line-height:1.45;margin:4px 0}.pdf-item small{font-size:9px;color:#666}
+.pdf-callout{padding:10px 12px;border-radius:6px;background:#f5f1d2;border:1px solid #d8c34c;font-size:11px;margin-bottom:12px}
+.pdf-form-section{display:flex;flex-direction:column;gap:12px}
+.pdf-form-part{border-bottom:1px solid #dfe3e8;padding-bottom:10px}
+.pdf-form-part:last-child{border-bottom:0}
+.pdf-form-field{display:flex;flex-direction:column;gap:3px;margin-top:7px}
+.pdf-form-field strong{font-size:10px;color:#555}
+.pdf-form-field p{margin:0;font-size:11px;line-height:1.5;white-space:pre-wrap}
+.pdf-actions{
+  position:fixed;z-index:700;left:10px;right:10px;bottom:calc(10px + env(safe-area-inset-bottom));
+  max-width:620px;margin:auto;display:grid;grid-template-columns:1fr 1.5fr;gap:8px;padding:8px;
+  background:color-mix(in srgb,var(--surf) 96%,transparent);border:1px solid var(--line);border-radius:18px;
+  -webkit-backdrop-filter:blur(16px);backdrop-filter:blur(16px)
+}
+.pdf-actions .cta{min-height:54px}
+
+@media(max-width:520px){
+  .pdf-page{padding:16px;min-height:0}
+  .pdf-kv{grid-template-columns:115px 1fr}
+  .pdf-kv strong,.pdf-kv span{font-size:9.5px;padding:6px 7px}
+  .pdf-map{height:320px}
+  .pdf-legend{grid-template-columns:1fr}
+  .pdf-actions{grid-template-columns:1fr}
+  .pdf-appbar .btn{font-size:11px;padding-inline:10px}
+  .final-summary-actions{grid-template-columns:1fr}
+}
+
+@media print{
+  @page{size:A4 portrait;margin:10mm}
+  html,body{background:#fff!important;color:#000!important}
+  body.printing-mission #app{display:block!important}
+  .no-print,.topbar,.cta-bar{display:none!important}
+  .pdf-view{background:#fff!important;padding:0!important}
+  .pdf-document{display:block!important;max-width:none!important;margin:0!important;padding:0!important}
+  .pdf-page{
+    box-shadow:none!important;border-radius:0!important;padding:0!important;margin:0!important;
+    min-height:auto!important;break-after:page;page-break-after:always
+  }
+  .pdf-page:last-child{break-after:auto;page-break-after:auto}
+  .pdf-map{height:120mm!important}
+  .pdf-block,.pdf-form-part,.pdf-item{break-inside:avoid;page-break-inside:avoid}
+  .leaflet-control-container{display:none!important}
+}
