@@ -1,5 +1,6 @@
 // Stockage des missions dans le navigateur, avec export/import JSON.
 // Tolère l'absence de localStorage : repli en mémoire.
+import { defaultWindow, isLocalDateTime, addMinutes } from './time.js';
 
 export const KEY = 'pmd.missions.v1';
 export const EXPORT_FORMAT = 'prepa-mission-drone/missions@1';
@@ -15,14 +16,20 @@ export function newId(now = new Date(), rand = Math.random) {
 
 export function newMission({ now = new Date(), name = 'Nouvelle mission' } = {}) {
   const iso = now.toISOString();
+  const window = defaultWindow(now);
   return {
     id: newId(now),
     name,
     createdAt: iso,
     updatedAt: iso,
-    context: { missionType: '', capture: 'observation', useCases: [] },
+    context: {
+      missionType: '',
+      capture: 'observation',
+      useCases: [],
+      administrativeOrder: { held: false, cameraCount: null, placeNote: '' }
+    },
     place: { label: '', lat: null, lon: null, radiusM: 500 },
-    window: { start: '', end: '', tz: 'Europe/Paris' },
+    window: { ...window, tz: 'Europe/Paris' },
     mens: {
       meteo: { gustLimitMs: DEFAULT_GUST_LIMIT_MS, fetchedAt: null, source: null, manual: false, slots: [], hours: [], tz: null, utcOffsetSeconds: 0, kp: null, alerts: [], forPlace: null, kpError: null, kpEntries: null },
       espace: { fetchedAt: null, source: null, controlled: null, zones: [], error: null, localAnalysisAt: null, localDataset: null, localZones: [], aerodromes: [] },
@@ -96,11 +103,18 @@ export function sanitizeMission(raw) {
   m.updatedAt = raw.updatedAt;
 
   const ctx = raw.context || {};
+  const ao = ctx.administrativeOrder || {};
   m.context = {
     missionType: known(ctx.missionType, ['judiciaire','administratif','sauvegarde','entrainement','communication','autre'], ''),
     capture: known(ctx.capture, ['observation','captation','enregistrement'], 'observation'),
-    useCases: list(ctx.useCases, 20).map((x) => str(x, 60)).filter(Boolean)
+    useCases: list(ctx.useCases, 20).map((x) => str(x, 60)).filter(Boolean),
+    administrativeOrder: {
+      held: ao.held === true,
+      cameraCount: Number.isInteger(Number(ao.cameraCount)) && Number(ao.cameraCount) > 0 ? Math.min(99, Number(ao.cameraCount)) : null,
+      placeNote: str(ao.placeNote, 1000)
+    }
   };
+  if (m.context.missionType === 'judiciaire') m.context.capture = 'enregistrement';
 
   const p = raw.place || {};
   m.place = { label: str(p.label, 300), lat: numOrNull(p.lat), lon: numOrNull(p.lon), radiusM: numOrNull(p.radiusM) ?? 500 };
@@ -109,7 +123,9 @@ export function sanitizeMission(raw) {
   m.place.radiusM = Math.max(10, Math.min(10000, m.place.radiusM));
 
   const w = raw.window || {};
-  m.window = { start: str(w.start, 16), end: str(w.end, 16), tz: str(w.tz, 60) || 'Europe/Paris' };
+  const start = isLocalDateTime(w.start) ? w.start : base.window.start;
+  const end = isLocalDateTime(w.end) && w.end > start ? w.end : addMinutes(start, 120);
+  m.window = { start, end, tz: str(w.tz, 60) || 'Europe/Paris' };
 
   const me = raw.mens?.meteo || {};
   const slot = (s) => ({ t: str(s?.t, 16), hour: str(s?.hour, 5), wind: numOrNull(s?.wind), gust: numOrNull(s?.gust), dir: numOrNull(s?.dir), wind80: numOrNull(s?.wind80), temp: numOrNull(s?.temp), pop: numOrNull(s?.pop), vis: numOrNull(s?.vis), cloud: numOrNull(s?.cloud) });
