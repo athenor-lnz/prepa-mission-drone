@@ -18,19 +18,74 @@ function nextRoute(m) {
   return 'fiche';
 }
 
-function card(m, rerender) {
+function preparationProgress(m) {
+  const checks = [
+    isStepDone(m, { key: 'cadre' }),
+    isStepDone(m, { key: 'lieu' }),
+    !!(m.mens.meteo.slots.length || m.mens.meteo.manual),
+    !!(m.mens.espace.fetchedAt || m.mens.espace.localAnalysisAt),
+    !!m.mens.notam.fetchedAt,
+    !!m.mens.supaip.fetchedAt,
+    formValidated(FORMS.macloe, m.validation?.macloe),
+    formValidated(FORMS.smepp, m.validation?.smepp)
+  ];
+  const done = checks.filter(Boolean).length;
+  return { done, total: checks.length, pct: Math.round((done / checks.length) * 100) };
+}
+
+function mensState(m) {
+  return [
+    ['M', 'Météo', !!(m.mens.meteo.slots.length || m.mens.meteo.manual)],
+    ['E', 'Espace', !!(m.mens.espace.fetchedAt || m.mens.espace.localAnalysisAt)],
+    ['N', 'NOTAM', !!m.mens.notam.fetchedAt],
+    ['S', 'SUP AIP', !!m.mens.supaip.fetchedAt]
+  ];
+}
+
+function missionStatus(m) {
   const v = meteoVerdict(m);
   const st = v && v.status !== 'unknown' ? v.status : null;
-  const sm = validatedProgress(FORMS.smepp, m.validation?.smepp);
-  const ma = validatedProgress(FORMS.macloe, m.validation?.macloe);
-  return h('li', { class: 'mcard' },
+  return st ? [st, LABELS[st]] : ['unknown', 'À préparer'];
+}
+
+function featuredCard(m, rerender) {
+  const [st, label] = missionStatus(m);
+  const p = preparationProgress(m);
+  const route = nextRoute(m);
+  return h('section', { class: 'mission-featured', 'aria-label': 'Mission en cours' },
+    h('div', { class: 'featured-top' },
+      h('div', {},
+        h('span', { class: 'eyebrow' }, 'Mission en cours'),
+        h('h2', { class: 'featured-name' }, m.name)),
+      h('button', { class: 'icon-btn featured-more', 'aria-label': `Actions pour ${m.name}`, onclick: () => actions(m, rerender) }, icon('more'))),
+    h('div', { class: 'featured-place' }, icon('locate', 18), h('span', {}, m.place.label || (m.place.lat !== null ? 'Point défini sur la carte' : 'Zone à définir'))),
+    h('div', { class: 'featured-time mono' }, formatRange(m.window.start, m.window.end)),
+    h('div', { class: 'progress-head' },
+      h('span', {}, 'Préparation'),
+      h('strong', { class: 'mono' }, `${p.pct}%`)),
+    h('div', { class: 'mission-progress', role: 'progressbar', 'aria-valuemin': '0', 'aria-valuemax': '100', 'aria-valuenow': String(p.pct) },
+      h('i', { style: `width:${p.pct}%` })),
+    h('div', { class: 'mens-mini', 'aria-label': 'État MENS' },
+      mensState(m).map(([letter, name, done]) => h('div', { class: `mens-mini-item ${done ? 'done' : ''}`, title: name },
+        h('span', { class: 'mens-mini-letter' }, done ? '✓' : letter),
+        h('small', {}, name)))),
+    h('div', { class: 'featured-actions' },
+      h('span', { class: `pill ${st}` }, label),
+      h('a', { class: 'btn featured-continue', href: missionUrl(m.id, route) }, h('span', {}, p.pct === 100 ? 'Voir la synthèse' : 'Continuer'), icon('arrow', 20))));
+}
+
+function card(m, rerender) {
+  const [st, label] = missionStatus(m);
+  const p = preparationProgress(m);
+  return h('li', { class: 'mcard compact' },
     h('a', { class: 'mcard-main', href: missionUrl(m.id, nextRoute(m)) },
       h('div', { class: 'mcard-top' },
         h('strong', { class: 'mcard-name' }, m.name),
-        st ? h('span', { class: `pill ${st}` }, LABELS[st]) : h('span', { class: 'pill unknown' }, 'À préparer')),
+        h('span', { class: `pill ${st}` }, label)),
       h('div', { class: 'mcard-sub' }, m.place.label || (m.place.lat !== null ? 'Point sur la carte' : 'Zone à définir')),
-      h('div', { class: 'mcard-meta mono' }, formatRange(m.window.start, m.window.end)),
-      h('div', { class: 'mcard-meta' }, `MACLOE ${ma.done}/${ma.total} · SMEPP ${sm.done}/${sm.total}`)),
+      h('div', { class: 'mcard-foot' },
+        h('span', { class: 'mcard-meta mono' }, formatRange(m.window.start, m.window.end)),
+        h('span', { class: 'mcard-progress mono' }, `${p.pct}%`))),
     h('button', { class: 'icon-btn', 'aria-label': `Actions pour ${m.name}`, onclick: () => actions(m, rerender) }, icon('more')));
 }
 
@@ -105,23 +160,39 @@ function exportAll() {
 
 export function renderAccueil() {
   flush();
-  const root = h('main', { class: 'screen home' });
+  const root = h('main', { class: 'screen home cockpit-home' });
+  const createMission = () => { const m = store.create(); location.hash = missionUrl(m.id, 'cadre'); };
   const draw = () => {
     const missions = store.list();
+    const current = missions[0];
+    const others = missions.slice(1);
     root.replaceChildren(...[
-      h('header', { class: 'home-head' },
-        h('div', {}, h('span', { class: 'eyebrow' }, 'Prépa Mission'), h('h1', {}, 'Drone')),
-        h('button', { class: 'icon-btn', 'aria-label': 'Réglages', onclick: () => settings(draw) }, icon('sun'))),
+      h('header', { class: 'cockpit-head' },
+        h('div', { class: 'cockpit-brand' },
+          h('div', { class: 'cockpit-drone', 'aria-hidden': 'true' }, icon('drone', 58)),
+          h('div', {},
+            h('span', { class: 'eyebrow' }, 'Gendarmerie · Préparation opérationnelle'),
+            h('h1', {}, 'Prépa Mission'),
+            h('p', { class: 'cockpit-sub' }, 'Drone'))),
+        h('button', { class: 'icon-btn cockpit-settings', 'aria-label': 'Réglages', onclick: () => settings(draw) }, icon('sun'))),
       !store.isPersistent ? h('div', { class: 'banner warn', role: 'alert' }, icon('warn'), 'Stockage du navigateur indisponible : les missions seront perdues à la fermeture. Exporte-les.') : null,
-      missions.length
-        ? h('ul', { class: 'mlist' }, missions.map((m) => card(m, draw)))
-        : h('div', { class: 'empty' },
-            h('div', { class: 'empty-ico' }, icon('locate', 40)),
-            h('h2', {}, 'Aucune mission'),
-            h('p', {}, 'Cadre, zone, MENS, MACLOE, SMEPP puis synthèse.'),
-            h('button', { class: 'btn ghost', onclick: () => settings(draw) }, 'Importer des missions')),
-      h('div', { class: 'cta-bar' }, h('button', { class: 'cta primary', onclick: () => { const m = store.create(); location.hash = missionUrl(m.id, 'cadre'); } }, icon('plus'), h('span', {}, 'Nouvelle mission')))].filter(Boolean));
+      h('section', { class: 'cockpit-create' },
+        h('button', { class: 'cockpit-new', onclick: createMission },
+          h('span', { class: 'cockpit-new-icon' }, icon('plus', 24)),
+          h('span', { class: 'cockpit-new-copy' }, h('strong', {}, 'Nouvelle mission'), h('small', {}, 'Cadre · Zone · MENS · Briefing')),
+          icon('arrow', 24))),
+      current ? featuredCard(current, draw) : null,
+      current && others.length ? h('div', { class: 'section-title' }, h('h2', {}, 'Missions récentes'), h('span', { class: 'pill' }, String(others.length))) : null,
+      others.length
+        ? h('ul', { class: 'mlist cockpit-list' }, others.map((m) => card(m, draw)))
+        : (!current ? h('div', { class: 'empty cockpit-empty' },
+            h('div', { class: 'empty-ico' }, icon('drone', 44)),
+            h('h2', {}, 'Prêt pour la première mission'),
+            h('p', {}, 'Crée une mission pour lancer le parcours de préparation.'),
+            h('button', { class: 'btn ghost', onclick: () => settings(draw) }, 'Importer des missions')) : null)
+    ].filter(Boolean));
   };
   draw();
   return { el: root };
 }
+
