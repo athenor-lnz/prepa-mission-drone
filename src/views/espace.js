@@ -21,7 +21,7 @@ function tabs(mission, current) {
   ], current);
 }
 function footer(mission, route) {
-  const nxt = { espace: ['Suivant · NOTAM', 'notam'], notam: ['Suivant · SUP AIP', 'supaip'], supaip: ['Valider MENS · MACLOE', 'macloe'] }[route];
+  const nxt = { espace: ['Suivant · NOTAM', 'notam'], notam: ['Suivant · SUP AIP', 'supaip'], supaip: ['Valider MENS · Retour aux étapes', 'etapes'] }[route];
   return ctaBar(ctaButton(nxt[0], () => { location.hash = missionUrl(mission.id, nxt[1]); }));
 }
 function fmtDistance(m) { return !Number.isFinite(m) ? '—' : m < 1000 ? `${Math.round(m)} m` : `${(m/1000).toFixed(m<10000?1:0)} km`; }
