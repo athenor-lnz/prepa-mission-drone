@@ -2,7 +2,7 @@ import { h, icon, toast } from '../ui/dom.js';
 import { topbar, ctaBar, ctaButton, missionUrl } from '../ui/layout.js';
 import { mutate, fmtSpeed, speedFromMs, speedToMs, getPrefs } from '../state.js';
 import { computeVerdict, LABELS } from '../lib/verdict.js';
-import { addMinutes, defaultWindow, formatRange, formatClock, isLocalDateTime } from '../lib/time.js';
+import { formatRange, formatClock, isLocalDateTime } from '../lib/time.js';
 import { slotsForWindow, chartHours, summarize, compass, windowCovered, kpForWindow, kpStatus, KP_LABEL } from '../lib/weather.js';
 import { fetchForecast, fetchKp } from '../services/meteo.js';
 
@@ -18,11 +18,8 @@ export function renderMeteo({ mission }) {
   let error = null;
   let manualOpen = false;
 
-  if (!isLocalDateTime(mission.window.start)) {
-    const w = defaultWindow();
-    mutate(mission, (m) => { m.window.start = w.start; m.window.end = w.end; });
-  }
   const hasPoint = Number.isFinite(p.lat) && Number.isFinite(p.lon);
+  const windowOk = isLocalDateTime(mission.window.start) && isLocalDateTime(mission.window.end) && mission.window.end > mission.window.start;
 
   function recompute() {
     mutate(mission, (m) => {
@@ -34,6 +31,7 @@ export function renderMeteo({ mission }) {
   }
 
   async function load() {
+    if (!windowOk) { toast('Définis d’abord le début et la fin de mission dans l’étape Mission.', 'bad'); return; }
     if (!hasPoint || loading) return;
     loading = true; error = null; draw();
     const [f, k] = await Promise.all([fetchForecast(p.lat, p.lon), fetchKp()]);
@@ -50,27 +48,6 @@ export function renderMeteo({ mission }) {
     });
     draw();
   }
-
-  function shiftTime(which, delta) {
-    mutate(mission, (m) => {
-      const t = addMinutes(m.window[which], delta);
-      if (which === 'start' && t >= m.window.end) m.window.end = addMinutes(t, 30);
-      if (which === 'end' && t <= m.window.start) return;
-      m.window[which] = t;
-    });
-    recompute(); draw();
-  }
-
-  const timeBox = (label, which) => h('div', { class: 'timebox' },
-    h('span', { class: 'lbl' }, label),
-    h('div', { class: 'stepper' },
-      h('button', { class: 'icon-btn tint', 'aria-label': `${label} : 30 minutes plus tôt`, onclick: () => shiftTime(which, -30) }, icon('minus')),
-      h('input', { type: 'datetime-local', class: 'mono', value: mission.window[which], 'aria-label': `${label} (heure locale du lieu)`, onchange: (e) => {
-        if (!isLocalDateTime(e.target.value)) return;
-        mutate(mission, (m) => { m.window[which] = e.target.value; if (m.window.end <= m.window.start) m.window.end = addMinutes(m.window.start, 60); });
-        recompute(); draw();
-      } }),
-      h('button', { class: 'icon-btn tint', 'aria-label': `${label} : 30 minutes plus tard`, onclick: () => shiftTime(which, 30) }, icon('plus'))));
 
   function verdictCard() {
     const v = computeVerdict(me.slots, me.gustLimitMs);
@@ -173,13 +150,25 @@ export function renderMeteo({ mission }) {
   }
 
   function draw() {
-    const needLoad = hasPoint && !me.manual && (!me.hours.length || me.forPlace !== placeKey(p));
+    const needLoad = hasPoint && windowOk && !me.manual && (!me.hours.length || me.forPlace !== placeKey(p));
     root.replaceChildren(topbar(mission, 'meteo'));
     if (!hasPoint) {
       root.append(h('div', { class: 'empty' }, h('h2', {}, 'Lieu manquant'), h('p', {}, 'Définissez d\'abord le lieu de la mission.'), h('a', { class: 'btn primary', href: missionUrl(mission.id, 'lieu') }, 'Choisir le lieu')));
       return;
     }
+    if (!windowOk) {
+      root.append(h('div', { class: 'empty' },
+        h('h2', {}, 'Créneau de mission manquant'),
+        h('p', {}, 'Le début et la fin sont désormais définis une seule fois pour toute la mission.'),
+        h('a', { class: 'btn primary', href: missionUrl(mission.id, 'cadre') }, 'Définir le créneau')));
+      return;
+    }
     root.append(h('div', { class: 'body' },
+      h('section', { class: 'card-sec mission-window-summary' },
+        h('div', { class: 'window-summary-head' },
+          h('div', {}, h('span', { class: 'lbl' }, 'Créneau de mission'), h('strong', {}, formatRange(mission.window.start, mission.window.end))),
+          h('a', { class: 'btn ghost small', href: missionUrl(mission.id, 'cadre') }, 'Modifier')),
+        h('p', { class: 'note' }, 'Ce créneau est défini dans l’étape Mission et utilisé ici pour sélectionner les prévisions météo.')),
       loading ? h('p', { class: 'note', role: 'status' }, 'Chargement des prévisions…') : null,
       error ? h('div', { class: 'banner bad', role: 'alert' }, icon('warn'), h('span', {}, `Prévisions indisponibles : ${error}`)) : null,
       me.slots.length ? [verdictCard(), stats()] : (!loading && !error ? h('div', { class: 'banner warn' }, icon('warn'), 'Aucune prévision pour ce créneau.') : null),
@@ -191,8 +180,7 @@ export function renderMeteo({ mission }) {
         h('button', { class: 'btn ghost', disabled: loading, onclick: load }, me.hours.length ? 'Actualiser' : 'Charger les prévisions'),
         h('button', { class: 'btn ghost', onclick: () => { manualOpen = !manualOpen; draw(); } }, me.manual ? 'Modifier la saisie' : 'Saisie manuelle')),
       manualOpen ? manualForm() : null,
-      h('div', { class: 'timeboxes' }, timeBox('Début', 'start'), timeBox('Fin', 'end')),
-      h('p', { class: 'note' }, `Heures locales du lieu${me.tz ? ` (${me.tz})` : ''}.`)));
+      h('p', { class: 'note' }, `Prévisions en heure locale du lieu${me.tz ? ` (${me.tz})` : ''}.`)));
     root.append(ctaBar(ctaButton('Valider · Espace aérien', () => { location.hash = missionUrl(mission.id, 'espace'); }, { disabled: !me.slots.length })));
     if (needLoad && !loading && !error) queueMicrotask(load);
   }
