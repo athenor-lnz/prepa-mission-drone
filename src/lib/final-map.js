@@ -15,7 +15,8 @@ export function missionMapItems(mission){
     radiusM:Number(mission.place?.radiusM)||0,
     lLines:Array.isArray(a.L?.lines)?a.L.lines:[],
     eLines:Array.isArray(a.E?.lines)?a.E.lines:[],
-    zones:Array.isArray(a.E?.zones)?a.E.zones:[]
+    zones:Array.isArray(a.E?.zones)?a.E.zones:[],
+    pois:Array.isArray(m.pois)?m.pois:[]
   };
 }
 function safeLabel(s){return String(s||'').replace(/[<>&"]/g,'').slice(0,80);}
@@ -73,6 +74,14 @@ export function drawMissionMap(L,map,mission,{labels=true,showRadius=true}={}){
       L.marker([p.lat,p.lon],{interactive:false,icon:labelIcon(L,z.name||'Zone de dégagement',color)}).addTo(group);
     }
     addPts(z.points);
+  });
+  data.pois.forEach((p)=>{
+    if(!Number.isFinite(p.lat)||!Number.isFinite(p.lon))return;
+    const color=p.color||'#CDB23A';
+    const marker=L.circleMarker([p.lat,p.lon],{radius:8,color:'#fff',weight:3,fillColor:color,fillOpacity:1}).addTo(group);
+    marker.bindTooltip(p.name||'POI');
+    if(labels)L.marker([p.lat,p.lon],{interactive:false,icon:labelIcon(L,p.name||'POI',color)}).addTo(group);
+    pts.push([p.lat,p.lon]);
   });
   return {group,bounds:pts.length?L.latLngBounds(pts):null,data};
 }
