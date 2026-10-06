@@ -17,28 +17,104 @@ const CASES = [
     title:'Catégorie ouverte',
     mode:'VLOS',
     range:'Selon sous-catégorie',
-    description:'Vol relevant de la catégorie ouverte. Vérifier la classe du drone, la sous-catégorie applicable, la hauteur, les distances et la présence éventuelle de personnes.'
+    description:'Vol en catégorie ouverte. Vérifier la classe du drone et la sous-catégorie applicable.',
+    highlights:[
+      ['Vue','En vue'],
+      ['Période','Jour'],
+      ['Hauteur','Selon sous-catégorie']
+    ],
+    rules:[
+      ['Qualification minimale','Niveau 1'],
+      ['En / hors vue','En vue'],
+      ['Jour / nuit','Uniquement de jour · journée aéronautique'],
+      ['Observateur','Selon situation ; maintien du drone en vue requis'],
+      ['Drones autorisés','Classes C0, C1, C2 ou drone autorisé'],
+      ['ADS-B In','Non obligatoire'],
+      ['Transport / largage','Non'],
+      ['Hauteur de vol','Selon sous-catégorie et environnement'],
+      ['Survol personnes impliquées','À éviter ; respecter les conditions de la sous-catégorie'],
+      ['Survol personnes non impliquées','Selon classe/sous-catégorie ; survol accidentel uniquement dans les cas autorisés'],
+      ['Attroupements','Interdit / distances à respecter'],
+      ['Rassemblements','Interdit / distances à respecter']
+    ]
   },
   {
     id:'sts-gn-01-1',
     title:'Scénario 1.1 · En vue',
     mode:'VLOS',
     range:'Vol en vue',
-    description:'Scénario 1.1 : le télépilote conserve l’APAD en vue directe pendant le vol. Vérifier les conditions du scénario, le matériel engagé et les limites opérationnelles applicables.'
+    description:'Scénario GN 01.1 : vol en vue directe avec les équipements et distances prévues par le scénario.',
+    highlights:[
+      ['Vue','VLOS · en vue'],
+      ['Hauteur','120 m max'],
+      ['Jour / nuit','Jour et nuit'],
+      ['Distances','30 m / 120 m']
+    ],
+    rules:[
+      ['Qualification minimale','Niveau 1'],
+      ['En / hors vue','En vue'],
+      ['Jour / nuit','Jour et nuit'],
+      ['Observateur','Observateur d’aéronef'],
+      ['Drones autorisés','Classes autorisées ou DGA selon doctrine'],
+      ['ADS-B In','Oui · facultatif pour les drones de MTOM < 250 g'],
+      ['Équipements de sécurité','Coupe-circuit + parachute selon appréciation de l’exploitant ; géofencing + détection d’obstacle à 360° + RTH'],
+      ['Transport / largage de charge non dangereuse','Oui'],
+      ['Hauteur de vol autorisée','120 m maximum'],
+      ['Survol de personnes impliquées','Oui'],
+      ['Survol de personnes non impliquées','Possible en optimisant les trajectoires'],
+      ['Distance de sécurité / attroupement','30 m'],
+      ['Distance de sécurité / rassemblement','120 m'],
+      ['Réduction possible','Distance réduite à 5 m si mode trépied activé, lorsque applicable']
+    ]
   },
   {
     id:'hors-vue-1km',
     title:'Scénario 2.2 · Hors vue · 1 km',
     mode:'BVLOS',
     range:'Élongation max 1 km',
-    description:'Scénario 2.2 en hors vue avec une élongation maximale de 1 km. Vérifier avant le vol les conditions, moyens, procédures et contraintes applicables.'
+    description:'Scénario GN 02.2 : vol hors vue dans la limite de 1 km avec observateur d’aéronef.',
+    highlights:[
+      ['Vue','BVLOS · hors vue'],
+      ['Élongation','1 km max'],
+      ['Hauteur','50 / 80 m'],
+      ['Jour / nuit','Jour et nuit']
+    ],
+    rules:[
+      ['Qualification minimale','Niveau 1'],
+      ['En / hors vue','Hors vue · 1 km maximum'],
+      ['Jour / nuit','Jour et nuit'],
+      ['Observateur','Observateur d’aéronef'],
+      ['Drone','MTOM < 2 kg selon la fiche'],
+      ['Drones autorisés','Classes autorisées ou DGA selon doctrine'],
+      ['ADS-B In','Oui · facultatif pour les drones de MTOM < 250 g'],
+      ['Équipements de sécurité','Coupe-circuit + parachute selon appréciation de l’exploitant ; géofencing + détection d’obstacle à 360° + RTH'],
+      ['Transport / largage de charge non dangereuse','Non'],
+      ['Hauteur · zone faiblement peuplée','50 m maximum'],
+      ['Hauteur · zone peuplée','80 m maximum'],
+      ['Survol de personnes impliquées','Oui'],
+      ['Survol de personnes non impliquées','Possible en optimisant les trajectoires'],
+      ['Distance de sécurité / attroupement','30 m'],
+      ['Distance de sécurité / rassemblement','120 m'],
+      ['Réduction possible','Distance réduite à 5 m si mode trépied activé, lorsque applicable']
+    ]
   },
   {
     id:'hors-vue-2km',
     title:'Scénario 2.2 · Hors vue · 2 km',
     mode:'BVLOS',
     range:'Élongation max 2 km',
-    description:'Scénario 2.2 en hors vue avec une élongation maximale de 2 km. Vérifier avant le vol les conditions, moyens, procédures et contraintes applicables.'
+    description:'Variante hors vue enregistrée dans l’application. Vérifier impérativement que le cadre opérationnel applicable autorise cette élongation.',
+    highlights:[
+      ['Vue','BVLOS'],
+      ['Élongation','2 km'],
+      ['Attention','Cadre à confirmer']
+    ],
+    rules:[
+      ['Point d’attention','La fiche fournie rappelle le cas 2.2 à 1 km maximum.'],
+      ['Avant engagement','Confirmer la doctrine / autorisation spécifique permettant 2 km.'],
+      ['Autres règles','Appliquer les contraintes du scénario hors vue retenu après confirmation du cadre applicable.']
+    ],
+    warning:'Ta fiche de référence indique 1 km maximum pour le cas d’usage 2.2. Le choix 2 km reste affiché dans l’application mais doit être confirmé avant utilisation.'
   }
 ];
 
@@ -83,17 +159,28 @@ export function renderCadre({ mission }) {
   function openCase(item) {
     let modal;
     const selected = c.useCases.includes(item.id);
-    modal = sheet(item.title, h('div', { class: 'stack usecase-sheet' },
+    modal = sheet(item.title, h('div', { class: 'stack usecase-sheet usecase-rules-sheet' },
       h('div', { class: 'usecase-sheet-badges' },
         h('span', { class: `usecase-mode ${item.mode === 'BVLOS' ? 'bvlos' : ''}` }, item.mode),
         h('span', { class: 'pill' }, item.range)),
       h('p', { class: 'usecase-sheet-text' }, item.description),
-      h('div', { class: 'banner info' }, icon('info'), h('span', {}, 'La documentation opérationnelle en vigueur reste la référence pour les conditions détaillées.')),
+      item.warning ? h('div',{class:'banner warn'},icon('warn'),h('span',{},item.warning)) : null,
+      item.highlights?.length ? h('div',{class:'usecase-highlight-grid'},
+        ...item.highlights.map(([label,value])=>h('div',{class:'usecase-highlight'},
+          h('span',{},label),h('strong',{},value)
+        ))) : null,
+      h('div',{class:'usecase-rules'},
+        h('div',{class:'usecase-rules-head'},h('strong',{},'Règles à retenir'),h('small',{},'Rappel rapide')),
+        ...(item.rules||[]).map(([label,value])=>h('div',{class:'usecase-rule-row'},
+          h('span',{},label),
+          h('strong',{},value)
+        ))),
+      h('div', { class: 'banner info' }, icon('info'), h('span', {}, 'Mémo opérationnel : la documentation et les consignes en vigueur restent la référence.')),
       h('button', {
         class: `btn block ${selected ? 'ghost' : 'primary'}`,
         onclick: () => { toggleCase(item.id); modal.close(); }
       }, selected ? 'Retirer ce cas d’usage' : 'Sélectionner ce cas d’usage')
-    ));
+    ), { autofocus:false });
   }
 
   function setWindow(which, value) {
