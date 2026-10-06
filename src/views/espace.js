@@ -46,7 +46,7 @@ export function renderEspace({ mission }) {
   const TILES = {
     plan: { url:'https://tile.openstreetmap.org/{z}/{x}/{y}.png', attr:'© OpenStreetMap', max:19 },
     sat: { url:'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', attr:'Imagerie © Esri', max:19 },
-    oaci: { url:'https://data.geopf.fr/private/wmts?apikey=ign_scan_ws&Layer=GEOGRAPHICALGRIDSYSTEMS.MAPS.SCAN-OACI&Style=normal&TileMatrixSet=PM&SERVICE=WMTS&REQUEST=GetTile&Version=1.0.0&FORMAT=image/jpeg&TileMatrix={z}&TileCol={x}&TileRow={y}', attr:'OACI-VFR © DSNA/SIA · Géoplateforme', max:20, native:11 }
+    oaci: { url:'https://data.geopf.fr/private/wmts?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER=GEOGRAPHICALGRIDSYSTEMS.MAPS.SCAN-OACI&STYLE=normal&TILEMATRIXSET=PM_6_11&FORMAT=image/jpeg&TILEMATRIX={z}&TILEROW={y}&TILECOL={x}&apikey=ign_scan_ws', attr:'OACI-VFR © DSNA/SIA · Géoplateforme', max:20, native:11 }
   };
 
   async function refreshMeta() {
@@ -255,7 +255,7 @@ export function renderEspace({ mission }) {
     overlay=L.layerGroup().addTo(map);
     const setMode=(m)=>{
       mapMode=m; if(layer)map.removeLayer(layer); const t=TILES[m];
-      layer=L.tileLayer(t.url,{maxZoom:t.max,maxNativeZoom:t.native||t.max,attribution:t.attr,keepBuffer:4}).addTo(map);
+      layer=L.tileLayer(t.url, { minZoom: t.min, maxZoom: t.max, maxNativeZoom: t.native || t.max, attribution: t.attr, keepBuffer: 4 }).addTo(map);
       el.parentElement.querySelectorAll('[data-air-base]').forEach((b)=>b.classList.toggle('on',b.dataset.airBase===m));
     };
     el.parentElement.querySelectorAll('[data-air-base]').forEach((b)=>b.onclick=()=>setMode(b.dataset.airBase));
