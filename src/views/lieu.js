@@ -190,20 +190,10 @@ export function renderLieu({ mission }) {
       'aria-pressed': String(mode === value),
       onclick: () => { setMode(value); sh.close(); layersSheet(); }
     }, label);
-    const overlayBtn = h('button', {
-      class: showAerodata ? 'check-choice on' : 'check-choice',
-      'aria-pressed': String(showAerodata),
-      onclick: () => {
-        showAerodata = !showAerodata;
-        overlayBtn.classList.toggle('on', showAerodata);
-        overlayBtn.setAttribute('aria-pressed', String(showAerodata));
-          }
-    }, h('span', { class: 'check-dot' }, showAerodata ? icon('check', 16) : ''), h('span', {}, 'Espaces & aérodromes GeoGM / SIA'));
-    sh = sheet('Couches cartographiques', h('div', { class: 'stack' },
+    sh = sheet('Fond de carte', h('div', { class: 'stack' },
       h('div', {}, h('span', { class: 'lbl' }, 'Fond de carte'), h('div', { class: 'seg map-base-picker' },
         base('plan', 'Plan'), base('sat', 'Satellite'), base('oaci', 'OACI'))),
-      h('div', {}, h('span', { class: 'lbl' }, 'Superpositions'), h('div', { class: 'check-list' }, overlayBtn)),
-      h('p', { class: 'note' }, 'Les données aéronautiques locales apparaissent uniquement si le jeu GeoGM / SIA a déjà été importé.')));
+      h('p', { class: 'note' }, 'Les espaces aéronautiques sont affichés uniquement dans MENS → Espace aérien.')));
   }
 
   const panel = h('section', { class: 'panel zone-panel' },
@@ -219,9 +209,10 @@ export function renderLieu({ mission }) {
       h('span', { class: 'zone-coordinate-copy' }, h('span', { class: 'lbl' }, 'Coordonnées'), coordText),
       h('span', { class: 'zone-coordinate-format' }, fmt.toUpperCase()),
       icon('arrow', 18)),
-    h('div', { class: 'zone-radius-head' }, h('span', { class: 'lbl' }, 'Rayon de mission'), h('span', { class: 'note' }, 'Touchez la carte pour déplacer le point')),
+    h('button', { class: 'btn ghost block zone-crosshair-pick', onclick: () => { if(!map)return; const q=map.getCenter(); setPoint(q.lat,q.lng,'',{recenter:false}); } }, icon('locate',18), 'Placer la croix au centre'),
+    h('div', { class: 'zone-radius-head' }, h('span', { class: 'lbl' }, 'Rayon de mission'), h('span', { class: 'note' }, 'Déplace la carte sous la croix ou touche directement la carte')),
     h('div', { class: 'radii zone-radii', role: 'group', 'aria-label': 'Rayon de travail' },
-      RADII.map((r) => h('button', { 'data-r': r, 'aria-pressed': 'false', onclick: () => { mutate(mission, (m) => { m.place.radiusM = r; }); circle?.setRadius(r); fit(); refresh(); drawAerodataOverlay(); } }, r >= 1000 ? `${r / 1000} km` : `${r} m`))));
+      RADII.map((r) => h('button', { 'data-r': r, 'aria-pressed': 'false', onclick: () => { mutate(mission, (m) => { m.place.radiusM = r; }); circle?.setRadius(r); fit(); refresh(); } }, r >= 1000 ? `${r / 1000} km` : `${r} m`))));
 
   const mapBtns = h('div', { class: 'map-ctl map-stack zone-map-tools' },
     h('button', { class: 'icon-btn float', 'aria-label': 'Ma position', onclick: locateMe }, icon('locate')),
@@ -242,7 +233,6 @@ export function renderLieu({ mission }) {
     setMode(mode);
     map.on('click', (e) => setPoint(e.latlng.lat, e.latlng.lng, '', { recenter: false }));
     drawMarker(false);
-    drawAerodataOverlay();
     setTimeout(() => map.invalidateSize(), 50);
     refresh();
   });
