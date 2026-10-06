@@ -182,6 +182,13 @@ export function renderAccueil() {
           h('span', { class: 'cockpit-new-copy' }, h('strong', {}, 'Nouvelle mission'), h('small', {}, 'Cadre · Zone · MENS · Briefing')),
           icon('arrow', 24))),
       current ? featuredCard(current, draw) : null,
+      current ? h('section', { class: 'cockpit-quick' },
+        h('a', { class: 'cockpit-checklists', href: `#/mission/${current.id}/checklists` },
+          h('span', { class: 'cockpit-check-icon' }, icon('check', 22)),
+          h('span', { class: 'cockpit-check-copy' },
+            h('strong', {}, 'Check-lists opérationnelles'),
+            h('small', {}, 'Avant départ · Sur zone · Décollage · Pannes · Retour')),
+          icon('arrow', 20))) : null,
       current && others.length ? h('div', { class: 'section-title' }, h('h2', {}, 'Missions récentes'), h('span', { class: 'pill' }, String(others.length))) : null,
       others.length
         ? h('ul', { class: 'mlist cockpit-list' }, others.map((m) => card(m, draw)))
