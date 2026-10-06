@@ -192,8 +192,26 @@ export const CHECKLISTS = [
 ];
 
 export const checklistById = (id) => CHECKLISTS.find((x)=>x.id===id) || null;
-export const checklistItems = (def) => def.sections.flatMap((s)=>s.items.map(([id,label,hint])=>({id,label,hint,section:s.title})));
+
+const OPTIONAL_RE = /\b(si besoin|si applicable|selon mission|si nécessaire|selon situation|si sécurité engagée|si sécurité non engagée|si adapté)\b/i;
+export const isOptionalChecklistItem = (hint = '') => OPTIONAL_RE.test(String(hint));
+
+export const checklistItems = (def) => def.sections.flatMap((s)=>s.items.map(([id,label,hint])=>({
+  id,label,hint,section:s.title,optional:isOptionalChecklistItem(hint)
+})));
+
 export const checklistProgress = (def, state={}) => {
-  const items=checklistItems(def), done=items.filter((x)=>state?.[x.id]===true).length;
-  return {done,total:items.length,pct:items.length?Math.round(done/items.length*100):0};
+  const items=checklistItems(def);
+  const required=items.filter((x)=>!x.optional);
+  const optional=items.filter((x)=>x.optional);
+  const done=required.filter((x)=>state?.[x.id]===true).length;
+  const optionalDone=optional.filter((x)=>state?.[x.id]===true).length;
+  return {
+    done,
+    total:required.length,
+    pct:required.length?Math.round(done/required.length*100):100,
+    optionalDone,
+    optionalTotal:optional.length,
+    complete:required.length===0 || done===required.length
+  };
 };
