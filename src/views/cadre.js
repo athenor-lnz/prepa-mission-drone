@@ -1,7 +1,7 @@
 import { h, icon, sheet, toast } from '../ui/dom.js';
 import { topbar, ctaBar, ctaButton, segmented, missionUrl } from '../ui/layout.js';
 import { mutate } from '../state.js';
-import { isLocalDateTime, addMinutes, formatRange } from '../lib/time.js';
+import { isLocalDateTime, formatRange } from '../lib/time.js';
 
 const TYPES = [
   ['judiciaire', 'Police judiciaire'],
@@ -60,12 +60,12 @@ export function renderCadre({ mission }) {
     if (!isLocalDateTime(value)) return;
     mutate(mission, (m) => {
       m.window[which] = value;
-      if (which === 'start' && (!isLocalDateTime(m.window.end) || m.window.end <= value)) {
-        m.window.end = addMinutes(value, 120);
+      if (which === 'start' && isLocalDateTime(m.window.end) && m.window.end <= value) {
+        m.window.end = '';
       }
-      if (which === 'end' && m.window.end <= m.window.start) {
+      if (which === 'end' && isLocalDateTime(m.window.start) && m.window.end <= m.window.start) {
         toast('La fin de mission doit être postérieure au début.', 'bad');
-        m.window.end = addMinutes(m.window.start, 120);
+        m.window.end = '';
       }
       invalidateWeather();
     });
