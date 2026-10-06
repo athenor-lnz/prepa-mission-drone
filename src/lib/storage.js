@@ -38,7 +38,7 @@ export function newMission({ now = new Date(), name = 'Nouvelle mission' } = {})
       supaip: { fetchedAt: null, source: null, items: [] }
     },
     macloe: { M: '', A: '', C: '', L: '', O: '', E: '' },
-    macloeMap: { start: null, end: null, route: [], polygon: [], elevation: [], elevationSource: '', flightProfile: [], annotations: { L: { lines: [] }, E: { lines: [], zones: [] } } },
+    macloeMap: { start: null, end: null, route: [], polygon: [], elevation: [], elevationSource: '', flightProfile: [], annotations: { L: { lines: [] }, E: { lines: [], zones: [] } }, pois: [] },
     smepp: { S1: '', S2: '', M: '', E_A: '', E_M: '', E_I: '', E_C: '', E_A2: '', E_L: '', P1: '', P2: '' },
     validation: { macloe: [], smepp: [] },
     admin: { gendrone: 'todo', visualdrone: 'todo' },
@@ -114,6 +114,19 @@ function cleanAnnotations(raw){
   };
 }
 
+
+function cleanPoi(x){
+  const p=cleanMapPoint(x);if(!p)return null;
+  return {
+    id:str(x?.id,80)||newId(),
+    name:str(x?.name,80)||'POI',
+    category:str(x?.category,60)||'Autre',
+    color:/^#[0-9A-Fa-f]{6}$/.test(x?.color||'')?x.color:'#CDB23A',
+    note:str(x?.note,500),
+    lat:p.lat,lon:p.lon
+  };
+}
+
 function cleanMacloeMap(raw){
   const src=raw&&typeof raw==='object'?raw:{};
   const route=list(src.route,200).map(cleanMapPoint).filter(Boolean);
@@ -126,7 +139,7 @@ function cleanMacloeMap(raw){
   })).filter((p)=>p.ratio!==null&&p.ratio>=0&&p.ratio<=1&&p.aglM!==null&&p.aglM>=0&&p.aglM<=500);
   return {
     start:cleanMapPoint(src.start),end:cleanMapPoint(src.end),
-    route,polygon,elevation,elevationSource:str(src.elevationSource,100),flightProfile,annotations:cleanAnnotations(src.annotations)
+    route,polygon,elevation,elevationSource:str(src.elevationSource,100),flightProfile,annotations:cleanAnnotations(src.annotations),pois:list(src.pois,200).map(cleanPoi).filter(Boolean)
   };
 }
 
