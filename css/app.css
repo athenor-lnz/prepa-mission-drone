@@ -605,3 +605,19 @@ button, .btn, .cta { font: inherit; cursor: pointer; }
 .usecase-mode.bvlos{background:var(--warnSoft);color:var(--warn)}
 .usecase-range{font-size:12px;font-weight:700;color:var(--acc)}
 .usecase-copy small{font-size:11px;line-height:1.35;color:var(--mute)}
+
+
+/* --- Cas d’usage : cartes compactes + fiche explicative --- */
+.usecase-card.compact{min-height:72px;align-items:center;padding:10px 12px;cursor:pointer}
+.usecase-card.compact .usecase-check{
+  width:32px;height:32px;border-radius:10px;border:1px solid var(--line);background:var(--surf);display:grid;place-items:center;color:var(--surf)
+}
+.usecase-card.compact .usecase-check.on{background:var(--acc);border-color:var(--acc);color:var(--accInk)}
+.usecase-card.compact .usecase-copy{gap:2px}
+.usecase-card.compact .usecase-title-row strong{font-size:14px}
+.usecase-card.compact .usecase-range{font-size:11px;color:var(--mute)}
+.usecase-more{display:grid;place-items:center;color:var(--mute);flex:none}
+.usecase-sheet{gap:14px}
+.usecase-sheet-badges{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.usecase-sheet-text{font-size:15px;line-height:1.5}
+.settings-save-actions{display:flex;flex-direction:column;gap:10px;margin-top:8px}
