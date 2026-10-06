@@ -473,7 +473,19 @@ export async function analyzeAerodata({lat,lon,radiusM=500,nearest=5}){
 }
 
 export function vacSearchUrl(icao){
-  return `https://www.sia.aviation-civile.gouv.fr/catalogsearch/result/?q=${encodeURIComponent(String(icao||'').trim().toUpperCase())}&format=pdf`;
+  return `https://www.sia.aviation-civile.gouv.fr/catalogsearch/result/?c=8&format=pdf&q=${encodeURIComponent(String(icao||'').trim().toUpperCase())}`;
+}
+export function vacDirectUrl(icao,effective=null){
+  const code=String(icao||'').trim().toUpperCase();
+  if(!/^LF[A-Z0-9]{2}$/.test(code))return vacSearchUrl(code);
+  const d=effective?new Date(effective):null;
+  if(!d||Number.isNaN(d.getTime()))return vacSearchUrl(code);
+  const months=['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
+  const cycle=`${String(d.getDate()).padStart(2,'0')}_${months[d.getMonth()]}_${d.getFullYear()}`;
+  return `https://www.sia.aviation-civile.gouv.fr/media/dvd/eAIP_${cycle}/Atlas-VAC/PDF_AIPparSSection/VAC/AD/AD-2.${code}.pdf`;
+}
+export function hasDirectVac(icao){
+  return /^LF[A-Z0-9]{2}$/i.test(String(icao||'').trim());
 }
 export const SIA_URL='https://www.sia.aviation-civile.gouv.fr/';
 export const SOFIA_URL='https://sofia-briefing.aviation-civile.gouv.fr/sofia/pages/homepage.html';
