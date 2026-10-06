@@ -87,10 +87,35 @@ export async function copyText(text, okMessage = 'Copié') {
 }
 
 /** Feuille modale (bas d'écran). Retourne { close }. Échap et clic sur le fond ferment. */
+function isIOSLike(){
+  const ua=navigator.userAgent||'';
+  return /iPad|iPhone|iPod/.test(ua) || (navigator.platform==='MacIntel' && navigator.maxTouchPoints>1);
+}
 export function sheet(title, content, { onClose, autofocus = true } = {}) {
   const prevFocus = document.activeElement;
-  const close = () => { scrim.remove(); document.removeEventListener('keydown', onKey); prevFocus?.focus?.(); onClose?.(); };
+  const ios=isIOSLike();
+  let closed=false;
   const onKey = (e) => { if (e.key === 'Escape') close(); };
+  const syncViewport=()=>{
+    const vv=globalThis.visualViewport;
+    if(!vv)return;
+    scrim.style.height=Math.max(180,Math.round(vv.height))+'px';
+    scrim.style.top=Math.round(vv.offsetTop)+'px';
+    scrim.style.bottom='auto';
+    panel.style.maxHeight=Math.max(160,Math.round(vv.height-8))+'px';
+  };
+  const close = () => {
+    if(closed)return;closed=true;
+    globalThis.visualViewport?.removeEventListener?.('resize',syncViewport);
+    globalThis.visualViewport?.removeEventListener?.('scroll',syncViewport);
+    scrim.remove();
+    document.removeEventListener('keydown', onKey);
+    // Sur iOS, restaurer le focus par script peut rouvrir puis refermer le clavier.
+    if(!ios && prevFocus?.isConnected) {
+      try { prevFocus.focus?.({preventScroll:true}); } catch { prevFocus.focus?.(); }
+    }
+    onClose?.();
+  };
   const panel = h('div', { class: 'sheet', role: 'dialog', 'aria-modal': 'true', 'aria-label': title },
     h('div', { class: 'grab' }),
     h('div', { class: 'sheet-head' }, h('h2', {}, title), h('button', { class: 'icon-btn', 'aria-label': 'Fermer', onclick: close }, icon('close'))),
@@ -98,7 +123,18 @@ export function sheet(title, content, { onClose, autofocus = true } = {}) {
   const scrim = h('div', { class: 'scrim', onclick: (e) => { if (e.target === scrim) close(); } }, panel);
   document.body.append(scrim);
   document.addEventListener('keydown', onKey);
-  if (autofocus) (panel.querySelector('input,textarea,button.primary') || panel.querySelector('button'))?.focus();
+  globalThis.visualViewport?.addEventListener?.('resize',syncViewport);
+  globalThis.visualViewport?.addEventListener?.('scroll',syncViewport);
+  syncViewport();
+
+  // iOS/WebKit : le focus programmatique d'un champ dans une feuille mobile est instable.
+  // Le clavier s'ouvre uniquement après un tap utilisateur sur le champ.
+  if (autofocus && !ios) {
+    queueMicrotask(()=>{
+      const target=panel.querySelector('input,textarea,button.primary') || panel.querySelector('button');
+      try { target?.focus?.({preventScroll:true}); } catch { target?.focus?.(); }
+    });
+  }
   return { close };
 }
 
