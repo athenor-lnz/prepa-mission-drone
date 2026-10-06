@@ -100,6 +100,27 @@ test('sanitizeMission : rejette l\'invalide, borne les textes, ne garde que les 
   assert.equal(m.mens.meteo.gustLimitMs, DEFAULT_GUST_LIMIT_MS);
 });
 
+test('sanitizeMission force l’enregistrement judiciaire et conserve le cadre administratif', () => {
+  const judicial = sanitizeMission({
+    id: 'm_jud', updatedAt: '2026-10-06T06:00:00Z',
+    context: { missionType: 'judiciaire', capture: 'observation', useCases: ['sts-gn-01-1'] },
+    window: { start: '2026-10-06T09:00', end: '2026-10-06T11:00' }
+  });
+  assert.equal(judicial.context.capture, 'enregistrement');
+
+  const admin = sanitizeMission({
+    id: 'm_adm', updatedAt: '2026-10-06T06:00:00Z',
+    context: {
+      missionType: 'administratif', capture: 'observation', useCases: ['sts-gn-01-1'],
+      administrativeOrder: { held: true, cameraCount: 2, placeNote: 'Périmètre centre-ville' }
+    },
+    window: { start: '2026-10-06T09:00', end: '2026-10-06T11:00' }
+  });
+  assert.deepEqual(admin.context.administrativeOrder, { held: true, cameraCount: 2, placeNote: 'Périmètre centre-ville' });
+  assert.equal(admin.window.start, '2026-10-06T09:00');
+  assert.equal(admin.window.end, '2026-10-06T11:00');
+});
+
 test('importJSON refuse un fichier invalide sans toucher aux missions existantes', () => {
   const mem = new Map();
   const storage = { getItem: (k) => mem.get(k) ?? null, setItem: (k, v) => mem.set(k, v) };
