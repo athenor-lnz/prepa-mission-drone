@@ -210,17 +210,40 @@ export function renderEspace({ mission }) {
       body);
   }
 
+  function frequencyLabel(f){
+    if(typeof f==='string'){
+      try { f=JSON.parse(f); } catch { return f; }
+    }
+    if(!f||typeof f!=='object')return '';
+    if(f.text)return f.text;
+    const left=[f.service,f.mhz?f.mhz+' MHz':''].filter(Boolean).join(' ');
+    return [left,f.callsign||f.indicatif,f.schedule||f.horaire].filter(Boolean).join(' · ');
+  }
+  function runwayLabel(r){
+    if(typeof r==='string'){
+      try { r=JSON.parse(r); } catch { return r; }
+    }
+    if(!r||typeof r!=='object')return '';
+    if(r.text)return r.text;
+    const dims=Number.isFinite(r.lengthM)&&Number.isFinite(r.widthM)?`${r.lengthM} × ${r.widthM} m`:Number.isFinite(r.lengthM)?`${r.lengthM} m`:'';
+    return [r.designation,dims,r.surface].filter(Boolean).join(' · ');
+  }
   function aerodromeCard() {
     if (!meta) return null;
     const ads=local?.aerodromes || es.aerodromes || [];
     return h('section',{class:'card-sec'},
       h('span',{class:'lbl'},'Aérodromes proches · VAC'),
-      h('p',{class:'note'},'Distance calculée depuis le point mission. Les fréquences proviennent du GeoJSON SIA importé.'),
+      h('p',{class:'note'},'Distance calculée depuis le point mission. Fréquences et pistes proviennent du GeoJSON SIA importé.'),
       ads.length?h('div',{class:'ad-list'},ads.map((a)=>h('article',{class:'ad-card'},
         h('div',{class:'ad-head'},h('div',{},h('strong',{},`${a.icao||'—'} · ${a.name||'Aérodrome'}`),h('small',{},`${fmtDistance(a.distanceM)}${Number.isFinite(a.altitudeFt)?` · ${a.altitudeFt} ft`:''}`))),
-        a.frequencies?.length?h('p',{class:'mono small'},a.frequencies.slice(0,4).join(' · ')):null,
+        a.frequencies?.length?h('div',{class:'ad-frequencies'},
+          h('span',{class:'lbl'},'Fréquences'),
+          a.frequencies.slice(0,6).map((f)=>h('div',{class:'mono small'},frequencyLabel(f)))):null,
+        a.runways?.length?h('div',{class:'ad-runways'},
+          h('span',{class:'lbl'},'Pistes'),
+          a.runways.slice(0,4).map((r)=>h('div',{class:'small'},runwayLabel(r)))):null,
         a.remark?h('p',{class:'note'},a.remark):null,
-        h('a',{class:'btn ghost small',href:vacSearchUrl(a.icao),target:'_blank',rel:'noopener noreferrer'},'VAC / AIP ↗')
+        a.icao?h('a',{class:'btn ghost small',href:vacSearchUrl(a.icao),target:'_blank',rel:'noopener noreferrer'},'VAC / AIP ↗'):null
       ))):h('p',{class:'note'},'Aucun aérodrome disponible dans la base locale.'));
   }
 
