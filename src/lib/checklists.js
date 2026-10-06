@@ -3,21 +3,6 @@
 
 export const CHECKLISTS = [
   {
-    id:'usage', title:"Cas d’usage", subtitle:'Rappel rapide des scénarios et distances', tone:'info',
-    sections:[
-      { title:'Repères', items:[
-        ['ouverte','Catégorie ouverte','C0, C1, C2 · DGA selon matériel'],
-        ['usage11',"Cas d’usage 1.1",'Vol en vue · jour/nuit · observateur possible'],
-        ['usage22',"Cas d’usage 2.2",'Vol en vue · contraintes de distance et de hauteur'],
-        ['d30','Distance 30 m','Distance de sécurité selon le cas retenu'],
-        ['d50','Distance 50 m','Distance de sécurité selon le cas retenu'],
-        ['d120','Distance 120 m','Distance / hauteur à vérifier selon scénario'],
-        ['pers','Survol de personnes','Vérifier le régime applicable'],
-        ['height','Hauteur maximale','Vérifier la limite applicable au cas d’usage']
-      ]}
-    ]
-  },
-  {
     id:'depart', title:'Avant le départ', subtitle:'Préparation matériel et mission', tone:'accent',
     sections:[
       { title:'Mises à jour', items:[
