@@ -38,7 +38,7 @@ export function newMission({ now = new Date(), name = 'Nouvelle mission' } = {})
       supaip: { fetchedAt: null, source: null, items: [] }
     },
     macloe: { M: '', A: '', C: '', L: '', O: '', E: '' },
-    macloeMap: { start: null, end: null, route: [], polygon: [], elevation: [], elevationSource: '', flightProfile: [] },
+    macloeMap: { start: null, end: null, route: [], polygon: [], elevation: [], elevationSource: '', flightProfile: [], annotations: { L: { lines: [] }, E: { lines: [], zones: [] } } },
     smepp: { S1: '', S2: '', M: '', E_A: '', E_M: '', E_I: '', E_C: '', E_A2: '', E_L: '', P1: '', P2: '' },
     validation: { macloe: [], smepp: [] },
     admin: { gendrone: 'todo', visualdrone: 'todo' },
@@ -91,6 +91,29 @@ function cleanMapPoint(p){
   const aglM=numOrNull(p?.aglM);
   return aglM!==null&&aglM>=0&&aglM<=500?{lat,lon,aglM}:{lat,lon};
 }
+
+function cleanAnnotationItem(x,kind){
+  const pts=list(x?.points,200).map(cleanMapPoint).filter(Boolean);
+  const min=kind==='zone'?3:2;
+  if(pts.length<min)return null;
+  return {
+    id:str(x?.id,80)||newId(),
+    name:str(x?.name,80)|| (kind==='zone'?'Zone de dégagement':'Ligne'),
+    color:/^#[0-9A-Fa-f]{6}$/.test(x?.color||'')?x.color:'#E53935',
+    points:pts
+  };
+}
+function cleanAnnotations(raw){
+  const a=raw&&typeof raw==='object'?raw:{};
+  return {
+    L:{lines:list(a.L?.lines,100).map((x)=>cleanAnnotationItem(x,'line')).filter(Boolean)},
+    E:{
+      lines:list(a.E?.lines,100).map((x)=>cleanAnnotationItem(x,'line')).filter(Boolean),
+      zones:list(a.E?.zones,100).map((x)=>cleanAnnotationItem(x,'zone')).filter(Boolean)
+    }
+  };
+}
+
 function cleanMacloeMap(raw){
   const src=raw&&typeof raw==='object'?raw:{};
   const route=list(src.route,200).map(cleanMapPoint).filter(Boolean);
@@ -103,7 +126,7 @@ function cleanMacloeMap(raw){
   })).filter((p)=>p.ratio!==null&&p.ratio>=0&&p.ratio<=1&&p.aglM!==null&&p.aglM>=0&&p.aglM<=500);
   return {
     start:cleanMapPoint(src.start),end:cleanMapPoint(src.end),
-    route,polygon,elevation,elevationSource:str(src.elevationSource,100),flightProfile
+    route,polygon,elevation,elevationSource:str(src.elevationSource,100),flightProfile,annotations:cleanAnnotations(src.annotations)
   };
 }
 
