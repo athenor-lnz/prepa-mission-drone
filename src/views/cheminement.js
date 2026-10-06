@@ -96,9 +96,10 @@ export function renderCheminement({mission}){
 
   function syncPointHeightsToProfile(){
     const ratios=routePointRatios(data.route||[]);
-    const pointProfile=(data.route||[]).map((p,i)=>Number.isFinite(Number(p.aglM))?{ratio:+ratios[i].toFixed(4),aglM:Number(p.aglM)}:null).filter(Boolean);
-    const free=(data.flightProfile||[]).filter((fp)=>!pointProfile.some((pp)=>Math.abs(pp.ratio-fp.ratio)<.01));
-    data.flightProfile=[...free,...pointProfile].sort((a,b)=>a.ratio-b.ratio);
+    data.flightProfile=(data.route||[])
+      .map((p,i)=>Number.isFinite(Number(p.aglM))?{ratio:+ratios[i].toFixed(4),aglM:Number(p.aglM)}:null)
+      .filter(Boolean)
+      .sort((a,b)=>a.ratio-b.ratio);
   }
 
   function openRoutePoint(i){
@@ -110,33 +111,45 @@ export function renderCheminement({mission}){
     const input=h('input',{
       type:'number',min:0,max:500,inputmode:'decimal',
       value:Number.isFinite(Number(p.aglM))?String(p.aglM):'',
-      placeholder:'Ex. 50','aria-label':'Hauteur de vol AGL'
+      placeholder:'Ex. 60','aria-label':'Hauteur du drone en mètres AGL'
     });
-    const altitude=()=>{
-      const v=Number(input.value);
-      return Number.isFinite(terrain)&&Number.isFinite(v)?Math.round((terrain+v)*10)/10:null;
-    };
+    const quick=[20,30,50,60,80,100,120];
+    const quickWrap=h('div',{class:'agl-quick'},
+      ...quick.map((v)=>h('button',{
+        class:'agl-chip '+(Number(p.aglM)===v?'on':''),
+        onclick:()=>{input.value=String(v);[...quickWrap.children].forEach((b)=>b.classList.toggle('on',b.textContent===v+' m'));}
+      },v+' m'))
+    );
     const info=h('div',{class:'route-point-info'},
       h('div',{},h('span',{class:'lbl'},'Coordonnées'),h('strong',{class:'mono'},p.lat.toFixed(6)+' · '+p.lon.toFixed(6))),
-      h('div',{},h('span',{class:'lbl'},'Terrain'),h('strong',{},Number.isFinite(terrain)?Math.round(terrain)+' m AMSL':'Profil non calculé'))
+      h('div',{},h('span',{class:'lbl'},'Terrain'),h('strong',{},Number.isFinite(terrain)?Math.round(terrain)+' m AMSL':'Non calculé'))
     );
     const save=()=>{
       const raw=input.value.trim();
       if(raw==='')delete p.aglM;
       else{
         const v=Number(raw);
-        if(!Number.isFinite(v)||v<0||v>500)return toast('Hauteur entre 0 et 500 m.','bad');
+        if(!Number.isFinite(v)||v<0||v>500)return toast('Hauteur entre 0 et 500 m AGL.','bad');
         p.aglM=v;
       }
       syncPointHeightsToProfile();persist();modal.close();renderMapShapes();drawPanel();
     };
     modal=sheet(i===0?'Départ':i===data.route.length-1?'Arrivée':'Point '+(i+1),
       h('div',{class:'stack route-point-sheet'},
+        h('div',{class:'agl-title'},
+          h('span',{class:'eyebrow'},'Hauteur de vol du drone'),
+          h('strong',{},Number.isFinite(Number(p.aglM))?p.aglM+' m AGL':'À définir')),
         info,
-        h('label',{class:'field-label'},'Hauteur de vol à ce point · AGL',input),
-        Number.isFinite(terrain)?h('p',{class:'note'},'Altitude drone = terrain + hauteur AGL.'):h('p',{class:'note'},'Calcule le profil altimétrique pour afficher automatiquement l’altitude AMSL du drone.'),
-        h('button',{class:'btn primary block',onclick:save},'Enregistrer la hauteur'),
-        h('button',{class:'btn ghost block',onclick:()=>{modal.close();toast('Maintiens puis fais glisser le point sur la carte pour le déplacer.');}},'Déplacer sur la carte'),
+        h('div',{class:'agl-section'},
+          h('span',{class:'lbl'},'Hauteur au-dessus du sol · AGL'),
+          quickWrap,
+          h('label',{class:'field-label'},'Saisie libre en mètres',input)),
+        h('div',{class:'banner info'},icon('info'),h('span',{},'Exemple : 60 m signifie que le drone vole à 60 m au-dessus du sol à ce point.')),
+        Number.isFinite(terrain)&&Number.isFinite(Number(p.aglM))
+          ? h('p',{class:'note'},'Altitude estimée du drone : '+Math.round((terrain+Number(p.aglM))*10)/10+' m AMSL.')
+          : null,
+        h('button',{class:'btn primary block',onclick:save},'Enregistrer la hauteur de vol'),
+        h('button',{class:'btn ghost block',onclick:()=>{modal.close();toast('Maintiens puis fais glisser le point sur la carte pour le déplacer.');}},'Déplacer ce point'),
         h('button',{class:'btn danger block',onclick:async()=>{
           if(!await confirmDialog('Supprimer ce point ?','Le tracé sera recalculé sans ce point.','Supprimer'))return;
           data.route.splice(i,1);data.elevation=[];data.elevationSource='';syncPointHeightsToProfile();persist();modal.close();renderMapShapes();drawPanel();
@@ -198,50 +211,27 @@ export function renderCheminement({mission}){
     busy=false;drawPanel();
   }
 
-  function addFlightPoint(ratio){
-    let modal;
-    const input=h('input',{type:'number',min:0,max:500,inputmode:'decimal',placeholder:'Hauteur AGL en mètres','aria-label':'Hauteur AGL'});
-    modal=sheet('Point de hauteur de vol',h('div',{class:'stack'},
-      h('p',{class:'note'},'Position : '+Math.round(ratio*100)+' % du cheminement.'),
-      input,
-      h('button',{class:'btn primary block',onclick:()=>{
-        const v=Number(input.value);
-        if(!Number.isFinite(v)||v<0||v>500)return toast('Hauteur entre 0 et 500 m.','bad');
-        data.flightProfile=[...(data.flightProfile||[]).filter((x)=>Math.abs(x.ratio-ratio)>.015),{ratio:+ratio.toFixed(3),aglM:v}].sort((a,b)=>a.ratio-b.ratio);
-        persist();modal.close();drawPanel();
-      }},'Ajouter ce point')
-    ));
-    setTimeout(()=>input.focus(),100);
-  }
 
   function profileSvg(){
-    const prof=data.elevation||[];
-    if(prof.length<2)return null;
-    const W=720,H=220,pad=28,maxD=prof[prof.length-1].distanceM||1;
-    const terrain=prof.map((p)=>p.z);
-    const flight=prof.map((p)=>{
-      const ratio=p.distanceM/maxD;
-      const agl=interpAgl(data.flightProfile,ratio);
-      return agl==null?null:p.z+agl;
-    });
-    const vals=[...terrain,...flight.filter(Number.isFinite)];
-    const min=Math.floor(Math.min(...vals)-10),max=Math.ceil(Math.max(...vals)+10),span=Math.max(20,max-min);
-    const xy=(d,z)=>[pad+(d/maxD)*(W-pad*2),H-pad-((z-min)/span)*(H-pad*2)];
-    const terrainLine=terrain.map((z,i)=>xy(prof[i].distanceM,z).join(',')).join(' ');
-    const flightPts=flight.map((z,i)=>z==null?null:xy(prof[i].distanceM,z)).filter(Boolean);
-    const flightLine=flightPts.map((p)=>p.join(',')).join(' ');
-    const controls=(data.flightProfile||[]).map((p)=>{
-      const idx=Math.min(prof.length-1,Math.round(p.ratio*(prof.length-1)));
-      const z=terrain[idx]+p.aglM;
-      const pos=xy(p.ratio*maxD,z);
-      return '<circle cx="'+pos[0]+'" cy="'+pos[1]+'" r="6" class="route-chart-control"/><text x="'+pos[0]+'" y="'+Math.max(12,pos[1]-10)+'" text-anchor="middle" class="route-chart-label">'+p.aglM+'m</text>';
+    syncPointHeightsToProfile();
+    const fp=data.flightProfile||[];
+    if(fp.length<2)return null;
+    const W=720,H=220,pad=30;
+    const vals=fp.map((p)=>p.aglM);
+    const min=0,max=Math.max(20,Math.ceil(Math.max(...vals)/10)*10+10),span=max-min;
+    const xy=(ratio,agl)=>[pad+ratio*(W-pad*2),H-pad-((agl-min)/span)*(H-pad*2)];
+    const samples=[];
+    for(let i=0;i<=100;i++){
+      const ratio=i/100,agl=interpAgl(fp,ratio);
+      if(agl!=null)samples.push(xy(ratio,agl));
+    }
+    const line=samples.map((p)=>p.join(',')).join(' ');
+    const controls=fp.map((p)=>{
+      const pos=xy(p.ratio,p.aglM);
+      return '<circle cx="'+pos[0]+'" cy="'+pos[1]+'" r="7" class="route-chart-control"/><text x="'+pos[0]+'" y="'+Math.max(14,pos[1]-11)+'" text-anchor="middle" class="route-chart-label">'+p.aglM+' m</text>';
     }).join('');
-    const box=h('div',{class:'route-profile-chart',onclick:(e)=>{
-      const rect=e.currentTarget.getBoundingClientRect();
-      const ratio=Math.max(0,Math.min(1,(e.clientX-rect.left)/rect.width));
-      addFlightPoint(ratio);
-    }});
-    box.innerHTML='<svg viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="none" aria-label="Profil altimétrique"><polyline class="route-terrain" points="'+terrainLine+'"/>'+(flightLine?'<polyline class="route-flight" points="'+flightLine+'"/>':'')+controls+'<text x="'+pad+'" y="18" class="route-chart-label">'+max+' m AMSL</text><text x="'+pad+'" y="'+(H-6)+'" class="route-chart-label">'+min+' m AMSL</text></svg>';
+    const box=h('div',{class:'route-profile-chart drone-profile'});
+    box.innerHTML='<svg viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="none" aria-label="Profil de vol du drone en hauteur AGL"><line x1="'+pad+'" y1="'+(H-pad)+'" x2="'+(W-pad)+'" y2="'+(H-pad)+'" class="route-ground"/><polyline class="route-flight-solid" points="'+line+'"/>'+controls+'<text x="'+pad+'" y="18" class="route-chart-label">'+max+' m AGL</text><text x="'+pad+'" y="'+(H-7)+'" class="route-chart-label">Sol · 0 m</text></svg>';
     return box;
   }
 
@@ -263,7 +253,7 @@ export function renderCheminement({mission}){
     ];
     if(data.route.length){
       out.push(h('section',{class:'route-points-card'},
-        h('div',{class:'route-points-head'},h('strong',{},'Points du tracé'),h('small',{},'Touchez un point pour altitude, déplacement ou suppression')),
+        h('div',{class:'route-points-head'},h('strong',{},'Points du tracé'),h('small',{},'Touchez un point pour régler la hauteur de vol AGL')),
         h('div',{class:'route-points-list'},
           ...data.route.map((p,i)=>h('button',{
             class:'route-point-row',
@@ -271,19 +261,18 @@ export function renderCheminement({mission}){
           },
             h('span',{class:'route-point-index'},i===0?'D':i===data.route.length-1?'A':String(i+1)),
             h('span',{class:'route-point-coord mono'},p.lat.toFixed(5)+' · '+p.lon.toFixed(5)),
-            h('span',{class:'route-point-agl'},Number.isFinite(Number(p.aglM))?p.aglM+' m AGL':'Altitude —'),
+            h('span',{class:'route-point-agl'},Number.isFinite(Number(p.aglM))?p.aglM+' m AGL':'Hauteur —'),
             icon('arrow',16)
           ))
         )
       ));
     }
-    if(data.route.length>=2)out.push(h('button',{class:'btn primary block',disabled:busy,onclick:calcProfile},busy?'Calcul du profil…':data.elevation.length?'Recalculer le profil altimétrique':'Calculer le profil altimétrique'));
+    if(data.route.length>=2)out.push(h('button',{class:'btn primary block',disabled:busy,onclick:calcProfile},busy?'Calcul du relief…':data.elevation.length?'Recalculer le terrain IGN':'Calculer le terrain IGN · optionnel'));
     if(chart){
       out.push(h('section',{class:'route-profile'},
-        h('div',{class:'route-profile-title'},h('strong',{},'Profil altimétrique'),h('small',{},data.elevationSource||'')),
+        h('div',{class:'route-profile-title'},h('strong',{},'Profil de vol du drone'),h('small',{},'Hauteur AGL')),
         chart,
-        h('p',{class:'note'},'Touchez le graphique pour ajouter une consigne de hauteur AGL. La ligne jaune représente la trajectoire prévue au-dessus du terrain.'),
-        data.flightProfile?.length?h('div',{class:'route-height-points'},...data.flightProfile.map((p)=>h('button',{class:'route-height-chip',onclick:(e)=>{e.stopPropagation();data.flightProfile=data.flightProfile.filter((x)=>x!==p);persist();drawPanel();}},Math.round(p.ratio*100)+'% · '+p.aglM+' m ×'))):null
+        h('p',{class:'note'},'La courbe jaune représente la hauteur du drone au-dessus du sol. Elle est interpolée entre les hauteurs renseignées sur les points.')
       ));
     }
     out.push(h('button',{class:'btn ghost block',onclick:()=>{persist();location.hash=missionUrl(mission.id,'macloe');}},'Retour à MACLOE'));
