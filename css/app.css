@@ -306,3 +306,62 @@ button, .btn, .cta { font: inherit; cursor: pointer; }
 @media(max-width:520px){
   .mission-datetime-grid{grid-template-columns:1fr}
 }
+
+
+/* --- Design B.2 : accueil cockpit opérationnel --- */
+.cockpit-home{padding-bottom:calc(28px + env(safe-area-inset-bottom))}
+.cockpit-head{position:relative;display:flex;align-items:flex-start;gap:14px;padding:calc(22px + env(safe-area-inset-top)) 18px 18px;overflow:hidden}
+.cockpit-brand{display:flex;align-items:center;gap:14px;min-width:0;flex:1}
+.cockpit-brand h1{font-size:29px}
+.cockpit-sub{font-family:var(--font-display);font-weight:700;font-size:18px;color:var(--acc);margin-top:1px}
+.cockpit-drone{width:76px;height:76px;border-radius:24px;display:grid;place-items:center;flex:none;background:linear-gradient(145deg,var(--accSoft),var(--surf));color:var(--acc);box-shadow:var(--shadow)}
+.cockpit-settings{background:var(--surf);box-shadow:var(--shadow);margin-top:4px}
+.cockpit-home>.banner{margin:0 16px 14px}
+.cockpit-create{padding:0 16px 14px}
+.cockpit-new{width:100%;min-height:76px;border:0;border-radius:24px;padding:12px 16px;background:var(--ink);color:var(--bg);display:flex;align-items:center;gap:12px;text-align:left;box-shadow:var(--shadow)}
+.cockpit-new-icon{width:46px;height:46px;border-radius:16px;display:grid;place-items:center;background:var(--acc);color:var(--accInk);flex:none}
+.cockpit-new-copy{display:flex;flex-direction:column;gap:2px;flex:1;min-width:0}
+.cockpit-new-copy strong{font-family:var(--font-display);font-size:18px}
+.cockpit-new-copy small{opacity:.72;font-size:12px}
+.mission-featured{margin:0 16px 18px;padding:18px;border-radius:28px;background:var(--surf);box-shadow:var(--shadow);display:flex;flex-direction:column;gap:11px}
+.featured-top{display:flex;gap:10px;align-items:flex-start}
+.featured-top>div{flex:1;min-width:0}
+.featured-name{font-size:23px;overflow-wrap:anywhere;margin-top:2px}
+.featured-more{background:var(--surf2)}
+.featured-place{display:flex;gap:7px;align-items:center;color:var(--mute);font-weight:600;min-width:0}
+.featured-place span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.featured-time{font-size:13px;color:var(--mute)}
+.progress-head{display:flex;justify-content:space-between;align-items:center;font-size:13px;color:var(--mute);margin-top:2px}
+.progress-head strong{color:var(--ink);font-size:14px}
+.mission-progress{height:9px;border-radius:99px;background:var(--surf2);overflow:hidden}
+.mission-progress i{display:block;height:100%;border-radius:99px;background:var(--acc)}
+.mens-mini{display:grid;grid-template-columns:repeat(4,1fr);gap:7px}
+.mens-mini-item{min-width:0;padding:8px 4px;border-radius:15px;background:var(--surf2);display:flex;flex-direction:column;align-items:center;gap:3px;color:var(--mute)}
+.mens-mini-item.done{background:var(--goSoft);color:var(--go)}
+.mens-mini-letter{width:26px;height:26px;border-radius:9px;display:grid;place-items:center;background:var(--surf);font-family:var(--font-display);font-weight:800;font-size:12px}
+.mens-mini-item.done .mens-mini-letter{background:var(--go);color:var(--surf)}
+.mens-mini-item small{font-size:10px;font-weight:700;max-width:100%;overflow:hidden;text-overflow:ellipsis}
+.featured-actions{display:flex;align-items:center;gap:10px;margin-top:2px}
+.featured-actions>.pill{flex:none}
+.featured-continue{margin-left:auto;min-height:48px;border-radius:16px}
+.section-title{display:flex;justify-content:space-between;align-items:center;padding:0 20px 10px}
+.section-title h2{font-size:17px}
+.cockpit-list{gap:9px;padding-bottom:12px}
+.mcard.compact{border-radius:20px;box-shadow:none;border:1px solid var(--line)}
+.mcard.compact .mcard-main{padding-top:13px;padding-bottom:13px}
+.mcard.compact .mcard-name{font-size:16px}
+.mcard-foot{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:3px}
+.mcard-progress{font-size:12px;color:var(--acc);font-weight:700}
+.cockpit-empty{margin-top:4px}
+@media(max-width:390px){
+  .cockpit-head{padding-left:16px;padding-right:16px}
+  .cockpit-drone{width:64px;height:64px;border-radius:20px}
+  .cockpit-drone svg{width:48px;height:48px}
+  .cockpit-brand h1{font-size:25px}
+  .cockpit-sub{font-size:16px}
+  .cockpit-brand .eyebrow{font-size:10px;letter-spacing:.07em}
+  .featured-name{font-size:21px}
+  .featured-actions{align-items:stretch;flex-direction:column}
+  .featured-actions>.pill{align-self:flex-start}
+  .featured-continue{width:100%;margin-left:0}
+}
