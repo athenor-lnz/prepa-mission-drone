@@ -153,8 +153,9 @@ export function renderCheminement({mission}){
       data.route.forEach((p,i)=>{
         const label=i===0?'D':i===data.route.length-1?'A':String(i+1);
         const cls=i===0?'start':i===data.route.length-1?'end':'';
-        const m=L.marker([p.lat,p.lon],{draggable:true,icon:markerIcon(label+(Number.isFinite(Number(p.aglM))?' · '+p.aglM+'m':''),cls)}).addTo(map);
+        const m=L.marker([p.lat,p.lon],{draggable:true,bubblingMouseEvents:false,riseOnHover:true,icon:markerIcon(label+(Number.isFinite(Number(p.aglM))?' · '+p.aglM+'m':''),cls)}).addTo(map);
         m.on('click',(e)=>{L.DomEvent.stopPropagation(e);openRoutePoint(i);});
+        m.on('contextmenu',(e)=>{L.DomEvent.stopPropagation(e);openRoutePoint(i);});
         m.on('dragend',()=>{
           const q=m.getLatLng();
           data.route[i]={...data.route[i],lat:q.lat,lon:q.lng};
@@ -260,6 +261,22 @@ export function renderCheminement({mission}){
         h('button',{class:'btn ghost small',onclick:undo},'↶ Dernier point'),
         h('button',{class:'btn ghost small',onclick:async()=>{if(await confirmDialog('Effacer la carte ?','Le tracé, la zone et le profil altimétrique seront supprimés.','Effacer'))clearAll();}},'Effacer'))
     ];
+    if(data.route.length){
+      out.push(h('section',{class:'route-points-card'},
+        h('div',{class:'route-points-head'},h('strong',{},'Points du tracé'),h('small',{},'Touchez un point pour altitude, déplacement ou suppression')),
+        h('div',{class:'route-points-list'},
+          ...data.route.map((p,i)=>h('button',{
+            class:'route-point-row',
+            onclick:()=>openRoutePoint(i)
+          },
+            h('span',{class:'route-point-index'},i===0?'D':i===data.route.length-1?'A':String(i+1)),
+            h('span',{class:'route-point-coord mono'},p.lat.toFixed(5)+' · '+p.lon.toFixed(5)),
+            h('span',{class:'route-point-agl'},Number.isFinite(Number(p.aglM))?p.aglM+' m AGL':'Altitude —'),
+            icon('arrow',16)
+          ))
+        )
+      ));
+    }
     if(data.route.length>=2)out.push(h('button',{class:'btn primary block',disabled:busy,onclick:calcProfile},busy?'Calcul du profil…':data.elevation.length?'Recalculer le profil altimétrique':'Calculer le profil altimétrique'));
     if(chart){
       out.push(h('section',{class:'route-profile'},
