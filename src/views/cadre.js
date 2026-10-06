@@ -12,10 +12,34 @@ const TYPES = [
   ['autre', 'Autre']
 ];
 const CASES = [
-  ['ouverte', 'Catégorie ouverte AE'],
-  ['sts-gn-01-1', 'En vue · STS GN 01.1'],
-  ['hors-vue-1km', 'Hors vue · 1 km max'],
-  ['hors-vue-2km', 'Hors vue · 2 km max']
+  {
+    id:'ouverte',
+    title:'Catégorie ouverte AE',
+    mode:'VLOS',
+    range:'Selon sous-catégorie',
+    description:'Régime catégorie ouverte. Vérifier la classe du drone, les personnes présentes, la hauteur et les distances applicables à la situation.'
+  },
+  {
+    id:'sts-gn-01-1',
+    title:'STS GN 01.1',
+    mode:'VLOS',
+    range:'Vol en vue',
+    description:'Le télépilote conserve l’APAD en vue directe pendant le vol. Vérifier les conditions prévues par le scénario et le matériel engagé.'
+  },
+  {
+    id:'hors-vue-1km',
+    title:'Hors vue · 1 km max',
+    mode:'BVLOS',
+    range:'Élongation max 1 km',
+    description:'Cas d’usage hors vue limité à 1 km. Vérifier avant mission les conditions, moyens et contraintes prévus par le scénario applicable.'
+  },
+  {
+    id:'hors-vue-2km',
+    title:'Hors vue · 2 km max',
+    mode:'BVLOS',
+    range:'Élongation max 2 km',
+    description:'Cas d’usage hors vue limité à 2 km. Vérifier avant mission les conditions, moyens et contraintes prévus par le scénario applicable.'
+  }
 ];
 
 export function renderCadre({ mission }) {
@@ -197,15 +221,25 @@ export function renderCadre({ mission }) {
             draw();
           }, 'Type de captation')),
 
-        h('section', { class: 'card-sec' },
+        h('section', { class: 'card-sec usecase-section' },
           h('span', { class: 'lbl' }, 'Cas d’usage / scénario'),
-          h('p', { class: 'note' }, 'Plusieurs cas peuvent être retenus. Les caractéristiques exactes restent à vérifier dans la documentation opérationnelle en vigueur.'),
-          h('div', { class: 'check-list' }, CASES.map(([v, label]) =>
-            h('button', {
-              class: `check-choice ${c.useCases.includes(v) ? 'on' : ''}`,
-              'aria-pressed': String(c.useCases.includes(v)),
-              onclick: () => toggleCase(v)
-            }, h('span', { class: 'check-dot' }, c.useCases.includes(v) ? icon('check', 16) : ''), h('span', {}, label))))),
+          h('p', { class: 'note' }, 'Sélectionne le ou les cas prévus pour la mission. Les repères essentiels sont affichés ici ; la documentation opérationnelle en vigueur reste la référence.'),
+          h('div', { class: 'usecase-list' }, CASES.map((item) => {
+            const selected=c.useCases.includes(item.id);
+            return h('button', {
+              class: `usecase-card ${selected ? 'on' : ''}`,
+              'aria-pressed': String(selected),
+              onclick: () => toggleCase(item.id)
+            },
+              h('span', { class: 'check-dot usecase-check' }, selected ? icon('check', 16) : ''),
+              h('span', { class:'usecase-copy' },
+                h('span', { class:'usecase-title-row' },
+                  h('strong', {}, item.title),
+                  h('span', { class:`usecase-mode ${item.mode==='BVLOS'?'bvlos':''}` }, item.mode)),
+                h('span', { class:'usecase-range' }, item.range),
+                h('small', {}, item.description))
+            );
+          }))),
 
         !ready
           ? h('div', { class: 'banner warn' }, icon('warn'), h('span', {},
