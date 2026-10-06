@@ -27,6 +27,7 @@ export function isStepDone(mission, step) {
   }
   if (step.key === 'lieu') return Number.isFinite(mission.place?.lat) && Number.isFinite(mission.place?.lon);
   if (step.key === 'mens') {
+    if (mission.workflow?.mensExternal === true) return true;
     const m = mission.mens || {};
     const meteo = !!(m.meteo?.slots?.length || m.meteo?.manual);
     const espace = !!(m.espace?.fetchedAt || m.espace?.localAnalysisAt);
