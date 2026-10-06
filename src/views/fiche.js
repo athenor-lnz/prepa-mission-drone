@@ -75,6 +75,10 @@ export function renderForm({ mission, route }) {
 
   const isValidated = (id) => (mission.validation?.[validationKey] || []).includes(id);
   const sectionById = (id) => form.sections.find((s) => s.id === id);
+  const hasCheminementMap = () => {
+    const d=mission.macloeMap||{};
+    return (Array.isArray(d.route)&&d.route.length>=2)||(Array.isArray(d.polygon)&&d.polygon.length>=3)||(d.start&&d.end);
+  };
 
   function setValidated(id, on) {
     mutate(mission, (m) => {
@@ -94,7 +98,8 @@ export function renderForm({ mission, route }) {
     const vp = validatedProgress(form, validated);
     const sec = sectionById(active) || form.sections[0];
     const sp = sectionProgress(sec, mission[key]);
-    const complete = sectionComplete(sec, mission[key]);
+    const mapComplete = route==='macloe' && sec.id==='C' && hasCheminementMap();
+    const complete = sectionComplete(sec, mission[key]) || mapComplete;
     const done = isValidated(sec.id);
 
     const rail = h('div', { class: 'form-rail', role: 'tablist', 'aria-label': `Sections ${form.title}` },
@@ -107,10 +112,13 @@ export function renderForm({ mission, route }) {
 
     let validate;
     const fieldNodes = new Map();
-    const liveSectionComplete = () => sec.fields.every((f) => {
-      const value = fieldNodes.get(f.key)?.value ?? mission[key][f.key] ?? '';
-      return String(value).trim().length > 0;
-    });
+    const liveSectionComplete = () => {
+      if(route==='macloe' && sec.id==='C' && hasCheminementMap()) return true;
+      return sec.fields.every((f) => {
+        const value = fieldNodes.get(f.key)?.value ?? mission[key][f.key] ?? '';
+        return String(value).trim().length > 0;
+      });
+    };
     const syncSectionFields = () => {
       mutate(mission, (m) => {
         for (const f of sec.fields) {
@@ -159,8 +167,9 @@ export function renderForm({ mission, route }) {
       onclick: () => {
         if (done) { setValidated(sec.id,false); draw(); return; }
         syncSectionFields();
-        if (!sectionComplete(sec, mission[key])) {
-          toast('Complète le champ avant de continuer.', 'bad');
+        const cartoOk = route==='macloe' && sec.id==='C' && hasCheminementMap();
+        if (!sectionComplete(sec, mission[key]) && !cartoOk) {
+          toast('Complète le texte ou enregistre un cheminement sur la carte.', 'bad');
           return;
         }
         setValidated(sec.id,true);
@@ -184,9 +193,19 @@ export function renderForm({ mission, route }) {
         h('section', { class: `card-sec active-form-section ${done?'section-validated':''}` },
           h('div', { class: 'fsec-head' },
             h('span', { class: `letter ${done?'done':''}` }, done?icon('check',18):sec.letter),
-            h('div',{class:'fsec-title'},h('h2', {}, sec.title), h('span',{class:'mono small','data-section-count':'1'},`${sp.done} / ${sp.total} champ(s)`))),
+            h('div',{class:'fsec-title'},h('h2', {}, sec.title), h('span',{class:'mono small','data-section-count':'1'},mapComplete ? 'Carte OK' : `${sp.done} / ${sp.total} champ(s)`))),
           guidance,
           fields,
+          route==='macloe' && sec.id==='C'
+            ? h('div',{class:'cheminement-bonus'},
+                h('div',{class:'cheminement-bonus-copy'},
+                  h('span',{class:'eyebrow'},'Outil bonus'),
+                  h('strong',{},hasCheminementMap()?'Carte de cheminement enregistrée':'Carte plein écran'),
+                  h('small',{},hasCheminementMap()
+                    ? 'Le texte devient facultatif : la carte suffit pour valider Cheminement.'
+                    : 'Trace un départ, une arrivée, un itinéraire ou une zone. Cet outil reste facultatif.')),
+                h('a',{class:'btn ghost',href:missionUrl(mission.id,'cheminement')},hasCheminementMap()?'Modifier la carte':'Ouvrir la carte'))
+            : null,
           validate),
         h('button', { class: 'btn ghost block', onclick: () => copyText(toText(form, mission[key]), `${form.title} copié`) }, icon('copy'), `Copier ${form.title}`)),
       ctaBar(h('button', {
