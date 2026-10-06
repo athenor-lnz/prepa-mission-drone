@@ -260,7 +260,7 @@ export function renderEspace({ mission }) {
     };
     el.parentElement.querySelectorAll('[data-air-base]').forEach((b)=>b.onclick=()=>setMode(b.dataset.airBase));
     setMode(mapMode);
-    L.circle([p.lat,p.lon],{radius:p.radiusM||500,color:getComputedStyle(document.documentElement).getPropertyValue('--acc').trim()||'#2340E8',weight:3,dashArray:'8 6',fillOpacity:.08}).addTo(overlay);
+    L.circle([p.lat,p.lon],{radius:p.radiusM||500,color:'#2F80ED',fillColor:'#2F80ED',weight:3,dashArray:'8 6',fillOpacity:.08}).addTo(overlay);
     L.marker([p.lat,p.lon]).addTo(overlay);
     for(const z of local?.zones||[]){
       if(!z.geometry||z.geometry.type==='Point')continue;
