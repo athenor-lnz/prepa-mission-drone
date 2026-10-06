@@ -217,9 +217,26 @@ export function sanitizeMission(raw) {
   };
 
   const nt = raw.mens?.notam || {};
-  m.mens.notam = { fetchedAt: strOrNull(nt.fetchedAt), source: strOrNull(nt.source), items: list(nt.items).map((i) => ({ id: str(i?.id, 60), text: str(i?.text), validity: str(i?.validity, 120), addedAt: strOrNull(i?.addedAt) })) };
+  m.mens.notam = { fetchedAt: strOrNull(nt.fetchedAt), source: strOrNull(nt.source), items: list(nt.items).map((i) => ({
+    id: str(i?.id, 60), text: str(i?.text), validity: str(i?.validity, 120), addedAt: strOrNull(i?.addedAt),
+    lat: numOrNull(i?.lat), lon: numOrNull(i?.lon), radiusM: numOrNull(i?.radiusM)
+  })).map((i)=>({
+    ...i,
+    lat:i.lat!==null&&i.lat>=-90&&i.lat<=90?i.lat:null,
+    lon:i.lon!==null&&i.lon>=-180&&i.lon<=180?i.lon:null,
+    radiusM:i.radiusM!==null?Math.max(50,Math.min(50000,i.radiusM)):null
+  })) };
   const sp = raw.mens?.supaip || {};
-  m.mens.supaip = { fetchedAt: strOrNull(sp.fetchedAt), source: strOrNull(sp.source), items: list(sp.items).map((i) => ({ id: str(i?.id, 60), title: str(i?.title, 300), validity: str(i?.validity, 120), url: /^https?:\/\//i.test(i?.url) ? str(i.url, 500) : '', addedAt: strOrNull(i?.addedAt) })) };
+  m.mens.supaip = { fetchedAt: strOrNull(sp.fetchedAt), source: strOrNull(sp.source), items: list(sp.items).map((i) => ({
+    id: str(i?.id, 60), title: str(i?.title, 300), validity: str(i?.validity, 120),
+    url: /^https?:\/\//i.test(i?.url) ? str(i.url, 500) : '', addedAt: strOrNull(i?.addedAt),
+    lat: numOrNull(i?.lat), lon: numOrNull(i?.lon), radiusM: numOrNull(i?.radiusM)
+  })).map((i)=>({
+    ...i,
+    lat:i.lat!==null&&i.lat>=-90&&i.lat<=90?i.lat:null,
+    lon:i.lon!==null&&i.lon>=-180&&i.lon<=180?i.lon:null,
+    radiusM:i.radiusM!==null?Math.max(50,Math.min(50000,i.radiusM)):null
+  })) };
 
   for (const k of Object.keys(m.macloe)) m.macloe[k] = str(raw.macloe?.[k]);
   m.macloeMap = cleanMacloeMap(raw.macloeMap);
