@@ -35,7 +35,7 @@ export function renderFiche({ mission }) {
     const nt = mission.mens.notam; const sp = mission.mens.supaip;
     const name = h('input', { class: 'title-input', value: mission.name, maxlength: 200, 'aria-label': 'Nom de la mission', oninput: (e) => mutate(mission, (m) => { m.name = e.target.value.trim() || 'Nouvelle mission'; }, { debounce: 400 }) });
 
-    root.replaceChildren(topbar(mission, 'fiche'), h('div', { class: 'body' },
+    root.replaceChildren(topbar(mission, 'fiche', { onBack: () => { location.hash = missionUrl(mission.id, 'etapes'); } }), h('div', { class: 'body' },
       h('div', { class: 'form-head' }, h('div', {}, h('span', { class: 'eyebrow' }, 'Étape 6'), h('h1', {}, 'Synthèse')), h('span', { class: 'pill go' }, 'MISSION')),
       name,
       h('section', { class: 'card-sec summary' },
@@ -179,9 +179,9 @@ export function renderForm({ mission, route }) {
       }
     }, done ? '✓ Partie validée — modifier' : 'Valider cette partie et continuer');
 
-    const backRoute = route==='macloe' ? 'supaip' : 'macloe';
-    const nextRoute = route==='macloe' ? 'smepp' : 'fiche';
-    const nextLabel = route==='macloe' ? 'Continuer · SMEPP' : 'Continuer · Synthèse';
+    const backRoute = 'etapes';
+    const nextRoute = 'etapes';
+    const nextLabel = 'Valider · Retour aux étapes';
 
     root.replaceChildren(
       topbar(mission, route, { onBack: () => { location.hash = missionUrl(mission.id, backRoute); } }),
