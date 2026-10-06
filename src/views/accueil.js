@@ -9,23 +9,17 @@ import { missionUrl, isStepDone } from '../ui/layout.js';
 function nextRoute(m) {
   if (!isStepDone(m, { key: 'cadre' })) return 'cadre';
   if (!isStepDone(m, { key: 'lieu' })) return 'lieu';
-  if (!m.mens.meteo.slots.length && !m.mens.meteo.manual) return 'meteo';
-  if (!m.mens.espace.fetchedAt && !m.mens.espace.localAnalysisAt) return 'espace';
-  if (!m.mens.notam.fetchedAt) return 'notam';
-  if (!m.mens.supaip.fetchedAt) return 'supaip';
-  if (!formValidated(FORMS.macloe, m.validation?.macloe)) return 'macloe';
-  if (!formValidated(FORMS.smepp, m.validation?.smepp)) return 'smepp';
-  return 'fiche';
+  return 'etapes';
 }
 
 function preparationProgress(m) {
   const checks = [
     isStepDone(m, { key: 'cadre' }),
     isStepDone(m, { key: 'lieu' }),
-    !!(m.mens.meteo.slots.length || m.mens.meteo.manual),
-    !!(m.mens.espace.fetchedAt || m.mens.espace.localAnalysisAt),
-    !!m.mens.notam.fetchedAt,
-    !!m.mens.supaip.fetchedAt,
+    !!(m.workflow?.mensExternal || m.mens.meteo.slots.length || m.mens.meteo.manual),
+    !!(m.workflow?.mensExternal || m.mens.espace.fetchedAt || m.mens.espace.localAnalysisAt),
+    !!(m.workflow?.mensExternal || m.mens.notam.fetchedAt),
+    !!(m.workflow?.mensExternal || m.mens.supaip.fetchedAt),
     formValidated(FORMS.macloe, m.validation?.macloe),
     formValidated(FORMS.smepp, m.validation?.smepp)
   ];
@@ -35,10 +29,10 @@ function preparationProgress(m) {
 
 function mensState(m) {
   return [
-    ['M', 'Météo', !!(m.mens.meteo.slots.length || m.mens.meteo.manual)],
-    ['E', 'Espace', !!(m.mens.espace.fetchedAt || m.mens.espace.localAnalysisAt)],
-    ['N', 'NOTAM', !!m.mens.notam.fetchedAt],
-    ['S', 'SUP AIP', !!m.mens.supaip.fetchedAt]
+    ['M', 'Météo', !!(m.workflow?.mensExternal || m.mens.meteo.slots.length || m.mens.meteo.manual)],
+    ['E', 'Espace', !!(m.workflow?.mensExternal || m.mens.espace.fetchedAt || m.mens.espace.localAnalysisAt)],
+    ['N', 'NOTAM', !!(m.workflow?.mensExternal || m.mens.notam.fetchedAt)],
+    ['S', 'SUP AIP', !!(m.workflow?.mensExternal || m.mens.supaip.fetchedAt)]
   ];
 }
 
