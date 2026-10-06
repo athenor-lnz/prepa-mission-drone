@@ -1,6 +1,7 @@
 // Stockage des missions dans le navigateur, avec export/import JSON.
 // Tolère l'absence de localStorage : repli en mémoire.
 import { isLocalDateTime } from './time.js';
+import { CHECKLISTS, checklistItems } from './checklists.js';
 
 export const KEY = 'pmd.missions.v1';
 export const EXPORT_FORMAT = 'prepa-mission-drone/missions@1';
@@ -38,7 +39,8 @@ export function newMission({ now = new Date(), name = 'Nouvelle mission' } = {})
     macloe: { M: '', A: '', C: '', L: '', O: '', E: '' },
     smepp: { S1: '', S2: '', M: '', E_A: '', E_M: '', E_I: '', E_C: '', E_A2: '', E_L: '', P1: '', P2: '' },
     validation: { macloe: [], smepp: [] },
-    admin: { gendrone: 'todo', visualdrone: 'todo' }
+    admin: { gendrone: 'todo', visualdrone: 'todo' },
+    checklists: {}
   };
 }
 
@@ -180,6 +182,17 @@ export function sanitizeMission(raw) {
   const g = raw.admin?.gendrone;
   const v = raw.admin?.visualdrone;
   m.admin = { gendrone: ['todo', 'sent', 'validated'].includes(g) ? g : 'todo', visualdrone: ['todo', 'declared'].includes(v) ? v : 'todo' };
+
+  // Check-lists : on ne conserve que les identifiants connus et des booléens vrais.
+  m.checklists = {};
+  const rawChecks = raw.checklists && typeof raw.checklists === 'object' ? raw.checklists : {};
+  for (const def of CHECKLISTS) {
+    const allowed = new Set(checklistItems(def).map((x)=>x.id));
+    const src = rawChecks[def.id] && typeof rawChecks[def.id] === 'object' ? rawChecks[def.id] : {};
+    const clean = {};
+    for (const [id, value] of Object.entries(src)) if (allowed.has(id) && value === true) clean[id] = true;
+    if (Object.keys(clean).length) m.checklists[def.id] = clean;
+  }
   return m;
 }
 
