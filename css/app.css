@@ -769,3 +769,39 @@ button, .btn, .cta { font: inherit; cursor: pointer; }
 .route-point-info>div{padding:10px;border-radius:14px;background:var(--surf2);display:flex;flex-direction:column;gap:3px;min-width:0}
 .route-point-info strong{font-size:12px;overflow-wrap:anywhere}
 .route-point-sheet .btn.danger{margin-top:2px}
+
+
+/* --- Zone mission : visée centrale sans données aéronautiques --- */
+.zone-crosshair{
+  position:absolute;left:50%;top:39%;width:44px;height:44px;transform:translate(-50%,-50%);
+  z-index:260;pointer-events:none;filter:drop-shadow(0 2px 5px rgba(0,0,0,.55))
+}
+.zone-crosshair::before{
+  content:'';position:absolute;inset:8px;border:2px solid #fff;border-radius:50%
+}
+.zone-crosshair::after{
+  content:'';position:absolute;left:20px;top:20px;width:4px;height:4px;border-radius:50%;background:#CDB23A;box-shadow:0 0 0 2px rgba(0,0,0,.35)
+}
+.zone-crosshair span:first-child{position:absolute;left:21px;top:0;width:2px;height:44px;background:linear-gradient(transparent 0 18%,#fff 18% 39%,transparent 39% 61%,#fff 61% 82%,transparent 82%)}
+.zone-crosshair span:last-child{position:absolute;left:0;top:21px;width:44px;height:2px;background:linear-gradient(90deg,transparent 0 18%,#fff 18% 39%,transparent 39% 61%,#fff 61% 82%,transparent 82%)}
+.zone-crosshair-pick{min-height:46px}
+
+/* --- Cheminement : liste tactile des points --- */
+.route-points-card{display:flex;flex-direction:column;gap:7px;padding:9px;border-radius:16px;background:var(--surf2);border:1px solid var(--line)}
+.route-points-head{display:flex;flex-direction:column;gap:1px}
+.route-points-head strong{font-family:var(--font-display);font-size:13px}
+.route-points-head small{font-size:10px;color:var(--mute)}
+.route-points-list{display:flex;gap:6px;overflow-x:auto;padding-bottom:2px;scrollbar-width:none}
+.route-points-list::-webkit-scrollbar{display:none}
+.route-point-row{
+  flex:0 0 auto;min-width:138px;min-height:66px;padding:7px 8px;border-radius:13px;border:1px solid var(--line);
+  background:var(--surf);color:var(--ink);display:grid;grid-template-columns:28px 1fr 16px;grid-template-rows:auto auto;
+  align-items:center;gap:2px 7px;text-align:left
+}
+.route-point-index{
+  grid-row:1/3;width:28px;height:28px;border-radius:50%;display:grid;place-items:center;
+  background:#2F80ED;color:#fff;font-family:var(--font-display);font-size:10px;font-weight:800
+}
+.route-point-coord{font-size:9px;color:var(--mute)}
+.route-point-agl{font-size:11px;font-weight:800}
+.route-point-row>svg{grid-column:3;grid-row:1/3;color:var(--mute)}
