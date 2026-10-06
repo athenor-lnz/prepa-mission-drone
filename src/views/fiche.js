@@ -39,7 +39,7 @@ export function renderFiche({ mission }) {
       h('div', { class: 'form-head' }, h('div', {}, h('span', { class: 'eyebrow' }, 'Étape 6'), h('h1', {}, 'Synthèse')), h('span', { class: 'pill go' }, 'MISSION')),
       name,
       h('section', { class: 'card-sec summary' },
-        row('Cadre', [mission.context.missionType, mission.context.capture].filter(Boolean).join(' · ') || 'Non défini', '', missionUrl(mission.id, 'cadre')),
+        row('Cadre', [mission.context.missionType, mission.context.vxcore === true ? 'VXCORE oui' : mission.context.vxcore === false ? 'VXCORE non' : 'VXCORE —'].filter(Boolean).join(' · ') || 'Non défini', '', missionUrl(mission.id, 'cadre')),
         row('Zone', mission.place.label || (Number.isFinite(mission.place.lat) ? 'Point sur la carte' : 'Non définie'), '', missionUrl(mission.id, 'lieu')),
         row('Créneau', formatRange(mission.window.start, mission.window.end), '', missionUrl(mission.id, 'meteo')),
         row('Météo', st ? LABELS[st] : 'Non évaluée', st || 'unknown', missionUrl(mission.id, 'meteo')),
