@@ -106,6 +106,20 @@ export function renderForm({ mission, route }) {
       }, isValidated(s.id)?icon('check',18):s.letter)));
 
     let validate;
+    const fieldNodes = new Map();
+    const liveSectionComplete = () => sec.fields.every((f) => {
+      const value = fieldNodes.get(f.key)?.value ?? mission[key][f.key] ?? '';
+      return String(value).trim().length > 0;
+    });
+    const syncSectionFields = () => {
+      mutate(mission, (m) => {
+        for (const f of sec.fields) {
+          const node = fieldNodes.get(f.key);
+          if (node) m[key][f.key] = node.value;
+        }
+      });
+    };
+
     const fields = sec.fields.map((f) => {
       const ta = h('textarea', {
         rows: 4, maxlength: 20000, value: mission[key][f.key] || '', id: `f-${f.key}`, 'aria-describedby': `h-${f.key}`,
@@ -118,7 +132,7 @@ export function renderForm({ mission, route }) {
           const count = root.querySelector('[data-section-count]');
           if (count) count.textContent = `${q.done} / ${q.total} champ(s)`;
           if (validate) {
-            validate.disabled = !sectionComplete(sec, mission[key]);
+            validate.disabled = !liveSectionComplete();
             validate.textContent = 'Valider cette partie et continuer';
             validate.className = 'btn block primary';
           }
@@ -126,6 +140,7 @@ export function renderForm({ mission, route }) {
           root.querySelector('.rail-btn.active')?.classList.remove('validated');
         }
       });
+      fieldNodes.set(f.key, ta);
       const interim = h('div', { class: 'interim', 'aria-live': 'polite' });
       const mic = micButton({ label: `Dicter : ${f.label}`, onText: (t) => { ta.value = appendDictation(ta.value, t); ta.dispatchEvent(new Event('input')); }, onInterim: (t) => { interim.textContent = t; } });
       return h('div', { class: 'field' },
@@ -143,7 +158,11 @@ export function renderForm({ mission, route }) {
       disabled: !complete && !done,
       onclick: () => {
         if (done) { setValidated(sec.id,false); draw(); return; }
-        if (!complete) return;
+        syncSectionFields();
+        if (!sectionComplete(sec, mission[key])) {
+          toast('Complète le champ avant de continuer.', 'bad');
+          return;
+        }
         setValidated(sec.id,true);
         const n=nextAfter(sec.id);
         if(n) active=n.id;
