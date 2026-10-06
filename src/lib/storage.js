@@ -1,6 +1,6 @@
 // Stockage des missions dans le navigateur, avec export/import JSON.
 // Tolère l'absence de localStorage : repli en mémoire.
-import { defaultWindow, isLocalDateTime, addMinutes } from './time.js';
+import { isLocalDateTime } from './time.js';
 
 export const KEY = 'pmd.missions.v1';
 export const EXPORT_FORMAT = 'prepa-mission-drone/missions@1';
@@ -16,7 +16,6 @@ export function newId(now = new Date(), rand = Math.random) {
 
 export function newMission({ now = new Date(), name = 'Nouvelle mission' } = {}) {
   const iso = now.toISOString();
-  const window = defaultWindow(now);
   return {
     id: newId(now),
     name,
@@ -29,7 +28,7 @@ export function newMission({ now = new Date(), name = 'Nouvelle mission' } = {})
       administrativeOrder: { held: false, cameraCount: null, placeNote: '' }
     },
     place: { label: '', lat: null, lon: null, radiusM: 500 },
-    window: { ...window, tz: 'Europe/Paris' },
+    window: { start: '', end: '', tz: 'Europe/Paris' },
     mens: {
       meteo: { gustLimitMs: DEFAULT_GUST_LIMIT_MS, fetchedAt: null, source: null, manual: false, slots: [], hours: [], tz: null, utcOffsetSeconds: 0, kp: null, alerts: [], forPlace: null, kpError: null, kpEntries: null },
       espace: { fetchedAt: null, source: null, controlled: null, zones: [], error: null, localAnalysisAt: null, localDataset: null, localZones: [], aerodromes: [] },
@@ -123,8 +122,8 @@ export function sanitizeMission(raw) {
   m.place.radiusM = Math.max(10, Math.min(10000, m.place.radiusM));
 
   const w = raw.window || {};
-  const start = isLocalDateTime(w.start) ? w.start : base.window.start;
-  const end = isLocalDateTime(w.end) && w.end > start ? w.end : addMinutes(start, 120);
+  const start = isLocalDateTime(w.start) ? w.start : '';
+  const end = isLocalDateTime(w.end) && (!start || w.end > start) ? w.end : '';
   m.window = { start, end, tz: str(w.tz, 60) || 'Europe/Paris' };
 
   const me = raw.mens?.meteo || {};
