@@ -13,9 +13,7 @@ function head(mission,title,back){
 }
 
 function stateOf(mission,id){
-  mission.checklists ||= {};
-  mission.checklists[id] ||= {};
-  return mission.checklists[id];
+  return mission.checklists?.[id] || {};
 }
 
 export function renderChecklists({mission}){
