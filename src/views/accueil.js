@@ -169,7 +169,7 @@ export function renderAccueil() {
           h('div', {},
             h('div', { class: 'cockpit-title-row' },
               h('h1', {}, 'Prépa Mission'),
-              h('span', { class: 'app-version mono', title: 'Version de l’application' }, 'v23')),
+              h('span', { class: 'app-version mono', title: 'Version de l’application' }, 'v24')),
             h('p', { class: 'cockpit-sub' }, 'Drone'))),
         h('button', { class: 'icon-btn cockpit-settings', 'aria-label': 'Réglages', onclick: () => settings(draw) }, icon('sun'))),
       !store.isPersistent ? h('div', { class: 'banner warn', role: 'alert' }, icon('warn'), 'Stockage du navigateur indisponible : les missions seront perdues à la fermeture. Exporte-les.') : null,
