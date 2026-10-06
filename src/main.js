@@ -10,6 +10,7 @@ import { renderChecklists, renderChecklistDetail } from './views/checklists.js';
 import { renderAerodata } from './views/aerodata.js';
 import { renderCheminement } from './views/cheminement.js';
 import { renderEtapes } from './views/etapes.js';
+import { renderMensMap } from './views/mens-map.js';
 import { renderMacloeMap } from './views/macloe-map.js';
 import { renderFinalMap } from './views/final-map.js';
 import { renderMissionPdf } from './views/mission-pdf.js';
@@ -50,6 +51,7 @@ function route() {
   if (parts[0] === 'mission' && ID_RE.test(parts[1] || '')) {
     const mission = store.get(parts[1]);
     const r = parts[2] || 'cadre';
+    if (mission && ['espace','notam','supaip'].includes(r)) { mount(renderMensMap({ mission, current:r })); return; }
     if (mission && r === 'cheminement') { mount(renderCheminement({ mission })); return; }
     if (mission && r === 'macloe-map') { mount(renderMacloeMap({ mission, section: parts[3] || 'L' })); return; }
     if (mission && r === 'final-map') { mount(renderFinalMap({ mission })); return; }
