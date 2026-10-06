@@ -171,7 +171,6 @@ export function renderAccueil() {
         h('div', { class: 'cockpit-brand' },
           h('div', { class: 'cockpit-drone', 'aria-hidden': 'true' }, h('img', { src: 'icons/drone-logo.svg?v=11', alt: '', width: '76', height: '76' })),
           h('div', {},
-            h('span', { class: 'eyebrow' }, 'Gendarmerie · Préparation opérationnelle'),
             h('h1', {}, 'Prépa Mission'),
             h('p', { class: 'cockpit-sub' }, 'Drone'))),
         h('button', { class: 'icon-btn cockpit-settings', 'aria-label': 'Réglages', onclick: () => settings(draw) }, icon('sun'))),
