@@ -427,3 +427,6 @@ button, .btn, .cta { font: inherit; cursor: pointer; }
 @media(max-width:390px){
   .cockpit-drone{width:64px;height:64px}
 }
+
+/* --- Cartographie : accent bleu distinct du vert de validation --- */
+.screen.lieu .pin span{background:#2F80ED}
