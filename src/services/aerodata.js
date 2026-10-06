@@ -97,12 +97,41 @@ function prepSpaces(fc){
     }];
   });
 }
+export function normalizeFrequency(raw){
+  if(typeof raw==='string') return {service:'',mhz:'',callsign:'',schedule:'',text:raw.trim()};
+  if(!raw||typeof raw!=='object') return {service:'',mhz:'',callsign:'',schedule:'',text:''};
+  return {
+    service:String(raw.service||'').trim(),
+    mhz:String(raw.mhz||raw.frequence||'').trim(),
+    callsign:String(raw.indicatif||raw.callsign||'').trim(),
+    schedule:String(raw.horaire||raw.schedule||'').trim(),
+    text:''
+  };
+}
+export function normalizeRunway(raw){
+  if(typeof raw==='string') return {designation:'',lengthM:null,widthM:null,surface:'',text:raw.trim()};
+  if(!raw||typeof raw!=='object') return {designation:'',lengthM:null,widthM:null,surface:'',text:''};
+  const length=Number(raw.longueur_m??raw.lengthM),width=Number(raw.largeur_m??raw.widthM);
+  return {
+    designation:String(raw.designation||'').trim(),
+    lengthM:Number.isFinite(length)?length:null,
+    widthM:Number.isFinite(width)?width:null,
+    surface:String(raw.revetement||raw.surface||'').trim(),
+    text:''
+  };
+}
 function prepAerodromes(fc){
   return (fc?.features||[]).flatMap((f)=>{
     if(f?.geometry?.type!=='Point')return[];
     const [lon,lat]=f.geometry.coordinates||[];if(!Number.isFinite(lat)||!Number.isFinite(lon))return[];
     const p=f.properties||{};
-    return [{lat,lon,icao:p.icao||'',name:p.nom||'',type:p.type||'',altitudeFt:Number.isFinite(p.altitude_ft)?p.altitude_ft:null,remark:p.remarque||'',runways:Array.isArray(p.pistes)?p.pistes:[],frequencies:Array.isArray(p.frequences)?p.frequences:[]}];
+    const altitude=Number(p.altitude_ft);
+    return [{
+      lat,lon,icao:String(p.icao||'').trim(),name:String(p.nom||'').trim(),type:String(p.type||'').trim(),
+      altitudeFt:Number.isFinite(altitude)?altitude:null,remark:String(p.remarque||'').trim(),
+      runways:(Array.isArray(p.pistes)?p.pistes:[]).map(normalizeRunway),
+      frequencies:(Array.isArray(p.frequences)?p.frequences:[]).map(normalizeFrequency)
+    }];
   });
 }
 
