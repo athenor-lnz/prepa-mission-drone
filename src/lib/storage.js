@@ -37,6 +37,7 @@ export function newMission({ now = new Date(), name = 'Nouvelle mission' } = {})
       supaip: { fetchedAt: null, source: null, items: [] }
     },
     macloe: { M: '', A: '', C: '', L: '', O: '', E: '' },
+    macloeMap: { start: null, end: null, route: [], polygon: [], elevation: [], elevationSource: '', flightProfile: [] },
     smepp: { S1: '', S2: '', M: '', E_A: '', E_M: '', E_I: '', E_C: '', E_A2: '', E_L: '', P1: '', P2: '' },
     validation: { macloe: [], smepp: [] },
     admin: { gendrone: 'todo', visualdrone: 'todo' },
@@ -82,6 +83,27 @@ function cleanRunway(x){
     surface:str(x?.surface ?? x?.revetement,80),text:str(x?.text,300)
   };
 }
+function cleanMapPoint(p){
+  const lat=numOrNull(p?.lat),lon=numOrNull(p?.lon);
+  if(lat===null||lon===null||lat < -90||lat > 90||lon < -180||lon > 180)return null;
+  return {lat,lon};
+}
+function cleanMacloeMap(raw){
+  const src=raw&&typeof raw==='object'?raw:{};
+  const route=list(src.route,200).map(cleanMapPoint).filter(Boolean);
+  const polygon=list(src.polygon,200).map(cleanMapPoint).filter(Boolean);
+  const elevation=list(src.elevation,500).map((p)=>({
+    lat:numOrNull(p?.lat),lon:numOrNull(p?.lon),z:numOrNull(p?.z),distanceM:numOrNull(p?.distanceM)
+  })).filter((p)=>p.lat!==null&&p.lon!==null&&p.z!==null&&p.distanceM!==null);
+  const flightProfile=list(src.flightProfile,100).map((p)=>({
+    ratio:numOrNull(p?.ratio),aglM:numOrNull(p?.aglM)
+  })).filter((p)=>p.ratio!==null&&p.ratio>=0&&p.ratio<=1&&p.aglM!==null&&p.aglM>=0&&p.aglM<=500);
+  return {
+    start:cleanMapPoint(src.start),end:cleanMapPoint(src.end),
+    route,polygon,elevation,elevationSource:str(src.elevationSource,100),flightProfile
+  };
+}
+
 function cleanAerodrome(a) {
   return {
     icao: str(a?.icao, 12), name: str(a?.name ?? a?.nom, 240), type: str(a?.type, 40),
@@ -160,6 +182,7 @@ export function sanitizeMission(raw) {
   m.mens.supaip = { fetchedAt: strOrNull(sp.fetchedAt), source: strOrNull(sp.source), items: list(sp.items).map((i) => ({ id: str(i?.id, 60), title: str(i?.title, 300), validity: str(i?.validity, 120), url: /^https?:\/\//i.test(i?.url) ? str(i.url, 500) : '', addedAt: strOrNull(i?.addedAt) })) };
 
   for (const k of Object.keys(m.macloe)) m.macloe[k] = str(raw.macloe?.[k]);
+  m.macloeMap = cleanMacloeMap(raw.macloeMap);
 
   // Migration de l'ancien SMEPP (E1..E4) vers AMICAL complet.
   const rs = raw.smepp || {};
