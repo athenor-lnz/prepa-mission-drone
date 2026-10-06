@@ -11,6 +11,8 @@ import { renderAerodata } from './views/aerodata.js';
 import { renderCheminement } from './views/cheminement.js';
 import { renderEtapes } from './views/etapes.js';
 import { renderMacloeMap } from './views/macloe-map.js';
+import { renderFinalMap } from './views/final-map.js';
+import { renderMissionPdf } from './views/mission-pdf.js';
 import { h } from './ui/dom.js';
 
 const app = document.getElementById('app');
@@ -50,6 +52,8 @@ function route() {
     const r = parts[2] || 'cadre';
     if (mission && r === 'cheminement') { mount(renderCheminement({ mission })); return; }
     if (mission && r === 'macloe-map') { mount(renderMacloeMap({ mission, section: parts[3] || 'L' })); return; }
+    if (mission && r === 'final-map') { mount(renderFinalMap({ mission })); return; }
+    if (mission && r === 'pdf') { mount(renderMissionPdf({ mission })); return; }
     if (mission && r === 'checklists') {
       const checklistId = parts[3] || '';
       mount(checklistId ? renderChecklistDetail({ mission, checklistId }) : renderChecklists({ mission }));
