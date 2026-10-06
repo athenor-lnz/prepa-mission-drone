@@ -64,7 +64,7 @@ export function renderLieu({ mission }) {
     if (!marker) {
       marker = L.marker(ll, { draggable: true, keyboard: false, icon: L.divIcon({ className: 'pin', html: '<span></span>', iconSize: [28, 28], iconAnchor: [14, 14] }) }).addTo(map);
       marker.on('dragend', () => { const q = marker.getLatLng(); setPoint(q.lat, q.lng, '', { recenter: false }); });
-      circle = L.circle(ll, { radius: p.radiusM, color: getComputedStyle(document.documentElement).getPropertyValue('--acc').trim() || '#2340E8', weight: 3, dashArray: '8 6', fillOpacity: 0.15 }).addTo(map);
+      circle = L.circle(ll, { radius: p.radiusM, color: '#2F80ED', fillColor: '#2F80ED', weight: 3, dashArray: '8 6', fillOpacity: 0.12 }).addTo(map);
     } else { marker.setLatLng(ll); circle.setLatLng(ll); }
     circle.setRadius(p.radiusM);
     if (recenter) fit();
