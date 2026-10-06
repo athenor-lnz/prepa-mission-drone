@@ -87,7 +87,8 @@ function cleanRunway(x){
 function cleanMapPoint(p){
   const lat=numOrNull(p?.lat),lon=numOrNull(p?.lon);
   if(lat===null||lon===null||lat < -90||lat > 90||lon < -180||lon > 180)return null;
-  return {lat,lon};
+  const aglM=numOrNull(p?.aglM);
+  return aglM!==null&&aglM>=0&&aglM<=500?{lat,lon,aglM}:{lat,lon};
 }
 function cleanMacloeMap(raw){
   const src=raw&&typeof raw==='object'?raw:{};
