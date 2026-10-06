@@ -1,8 +1,9 @@
 import { h, icon } from './dom.js';
 import { FORMS, formValidated } from '../lib/forms.js';
+import { isLocalDateTime } from '../lib/time.js';
 
 export const STEPS = [
-  { n: 1, key: 'cadre', label: 'Cadre', routes: ['cadre'] },
+  { n: 1, key: 'cadre', label: 'Mission', routes: ['cadre'] },
   { n: 2, key: 'lieu', label: 'Zone', routes: ['lieu'] },
   { n: 3, key: 'mens', label: 'MENS', routes: ['meteo', 'espace', 'notam', 'supaip'] },
   { n: 4, key: 'macloe', label: 'MACLOE', routes: ['macloe'] },
@@ -14,7 +15,16 @@ export const missionUrl = (id, route) => `#/mission/${id}/${route}`;
 
 export function isStepDone(mission, step) {
   if (!mission) return false;
-  if (step.key === 'cadre') return !!mission.context?.missionType && !!mission.context?.capture && (mission.context?.useCases?.length || 0) > 0;
+  if (step.key === 'cadre') {
+    const c = mission.context || {};
+    const ao = c.administrativeOrder || {};
+    const nameOk = !!mission.name?.trim() && mission.name.trim() !== 'Nouvelle mission';
+    const windowOk = isLocalDateTime(mission.window?.start) && isLocalDateTime(mission.window?.end) && mission.window.end > mission.window.start;
+    const adminOk = c.missionType !== 'administratif' || (
+      ao.held === true && Number.isInteger(Number(ao.cameraCount)) && Number(ao.cameraCount) > 0 && !!String(ao.placeNote || '').trim()
+    );
+    return nameOk && windowOk && !!c.missionType && !!c.capture && (c.useCases?.length || 0) > 0 && adminOk;
+  }
   if (step.key === 'lieu') return Number.isFinite(mission.place?.lat) && Number.isFinite(mission.place?.lon);
   if (step.key === 'mens') {
     const m = mission.mens || {};
