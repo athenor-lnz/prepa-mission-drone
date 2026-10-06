@@ -13,7 +13,6 @@ export const VISUALDRONE_ORDER = ['todo', 'declared'];
 
 const kt = (ms) => (Number.isFinite(ms) ? `${Math.round(msToKt(ms))} kt` : '—');
 const TYPE_LABELS={judiciaire:'Police judiciaire',administratif:'Police administrative',sauvegarde:'Sauvegarde de la vie humaine',entrainement:'Entraînement',communication:'Communication',autre:'Autre'};
-const CAPTURE_LABELS={observation:'Observation',captation:'Captation',enregistrement:'Enregistrement'};
 
 export function meteoVerdict(mission) {
   const m = mission.mens?.meteo;
@@ -44,8 +43,8 @@ export function espaceLine(mission) {
 export function buildRecap(mission) {
   const L=[];
   L.push(`MISSION : ${mission.name}`);
-  L.push(`Cadre : ${TYPE_LABELS[mission.context?.missionType]||'non défini'} · ${CAPTURE_LABELS[mission.context?.capture]||'non défini'}`);
-  if (mission.context?.missionType === 'judiciaire') L.push('  Police judiciaire : enregistrement via VXCORE');
+  L.push(`Cadre : ${TYPE_LABELS[mission.context?.missionType]||'non défini'} · VXCORE ${mission.context?.vxcore === true ? 'oui' : mission.context?.vxcore === false ? 'non' : 'non défini'}`);
+  if (mission.context?.missionType === 'judiciaire') L.push('  Police judiciaire : VXCORE obligatoire');
   if (mission.context?.missionType === 'administratif') {
     const ao = mission.context?.administrativeOrder || {};
     L.push(`  Arrêté préfectoral : ${ao.held ? 'en possession' : 'non confirmé'}`);
