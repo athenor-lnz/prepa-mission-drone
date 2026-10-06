@@ -52,13 +52,35 @@ function cleanZone(z) {
     limit: str(z?.limit, 200), meters: numOrNull(z?.meters)
   };
 }
+function cleanFrequency(x){
+  if(typeof x==='string'){
+    try { const parsed=JSON.parse(x); if(parsed&&typeof parsed==='object')x=parsed; }
+    catch { return {service:'',mhz:'',callsign:'',schedule:'',text:str(x,200)}; }
+  }
+  return {
+    service:str(x?.service,40),mhz:str(x?.mhz,30),callsign:str(x?.callsign ?? x?.indicatif,120),
+    schedule:str(x?.schedule ?? x?.horaire,120),text:str(x?.text,200)
+  };
+}
+function cleanRunway(x){
+  if(typeof x==='string'){
+    try { const parsed=JSON.parse(x); if(parsed&&typeof parsed==='object')x=parsed; }
+    catch { return {designation:'',lengthM:null,widthM:null,surface:'',text:str(x,300)}; }
+  }
+  const length=Number(x?.lengthM ?? x?.longueur_m),width=Number(x?.widthM ?? x?.largeur_m);
+  return {
+    designation:str(x?.designation,40),
+    lengthM:Number.isFinite(length)?length:null,widthM:Number.isFinite(width)?width:null,
+    surface:str(x?.surface ?? x?.revetement,80),text:str(x?.text,300)
+  };
+}
 function cleanAerodrome(a) {
   return {
     icao: str(a?.icao, 12), name: str(a?.name ?? a?.nom, 240), type: str(a?.type, 40),
     altitudeFt: numOrNull(a?.altitudeFt ?? a?.altitude_ft), distanceM: numOrNull(a?.distanceM),
     remark: str(a?.remark ?? a?.remarque, 1000),
-    frequencies: list(a?.frequencies ?? a?.frequences, 50).map((x) => typeof x === 'string' ? str(x, 200) : JSON.stringify(x).slice(0, 200)),
-    runways: list(a?.runways ?? a?.pistes, 50).map((x) => typeof x === 'string' ? str(x, 300) : JSON.stringify(x).slice(0, 300))
+    frequencies: list(a?.frequencies ?? a?.frequences, 50).map(cleanFrequency),
+    runways: list(a?.runways ?? a?.pistes, 50).map(cleanRunway)
   };
 }
 
