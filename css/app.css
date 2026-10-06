@@ -1148,3 +1148,35 @@ button, .btn, .cta { font: inherit; cursor: pointer; }
     user-select:text
   }
 }
+
+
+/* --- Mission : fiche complète des cas d’usage --- */
+.usecase-rules-sheet{gap:12px}
+.usecase-highlight-grid{
+  display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px
+}
+.usecase-highlight{
+  padding:10px;border-radius:14px;background:var(--accSoft);
+  display:flex;flex-direction:column;gap:3px
+}
+.usecase-highlight span{font-size:9px;color:var(--mute);text-transform:uppercase;letter-spacing:.08em;font-weight:800}
+.usecase-highlight strong{font-family:var(--font-display);font-size:13px;line-height:1.25}
+.usecase-rules{
+  display:flex;flex-direction:column;border:1px solid var(--line);border-radius:16px;overflow:hidden
+}
+.usecase-rules-head{
+  display:flex;align-items:center;justify-content:space-between;gap:10px;
+  padding:10px 12px;background:var(--surf2)
+}
+.usecase-rules-head strong{font-family:var(--font-display);font-size:13px}
+.usecase-rules-head small{font-size:9px;color:var(--mute)}
+.usecase-rule-row{
+  display:grid;grid-template-columns:minmax(110px,.9fr) 1.4fr;gap:10px;
+  padding:9px 12px;border-top:1px solid var(--line);align-items:start
+}
+.usecase-rule-row span{font-size:10px;color:var(--mute);line-height:1.35}
+.usecase-rule-row strong{font-size:11px;line-height:1.4}
+@media(max-width:390px){
+  .usecase-highlight-grid{grid-template-columns:1fr 1fr}
+  .usecase-rule-row{grid-template-columns:1fr;gap:3px}
+}
