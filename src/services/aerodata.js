@@ -135,6 +135,159 @@ function prepAerodromes(fc){
   });
 }
 
+
+function localChildren(root,name){
+  return [...root.getElementsByTagName('*')].filter((n)=>n.localName===name);
+}
+function firstText(root,names){
+  for(const name of names){
+    const n=[...root.getElementsByTagName('*')].find((x)=>x.localName===name);
+    const v=n?.textContent?.trim();
+    if(v)return v;
+  }
+  return '';
+}
+function numText(root,names){
+  const v=Number(firstText(root,names));return Number.isFinite(v)?v:null;
+}
+function axisPair(a,b){
+  if(!Number.isFinite(a)||!Number.isFinite(b))return null;
+  // AIXM/GML EPSG:4326 est souvent sérialisé lat/lon. On détecte l'ordre le plus plausible,
+  // avec un biais France/Europe si les deux variantes seraient théoriquement valides.
+  if(Math.abs(a)<=90&&Math.abs(b)<=180){
+    if(Math.abs(a)>30&&Math.abs(a)<=70&&Math.abs(b)<=30)return [b,a];
+    if(Math.abs(b)>30&&Math.abs(b)<=70&&Math.abs(a)<=30)return [a,b];
+    return [b,a];
+  }
+  return null;
+}
+function coordsFromNode(node){
+  const posLists=localChildren(node,'posList');
+  for(const p of posLists){
+    const vals=(p.textContent||'').trim().split(/\s+/).map(Number).filter(Number.isFinite);
+    if(vals.length<6)continue;
+    const pts=[];
+    for(let i=0;i+1<vals.length;i+=2){
+      const pair=axisPair(vals[i],vals[i+1]);if(pair)pts.push(pair);
+    }
+    if(pts.length>=3){
+      const [x0,y0]=pts[0], [xn,yn]=pts[pts.length-1];
+      if(x0!==xn||y0!==yn)pts.push([x0,y0]);
+      return {type:'Polygon',coordinates:[pts]};
+    }
+  }
+  const poss=localChildren(node,'pos');
+  for(const p of poss){
+    const vals=(p.textContent||'').trim().split(/\s+/).map(Number).filter(Number.isFinite);
+    if(vals.length>=2){
+      const pair=axisPair(vals[0],vals[1]);
+      if(pair)return {type:'Point',coordinates:pair};
+    }
+  }
+  return null;
+}
+function parseXmlDoc(text){
+  const doc=new DOMParser().parseFromString(text,'application/xml');
+  const err=[...doc.getElementsByTagName('*')].find((n)=>n.localName==='parsererror');
+  if(err)throw new Error('XML invalide ou illisible.');
+  return doc;
+}
+function effectiveFromDoc(doc){
+  return firstText(doc,['beginPosition','timePosition','validTime'])||null;
+}
+function parseAixmSpaces(doc,onProgress){
+  const nodes=localChildren(doc,'AirspaceTimeSlice');
+  const out=[];
+  let skipped=0;
+  nodes.forEach((node,i)=>{
+    if(i%100===0)onProgress?.(`Conversion espaces : ${i}/${nodes.length}`);
+    const geometry=coordsFromNode(node);
+    if(!geometry||geometry.type==='Point'){skipped++;return;}
+    const bbox=boundsOf(geometry);if(!bbox){skipped++;return;}
+    const parent=node.closest?.('[gml\\:id]')||node.parentElement;
+    const id=parent?.getAttribute?.('gml:id')||parent?.getAttributeNS?.('http://www.opengis.net/gml/3.2','id')||firstText(node,['designator','identifier']);
+    const type=firstText(node,['type']);
+    const subType=firstText(node,['localType']);
+    const name=firstText(node,['name']);
+    const className=firstText(node,['class']);
+    const floor=firstText(node,['lowerLimit','lowerLimitReference']);
+    const ceiling=firstText(node,['upperLimit','upperLimitReference']);
+    out.push({geometry,bbox,p:{
+      territoire:'',type,subType,id:id||'',name,className,ceiling,floor,
+      schedule:'',remark:''
+    }});
+  });
+  return {items:out,sourceCount:nodes.length,skipped};
+}
+function parseAixmAerodromes(doc,onProgress){
+  const nodes=localChildren(doc,'AirportHeliportTimeSlice');
+  const out=[];
+  let skipped=0;
+  nodes.forEach((node,i)=>{
+    if(i%100===0)onProgress?.(`Conversion aérodromes : ${i}/${nodes.length}`);
+    const geometry=coordsFromNode(node);
+    if(!geometry||geometry.type!=='Point'){skipped++;return;}
+    const [lon,lat]=geometry.coordinates;
+    const altitude=numText(node,['elevation']);
+    out.push({
+      lat,lon,
+      icao:firstText(node,['locationIndicatorICAO']),
+      name:firstText(node,['name']),
+      type:firstText(node,['type']),
+      altitudeFt:altitude,
+      remark:'',
+      runways:[],
+      frequencies:[]
+    });
+  });
+  return {items:out,sourceCount:nodes.length,skipped};
+}
+
+export async function previewAerodataXml(file,{onProgress}={}){
+  if(!file)throw new Error('Aucun fichier sélectionné.');
+  if(!/\.xml$/i.test(file.name)&&!/xml/i.test(file.type||''))throw new Error('Sélectionne un fichier XML SIA / AIXM.');
+  onProgress?.('Lecture du XML…');
+  const text=await file.text();
+  if(text.length<100)throw new Error('Le fichier XML semble vide.');
+  onProgress?.('Analyse AIXM / GML…');
+  const doc=parseXmlDoc(text);
+  const rootName=doc.documentElement?.localName||'XML';
+  const spaces=parseAixmSpaces(doc,onProgress);
+  const aerodromes=parseAixmAerodromes(doc,onProgress);
+  if(!spaces.items.length&&!aerodromes.items.length){
+    throw new Error('Aucun espace aérien ni aérodrome AIXM exploitable détecté dans ce XML.');
+  }
+  const meta={
+    source:file.name,
+    format:`AIXM/XML · ${rootName}`,
+    effective:effectiveFromDoc(doc),
+    created:null,
+    importedAt:null,
+    spaceCount:spaces.items.length,
+    aerodromeCount:aerodromes.items.length,
+    sourceSpaceCount:spaces.sourceCount,
+    sourceAerodromeCount:aerodromes.sourceCount,
+    skippedSpaces:spaces.skipped,
+    skippedAerodromes:aerodromes.skipped
+  };
+  onProgress?.('Conversion terminée · prêt à installer.');
+  return {meta,spaces:spaces.items,aerodromes:aerodromes.items};
+}
+
+export async function installAerodataCandidate(candidate,{onProgress}={}){
+  if(!candidate?.meta||!Array.isArray(candidate.spaces)||!Array.isArray(candidate.aerodromes))throw new Error('Jeu converti invalide.');
+  if(!candidate.spaces.length&&!candidate.aerodromes.length)throw new Error('Jeu vide : installation refusée.');
+  const meta={...candidate.meta,importedAt:new Date().toISOString()};
+  onProgress?.('Installation du nouveau jeu local…');
+  // L'écriture du meta est volontairement faite en dernier : l'ancien jeu reste identifiable
+  // tant que les nouvelles données n'ont pas été entièrement enregistrées.
+  await putKey('spaces',candidate.spaces);
+  await putKey('aerodromes',candidate.aerodromes);
+  await putKey('meta',meta);
+  cache={meta,spaces:candidate.spaces,aerodromes:candidate.aerodromes};
+  return meta;
+}
+
 export async function importAerodata(file,{onProgress}={}){
   if(!file)throw new Error('Aucun fichier sélectionné.');
   let spacesText=null,aerodromesText=null,indexText='{}';
