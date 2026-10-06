@@ -58,14 +58,14 @@ export function renderCadre({ mission }) {
     let modal;
     modal = sheet('Police judiciaire', h('div', { class: 'stack' },
       h('div', { class: 'banner bad' }, icon('warn'), h('span', {}, 'Enregistrement obligatoire via VXCORE.')),
-      h('p', {}, 'Le mode « Enregistrement » est sélectionné automatiquement pour cette mission.'),
+      h('p', {}, 'VXCORE est activé automatiquement pour cette mission.'),
       h('button', { class: 'btn primary block', onclick: () => modal.close() }, 'Compris')));
   }
 
   function selectType(value) {
     mutate(mission, (m) => {
       m.context.missionType = value;
-      if (value === 'judiciaire') m.context.capture = 'enregistrement';
+      if (value === 'judiciaire') m.context.vxcore = true;
     });
     draw();
     if (value === 'judiciaire') judicialAlert();
@@ -128,7 +128,8 @@ export function renderCadre({ mission }) {
       Number.isInteger(Number(ao.cameraCount)) && Number(ao.cameraCount) > 0 &&
       !!ao.placeNote.trim()
     );
-    const ready = nameOk && windowOk && !!c.missionType && adminOk && !!c.capture && c.useCases.length > 0;
+    const vxcoreOk = c.missionType === 'judiciaire' ? c.vxcore === true : typeof c.vxcore === 'boolean';
+    const ready = nameOk && windowOk && !!c.missionType && adminOk && vxcoreOk && c.useCases.length > 0;
 
     const missionName = h('input', {
       value: mission.name === 'Nouvelle mission' ? '' : mission.name,
@@ -220,22 +221,19 @@ export function renderCadre({ mission }) {
           : null,
 
         h('section', { class: 'card-sec' },
-          h('span', { class: 'lbl' }, 'Image'),
+          h('span', { class: 'lbl' }, 'VXCORE'),
           h('p', { class: 'note' }, c.missionType === 'judiciaire'
-            ? 'Le mode Enregistrement est imposé pour cette mission.'
-            : 'Distinguer observation, captation sans conservation et enregistrement pour préparer les obligations applicables.'),
-          segmented([
-            { value: 'observation', label: 'Observation' },
-            { value: 'captation', label: 'Captation' },
-            { value: 'enregistrement', label: 'Enregistrement' }
-          ], c.capture, (v) => {
-            if (c.missionType === 'judiciaire' && v !== 'enregistrement') {
-              judicialAlert();
-              return;
-            }
-            mutate(mission, (m) => { m.context.capture = v; });
-            draw();
-          }, 'Type de captation')),
+            ? 'Police judiciaire : utilisation de VXCORE obligatoire.'
+            : 'VXCORE sera-t-il utilisé pour cette mission ?'),
+          c.missionType === 'judiciaire'
+            ? h('div', { class: 'banner bad' }, icon('warn'), h('span', {}, 'VXCORE obligatoire pour cette mission.'))
+            : segmented([
+                { value: 'non', label: 'Non' },
+                { value: 'oui', label: 'Oui' }
+              ], c.vxcore === true ? 'oui' : c.vxcore === false ? 'non' : '', (v) => {
+                mutate(mission, (m) => { m.context.vxcore = v === 'oui'; });
+                draw();
+              }, 'Utilisation de VXCORE')),
 
         h('section', { class: 'card-sec usecase-section' },
           h('span', { class: 'lbl' }, 'Cas d’usage / scénario'),
@@ -269,6 +267,7 @@ export function renderCadre({ mission }) {
               : !windowOk ? 'Renseigne un début et une fin de mission valides.'
               : !c.missionType ? 'Sélectionne le type de mission.'
               : !adminOk ? 'Complète les informations de l’arrêté préfectoral.'
+              : !vxcoreOk ? 'Indique si VXCORE sera utilisé.'
               : !c.useCases.length ? 'Sélectionne au moins un cas d’usage.'
               : 'Complète le cadre de mission.'))
           : null),
