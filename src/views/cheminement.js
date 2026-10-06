@@ -27,6 +27,20 @@ function interpAgl(points,ratio){
   return null;
 }
 
+function routePointRatios(points=[]){
+  if(points.length<2)return points.map(()=>0);
+  const seg=[];let total=0;
+  for(let i=1;i<points.length;i++){
+    const a=points[i-1],b=points[i];
+    const r=Math.PI/180,R=6371008.8,dLat=(b.lat-a.lat)*r,dLon=(b.lon-a.lon)*r;
+    const q=Math.sin(dLat/2)**2+Math.cos(a.lat*r)*Math.cos(b.lat*r)*Math.sin(dLon/2)**2;
+    const d=2*R*Math.asin(Math.min(1,Math.sqrt(q)));seg.push(d);total+=d;
+  }
+  let acc=0;const out=[0];
+  for(const d of seg){acc+=d;out.push(total?acc/total:0);}
+  return out;
+}
+
 export function renderCheminement({mission}){
   const root=h('main',{class:'route-tool'});
   let data=clone(mission.macloeMap||emptyMap());
@@ -64,8 +78,70 @@ export function renderCheminement({mission}){
     return L.divIcon({
       className:'route-div-icon',
       html:'<span class="route-pin '+(cls||'')+'">'+label+'</span>',
-      iconSize:[34,34],iconAnchor:[17,17]
+      iconSize:[Math.max(34,label.length*7+14),34],iconAnchor:[17,17]
     });
+  }
+
+  function terrainAtRatio(ratio){
+    const prof=data.elevation||[];
+    if(prof.length<2)return null;
+    const maxD=prof[prof.length-1].distanceM||1;
+    let best=prof[0],bestDelta=Infinity;
+    for(const p of prof){
+      const d=Math.abs((p.distanceM/maxD)-ratio);
+      if(d<bestDelta){bestDelta=d;best=p;}
+    }
+    return Number.isFinite(best?.z)?best.z:null;
+  }
+
+  function syncPointHeightsToProfile(){
+    const ratios=routePointRatios(data.route||[]);
+    const pointProfile=(data.route||[]).map((p,i)=>Number.isFinite(Number(p.aglM))?{ratio:+ratios[i].toFixed(4),aglM:Number(p.aglM)}:null).filter(Boolean);
+    const free=(data.flightProfile||[]).filter((fp)=>!pointProfile.some((pp)=>Math.abs(pp.ratio-fp.ratio)<.01));
+    data.flightProfile=[...free,...pointProfile].sort((a,b)=>a.ratio-b.ratio);
+  }
+
+  function openRoutePoint(i){
+    const p=data.route[i];if(!p)return;
+    const ratios=routePointRatios(data.route);
+    const ratio=ratios[i]||0;
+    const terrain=terrainAtRatio(ratio);
+    let modal;
+    const input=h('input',{
+      type:'number',min:0,max:500,inputmode:'decimal',
+      value:Number.isFinite(Number(p.aglM))?String(p.aglM):'',
+      placeholder:'Ex. 50','aria-label':'Hauteur de vol AGL'
+    });
+    const altitude=()=>{
+      const v=Number(input.value);
+      return Number.isFinite(terrain)&&Number.isFinite(v)?Math.round((terrain+v)*10)/10:null;
+    };
+    const info=h('div',{class:'route-point-info'},
+      h('div',{},h('span',{class:'lbl'},'Coordonnées'),h('strong',{class:'mono'},p.lat.toFixed(6)+' · '+p.lon.toFixed(6))),
+      h('div',{},h('span',{class:'lbl'},'Terrain'),h('strong',{},Number.isFinite(terrain)?Math.round(terrain)+' m AMSL':'Profil non calculé'))
+    );
+    const save=()=>{
+      const raw=input.value.trim();
+      if(raw==='')delete p.aglM;
+      else{
+        const v=Number(raw);
+        if(!Number.isFinite(v)||v<0||v>500)return toast('Hauteur entre 0 et 500 m.','bad');
+        p.aglM=v;
+      }
+      syncPointHeightsToProfile();persist();modal.close();renderMapShapes();drawPanel();
+    };
+    modal=sheet(i===0?'Départ':i===data.route.length-1?'Arrivée':'Point '+(i+1),
+      h('div',{class:'stack route-point-sheet'},
+        info,
+        h('label',{class:'field-label'},'Hauteur de vol à ce point · AGL',input),
+        Number.isFinite(terrain)?h('p',{class:'note'},'Altitude drone = terrain + hauteur AGL.'):h('p',{class:'note'},'Calcule le profil altimétrique pour afficher automatiquement l’altitude AMSL du drone.'),
+        h('button',{class:'btn primary block',onclick:save},'Enregistrer la hauteur'),
+        h('button',{class:'btn ghost block',onclick:()=>{modal.close();toast('Maintiens puis fais glisser le point sur la carte pour le déplacer.');}},'Déplacer sur la carte'),
+        h('button',{class:'btn danger block',onclick:async()=>{
+          if(!await confirmDialog('Supprimer ce point ?','Le tracé sera recalculé sans ce point.','Supprimer'))return;
+          data.route.splice(i,1);data.elevation=[];data.elevationSource='';syncPointHeightsToProfile();persist();modal.close();renderMapShapes();drawPanel();
+        }},'Supprimer ce point')
+      ));
   }
 
   function renderMapShapes(){
@@ -77,11 +153,13 @@ export function renderCheminement({mission}){
       data.route.forEach((p,i)=>{
         const label=i===0?'D':i===data.route.length-1?'A':String(i+1);
         const cls=i===0?'start':i===data.route.length-1?'end':'';
-        const m=L.marker([p.lat,p.lon],{draggable:true,icon:markerIcon(label,cls)}).addTo(map);
+        const m=L.marker([p.lat,p.lon],{draggable:true,icon:markerIcon(label+(Number.isFinite(Number(p.aglM))?' · '+p.aglM+'m':''),cls)}).addTo(map);
+        m.on('click',(e)=>{L.DomEvent.stopPropagation(e);openRoutePoint(i);});
         m.on('dragend',()=>{
           const q=m.getLatLng();
-          data.route[i]={lat:q.lat,lon:q.lng};
+          data.route[i]={...data.route[i],lat:q.lat,lon:q.lng};
           data.elevation=[];data.elevationSource='';
+          syncPointHeightsToProfile();
           persist();renderMapShapes();drawPanel();
         });
         markers.push(m);
@@ -114,7 +192,7 @@ export function renderCheminement({mission}){
     try{
       const sampling=Math.min(180,Math.max(50,Math.round(routeDistance(data.route)/30)));
       const r=await fetchElevationProfile(data.route,sampling);
-      data.elevation=r.profile;data.elevationSource=r.source;persist();toast('Profil altimétrique calculé');
+      data.elevation=r.profile;data.elevationSource=r.source;syncPointHeightsToProfile();persist();toast('Profil altimétrique calculé');
     }catch(e){toast(e.message,'bad');}
     busy=false;drawPanel();
   }
