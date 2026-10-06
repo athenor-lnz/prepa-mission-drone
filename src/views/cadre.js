@@ -98,7 +98,8 @@ export function renderCadre({ mission }) {
       'aria-label': 'Nom de la mission',
       oninput: (e) => {
         mutate(mission, (m) => { m.name = e.target.value; }, { debounce: 350 });
-      }
+      },
+      onchange: () => draw()
     });
 
     const start = h('input', {
@@ -171,7 +172,8 @@ export function renderCadre({ mission }) {
                         placeholder: 'Ex. commune, quartier, axe, emprise ou périmètre autorisé…',
                         oninput: (e) => {
                           mutate(mission, (m) => { m.context.administrativeOrder.placeNote = e.target.value; }, { debounce: 350 });
-                        }
+                        },
+                        onchange: () => draw()
                       }))
                   ]
                 : h('div', { class: 'banner warn' }, icon('warn'), h('span', {}, 'La possession de l’arrêté préfectoral doit être confirmée avant de poursuivre.')))
