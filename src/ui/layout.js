@@ -23,7 +23,8 @@ export function isStepDone(mission, step) {
     const adminOk = c.missionType !== 'administratif' || (
       ao.held === true && Number.isInteger(Number(ao.cameraCount)) && Number(ao.cameraCount) > 0 && !!String(ao.placeNote || '').trim()
     );
-    return nameOk && windowOk && !!c.missionType && !!c.capture && (c.useCases?.length || 0) > 0 && adminOk;
+    const vxcoreOk = c.missionType === 'judiciaire' ? c.vxcore === true : typeof c.vxcore === 'boolean';
+    return nameOk && windowOk && !!c.missionType && vxcoreOk && (c.useCases?.length || 0) > 0 && adminOk;
   }
   if (step.key === 'lieu') return Number.isFinite(mission.place?.lat) && Number.isFinite(mission.place?.lon);
   if (step.key === 'mens') {
