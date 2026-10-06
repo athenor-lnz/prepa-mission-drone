@@ -1120,3 +1120,31 @@ button, .btn, .cta { font: inherit; cursor: pointer; }
   .mens-map-bottom{bottom:calc(31px + env(safe-area-inset-bottom))}
   .mens-detail-grid{grid-template-columns:1fr}
 }
+
+
+/* --- iOS / clavier : feuilles modales stables --- */
+.scrim{
+  overscroll-behavior:contain;
+  -webkit-overflow-scrolling:touch
+}
+.sheet{
+  overscroll-behavior:contain;
+  -webkit-overflow-scrolling:touch;
+  touch-action:pan-y
+}
+.sheet input,.sheet textarea,.sheet select{
+  font-size:16px!important
+}
+.sheet input:focus,.sheet textarea:focus,.sheet select:focus{
+  scroll-margin-bottom:120px
+}
+@supports (-webkit-touch-callout:none){
+  .sheet{
+    padding-bottom:max(24px,env(safe-area-inset-bottom));
+    transform:translateZ(0)
+  }
+  .sheet input,.sheet textarea,.sheet select{
+    -webkit-user-select:text;
+    user-select:text
+  }
+}
