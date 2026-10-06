@@ -9,12 +9,7 @@ import { openTools } from './outils.js';
 const RADII = [50, 100, 300, 500, 1000, 2000];
 const TILES = {
   plan: { url: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png', attr: '© OpenStreetMap', max: 19 },
-  sat: { url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', attr: 'Imagerie © Esri', max: 19 },
-  oaci: {
-    url: 'https://data.geopf.fr/private/wmts?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER=GEOGRAPHICALGRIDSYSTEMS.MAPS.SCAN-OACI&STYLE=normal&TILEMATRIXSET=PM_6_11&FORMAT=image/jpeg&TILEMATRIX={z}&TILEROW={y}&TILECOL={x}&apikey=ign_scan_ws',
-    attr: 'Carte OACI-VFR © DSNA/SIA · Géoplateforme',
-    max: 20, native: 11, min: 6
-  }
+  sat: { url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', attr: 'Imagerie © Esri', max: 19 }
 };
 
 export function renderLieu({ mission }) {
@@ -192,8 +187,8 @@ export function renderLieu({ mission }) {
     }, label);
     sh = sheet('Fond de carte', h('div', { class: 'stack' },
       h('div', {}, h('span', { class: 'lbl' }, 'Fond de carte'), h('div', { class: 'seg map-base-picker' },
-        base('plan', 'Plan'), base('sat', 'Satellite'), base('oaci', 'OACI'))),
-      h('p', { class: 'note' }, 'Les espaces aéronautiques sont affichés uniquement dans MENS → Espace aérien.')));
+        base('plan', 'Plan'), base('sat', 'Satellite'))),
+      h('p', { class: 'note' }, 'Les espaces aéronautiques et le fond OACI sont réservés à MENS → Espace aérien.')));
   }
 
   const panel = h('section', { class: 'panel zone-panel' },
