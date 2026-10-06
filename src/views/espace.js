@@ -46,7 +46,7 @@ export function renderEspace({ mission }) {
   const TILES = {
     plan: { url:'https://tile.openstreetmap.org/{z}/{x}/{y}.png', attr:'© OpenStreetMap', max:19 },
     sat: { url:'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', attr:'Imagerie © Esri', max:19 },
-    oaci: { url:'https://data.geopf.fr/wmts?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER=GEOGRAPHICALGRIDSYSTEMS.MAPS.SCAN-OACI&STYLE=normal&FORMAT=image/jpeg&TILEMATRIXSET=PM&TILEMATRIX={z}&TILEROW={y}&TILECOL={x}', attr:'OACI-VFR © DSNA/SIA · Géoplateforme', max:20, native:11 }
+    oaci: { url:'https://data.geopf.fr/private/wmts?apikey=ign_scan_ws&Layer=GEOGRAPHICALGRIDSYSTEMS.MAPS.SCAN-OACI&Style=normal&TileMatrixSet=PM&SERVICE=WMTS&REQUEST=GetTile&Version=1.0.0&FORMAT=image/jpeg&TileMatrix={z}&TileCol={x}&TileRow={y}', attr:'OACI-VFR © DSNA/SIA · Géoplateforme', max:20, native:11 }
   };
 
   async function refreshMeta() {
