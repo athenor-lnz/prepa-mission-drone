@@ -751,3 +751,13 @@ button, .btn, .cta { font: inherit; cursor: pointer; }
   .prep-hub-card-copy strong{font-size:15px}
   .prep-hub-actions.two{grid-template-columns:1fr}
 }
+
+
+/* --- Version visible sur l’accueil --- */
+.cockpit-title-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.app-version{
+  display:inline-flex;align-items:center;justify-content:center;
+  min-height:24px;padding:3px 8px;border-radius:99px;
+  background:var(--surf2);border:1px solid var(--line);color:var(--mute);
+  font-size:10px;font-weight:700;letter-spacing:.04em
+}
