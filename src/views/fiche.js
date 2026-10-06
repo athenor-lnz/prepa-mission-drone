@@ -49,6 +49,13 @@ export function renderFiche({ mission }) {
       h('section', { class: 'forms' },
         h('a', { class: 'formcard', href: missionUrl(mission.id, 'macloe') }, h('strong', {}, 'MACLOE'), h('span', { class: 'mono' }, `${mc.done} / ${mc.total}`), h('span', { class: 'bar' }, h('i', { style: `width:${(mc.done / mc.total) * 100}%` }))),
         h('a', { class: 'formcard', href: missionUrl(mission.id, 'smepp') }, h('strong', {}, 'SMEPP'), h('span', { class: 'mono' }, `${s.done} / ${s.total}`), h('span', { class: 'bar' }, h('i', { style: `width:${(s.done / s.total) * 100}%` })))),
+      h('section',{class:'card-sec final-summary-card'},
+        h('div',{class:'final-summary-head'},
+          h('div',{},h('span',{class:'lbl'},'Carte finale'),h('strong',{},'Toutes les couches mission réunies')),
+          h('a',{class:'btn ghost small',href:missionUrl(mission.id,'final-map')},'Voir')),
+        h('div',{class:'final-summary-actions'},
+          h('a',{class:'btn ghost',href:missionUrl(mission.id,'final-map')},'Carte finale'),
+          h('a',{class:'btn primary',href:missionUrl(mission.id,'pdf')},'Aperçu du PDF'))),
       h('section', { class: 'card-sec' }, h('span', { class: 'lbl' }, 'GENDRONE'),
         segmented(GENDRONE_ORDER.map((k) => ({ value: k, label: GENDRONE[k] })), mission.admin.gendrone, (k) => { mutate(mission, (m) => { m.admin.gendrone = k; }); draw(); }, 'Statut GENDRONE'),
         h('span', { class: 'lbl' }, 'Visu@ldrone'),
@@ -60,7 +67,7 @@ export function renderFiche({ mission }) {
           h('button', { class: 'btn ghost', onclick: exportCurrent }, 'Exporter JSON'),
           h('button', { class: 'btn ghost', onclick: shareCurrent }, 'Partager')),
         h('button', { class: 'btn ghost block', onclick: () => copyText(buildRecap(mission), 'Récapitulatif copié') }, icon('copy'), 'Copier le récapitulatif'))),
-      ctaBar(h('button', { class: 'cta primary', onclick: () => copyText(buildRecap(mission), 'Récapitulatif copié') }, icon('copy'), h('span', {}, 'Copier la synthèse'))));
+      ctaBar(h('a', { class: 'cta primary', href: missionUrl(mission.id,'pdf') }, h('span', {}, 'Générer le PDF mission'), icon('arrow'))));
   }
   draw();
   return { el: root };
