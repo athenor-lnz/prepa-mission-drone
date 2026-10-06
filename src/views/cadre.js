@@ -133,9 +133,9 @@ export function renderCadre({ mission }) {
   function judicialAlert() {
     let modal;
     modal = sheet('Police judiciaire', h('div', { class: 'stack' },
-      h('div', { class: 'banner bad' }, icon('warn'), h('span', {}, 'Enregistrement obligatoire via VXCORE.')),
-      h('p', {}, 'VXCORE est activé automatiquement pour cette mission.'),
-      h('button', { class: 'btn primary block', onclick: () => modal.close() }, 'Compris')));
+      h('div', { class: 'banner bad' }, icon('warn'), h('span', {}, 'Dès visualisation de la zone concernée : enregistrement systématique.')),
+      h('p', {}, 'L’enregistrement doit être réalisé sur un coffre-fort numérique autorisé. VXCORE reste activé pour cette mission dans l’application.'),
+      h('button', { class: 'btn primary block', onclick: () => modal.close() }, 'Configurer le cadre judiciaire')), { autofocus:false });
   }
 
   function selectType(value) {
@@ -183,6 +183,59 @@ export function renderCadre({ mission }) {
     ), { autofocus:false });
   }
 
+  function updateJudicial(patch) {
+    mutate(mission, (m) => {
+      m.context.judicial = { ...(m.context.judicial || {}), ...patch };
+    });
+    draw();
+  }
+
+  function judicialRule(ju) {
+    if (ju.placeType === 'public') {
+      if (ju.procedure === 'public-prelim') return {
+        authority:'Procureur de la République',
+        duration:'1 mois maximum · renouvelable 1 fois',
+        title:'Enquête préliminaire / flagrance / procédures 74 à 74-2 CPP'
+      };
+      if (ju.procedure === 'public-instruction') return {
+        authority:'Juge d’instruction',
+        duration:'4 mois maximum · renouvelable sans excéder 2 ans',
+        title:'Instruction / information'
+      };
+    }
+    if (ju.placeType === 'private') {
+      if (ju.procedure === 'private-prelim') return {
+        authority:'JLD · ordonnance',
+        duration:'1 mois maximum · renouvelable 1 fois',
+        title:'Enquête préliminaire / flagrance'
+      };
+      if (ju.procedure === 'private-instruction') return {
+        authority:'Juge d’instruction · ordonnance',
+        duration:'4 mois maximum · renouvelable sans excéder 2 ans',
+        title:'Instruction'
+      };
+    }
+    return null;
+  }
+
+  function judicialComplete(ju) {
+    if (!ju?.placeType || !ju?.basis || !ju?.procedure || !ju?.authorizationHeld || !ju?.authorizationPlace || !ju?.authorizationDuration || !ju?.secureVaultReady) return false;
+    if (ju.placeType === 'private' && !ju.authorizationOffence) return false;
+    return true;
+  }
+
+  function checkLine(label, checked, onclick, note='') {
+    return h('button', {
+      class:`judicial-check ${checked?'on':''}`,
+      'aria-pressed':String(checked),
+      onclick
+    },
+      h('span',{class:'check-dot'},checked?icon('check',16):''),
+      h('span',{class:'judicial-check-copy'},h('strong',{},label),note?h('small',{},note):null)
+    );
+  }
+
+
   function setWindow(which, value) {
     if (!isLocalDateTime(value)) return;
     mutate(mission, (m) => {
@@ -208,6 +261,12 @@ export function renderCadre({ mission }) {
 
   function draw() {
     const ao = c.administrativeOrder || { held: false, cameraCount: null, placeNote: '' };
+    const ju = c.judicial || {
+      placeType:'', basis:'', procedure:'', authorizationHeld:false,
+      authorizationPlace:false, authorizationDuration:false, authorizationOffence:false, secureVaultReady:false
+    };
+    const jRule = judicialRule(ju);
+    const judicialOk = c.missionType !== 'judiciaire' || judicialComplete(ju);
     const nameOk = !!mission.name.trim() && mission.name.trim() !== 'Nouvelle mission';
     const windowOk = isLocalDateTime(mission.window.start) && isLocalDateTime(mission.window.end) && mission.window.end > mission.window.start;
     const adminOk = c.missionType !== 'administratif' || (
@@ -216,7 +275,7 @@ export function renderCadre({ mission }) {
       !!ao.placeNote.trim()
     );
     const vxcoreOk = c.missionType === 'judiciaire' ? c.vxcore === true : typeof c.vxcore === 'boolean';
-    const ready = nameOk && windowOk && !!c.missionType && adminOk && vxcoreOk && c.useCases.length > 0;
+    const ready = nameOk && windowOk && !!c.missionType && adminOk && judicialOk && vxcoreOk && c.useCases.length > 0;
 
     const missionName = h('input', {
       value: mission.name === 'Nouvelle mission' ? '' : mission.name,
@@ -266,7 +325,90 @@ export function renderCadre({ mission }) {
             }, label)))),
 
         c.missionType === 'judiciaire'
-          ? h('div', { class: 'banner bad', role: 'alert' }, icon('warn'), h('span', {}, 'Police judiciaire : enregistrement obligatoire via VXCORE.'))
+          ? h('section',{class:'card-sec judicial-card'},
+              h('div',{class:'judicial-title'},
+                h('div',{class:'judicial-title-icon'},'⚖'),
+                h('div',{},h('span',{class:'lbl'},'Captation d’image'),h('h2',{},'Police judiciaire'))),
+              h('div',{class:'banner bad'},icon('warn'),h('span',{},'Dès visualisation de la zone concernée : enregistrement systématique.')),
+
+              h('div',{class:'judicial-step'},
+                h('div',{class:'judicial-step-head'},h('span',{class:'judicial-step-num'},'1'),h('strong',{},'Type de lieu')),
+                h('div',{class:'judicial-place-grid'},
+                  h('button',{
+                    class:`judicial-place ${ju.placeType==='public'?'on':''}`,
+                    onclick:()=>updateJudicial({placeType:'public',basis:'',procedure:'',authorizationOffence:false})
+                  },h('span',{class:'judicial-place-icon'},'🏢'),h('strong',{},'Lieu public'),h('small',{},'Crime/délit, décès-disparition, personne en fuite')),
+                  h('button',{
+                    class:`judicial-place ${ju.placeType==='private'?'on':''}`,
+                    onclick:()=>updateJudicial({placeType:'private',basis:'private-706',procedure:'',authorizationOffence:false})
+                  },h('span',{class:'judicial-place-icon'},'⌂'),h('strong',{},'Lieu privé'),h('small',{},'Cadre plus restrictif · criminalité organisée'))
+                )),
+
+              ju.placeType
+                ? h('div',{class:'judicial-step'},
+                    h('div',{class:'judicial-step-head'},h('span',{class:'judicial-step-num'},'2'),h('strong',{},ju.placeType==='public'?'Dans quel cas ?':'Cadre d’infraction')),
+                    ju.placeType==='public'
+                      ? h('div',{class:'judicial-options'},
+                          h('button',{class:`judicial-option ${ju.basis==='public-3y'?'on':''}`,onclick:()=>updateJudicial({basis:'public-3y'})},
+                            h('strong',{},'Crime ou délit ≥ 3 ans'),h('small',{},'Enquête ou instruction portant sur un crime ou délit puni d’au moins 3 ans d’emprisonnement.')),
+                          h('button',{class:`judicial-option ${ju.basis==='public-death-disappearance'?'on':''}`,onclick:()=>updateJudicial({basis:'public-death-disappearance'})},
+                            h('strong',{},'Mort ou disparition'),h('small',{},'Recherche des causes de la mort ou d’une disparition · art. 74, 74-1 et 80-4 CPP.')),
+                          h('button',{class:`judicial-option ${ju.basis==='public-fugitive'?'on':''}`,onclick:()=>updateJudicial({basis:'public-fugitive'})},
+                            h('strong',{},'Personne en fuite'),h('small',{},'Procédure de recherche d’une personne en fuite · art. 74-2 CPP.')))
+                      : h('div',{class:'banner warn'},icon('warn'),h('span',{},'Lieu privé : uniquement pour une infraction entrant dans le champ des articles 706-73 ou 706-73-1 CPP · criminalité organisée.')))
+                : null,
+
+              ju.placeType
+                ? h('div',{class:'judicial-step'},
+                    h('div',{class:'judicial-step-head'},h('span',{class:'judicial-step-num'},'3'),h('strong',{},'Contexte de la procédure')),
+                    h('div',{class:'judicial-options'},
+                      ju.placeType==='public'
+                        ? [
+                            h('button',{class:`judicial-option ${ju.procedure==='public-prelim'?'on':''}`,onclick:()=>updateJudicial({procedure:'public-prelim'})},
+                              h('strong',{},'Préliminaire / flagrance / 74 à 74-2'),h('small',{},'Autorisation du procureur de la République.')),
+                            h('button',{class:`judicial-option ${ju.procedure==='public-instruction'?'on':''}`,onclick:()=>updateJudicial({procedure:'public-instruction'})},
+                              h('strong',{},'Instruction / information'),h('small',{},'Autorisation du juge d’instruction.'))
+                          ]
+                        : [
+                            h('button',{class:`judicial-option ${ju.procedure==='private-prelim'?'on':''}`,onclick:()=>updateJudicial({procedure:'private-prelim'})},
+                              h('strong',{},'Préliminaire / flagrance'),h('small',{},'Autorisation par ordonnance du JLD.')),
+                            h('button',{class:`judicial-option ${ju.procedure==='private-instruction'?'on':''}`,onclick:()=>updateJudicial({procedure:'private-instruction'})},
+                              h('strong',{},'Instruction'),h('small',{},'Autorisation par ordonnance du juge d’instruction.'))
+                          ])
+                  )
+                : null,
+
+              jRule
+                ? h('div',{class:'judicial-authority'},
+                    h('span',{class:'lbl'},'Autorité compétente'),
+                    h('strong',{},jRule.authority),
+                    h('span',{},jRule.duration),
+                    h('small',{},jRule.title))
+                : null,
+
+              ju.placeType
+                ? h('div',{class:'judicial-step'},
+                    h('div',{class:'judicial-step-head'},h('span',{class:'judicial-step-num'},'4'),h('strong',{},'Autorisation du magistrat')),
+                    checkLine('Autorisation obtenue',ju.authorizationHeld,()=>updateJudicial({authorizationHeld:!ju.authorizationHeld}),'Elle doit être versée au dossier de procédure.'),
+                    checkLine('Lieu identifié dans l’autorisation',ju.authorizationPlace,()=>updateJudicial({authorizationPlace:!ju.authorizationPlace})),
+                    checkLine('Durée précisée',ju.authorizationDuration,()=>updateJudicial({authorizationDuration:!ju.authorizationDuration})),
+                    ju.placeType==='private'
+                      ? checkLine('Infraction motivant ce mode d’action mentionnée',ju.authorizationOffence,()=>updateJudicial({authorizationOffence:!ju.authorizationOffence}))
+                      : null)
+                : null,
+
+              ju.placeType
+                ? h('div',{class:'judicial-step judicial-recording'},
+                    h('div',{class:'judicial-step-head'},h('span',{class:'judicial-step-num'},'5'),h('strong',{},'Enregistrement et après mission')),
+                    checkLine('Coffre-fort numérique autorisé disponible',ju.secureVaultReady,()=>updateJudicial({secureVaultReady:!ju.secureVaultReady}),'En l’absence d’un système autorisé, l’enregistrement est interdit.'),
+                    h('div',{class:'judicial-reminders'},
+                      h('div',{},h('strong',{},'Pendant'),h('span',{},'Activer l’enregistrement dès visualisation de la zone concernée.')),
+                      h('div',{},h('strong',{},'Après'),h('span',{},'Transmettre les images via le coffre-fort numérique · communiquer les heures début/fin pour le PV · réaliser le REMA / GENDRONE.')),
+                      h('div',{},h('strong',{},'Conservation'),h('span',{},'7 jours maximum avant suppression automatique, sauf placement sous scellé.')),
+                      h('div',{},h('strong',{},'Télépilote'),h('span',{},'L’enquêteur ne peut pas être le télépilote dans son propre dossier.')))
+                  )
+                : null
+            )
           : null,
 
         c.missionType === 'administratif'
@@ -310,10 +452,10 @@ export function renderCadre({ mission }) {
         h('section', { class: 'card-sec' },
           h('span', { class: 'lbl' }, 'VXCORE'),
           h('p', { class: 'note' }, c.missionType === 'judiciaire'
-            ? 'Police judiciaire : utilisation de VXCORE obligatoire.'
+            ? 'Dans l’application, VXCORE est activé pour le cadre judiciaire. La règle à retenir est l’enregistrement sur un coffre-fort numérique autorisé.'
             : 'VXCORE sera-t-il utilisé pour cette mission ?'),
           c.missionType === 'judiciaire'
-            ? h('div', { class: 'banner bad' }, icon('warn'), h('span', {}, 'VXCORE obligatoire pour cette mission.'))
+            ? h('div', { class: 'banner info' }, icon('info'), h('span', {}, 'VXCORE activé · vérifier que le système de coffre-fort numérique autorisé est disponible.'))
             : segmented([
                 { value: 'non', label: 'Non' },
                 { value: 'oui', label: 'Oui' }
@@ -354,6 +496,7 @@ export function renderCadre({ mission }) {
               : !windowOk ? 'Renseigne un début et une fin de mission valides.'
               : !c.missionType ? 'Sélectionne le type de mission.'
               : !adminOk ? 'Complète les informations de l’arrêté préfectoral.'
+              : !judicialOk ? 'Complète le cadre judiciaire : lieu, procédure, autorisation et coffre-fort numérique.'
               : !vxcoreOk ? 'Indique si VXCORE sera utilisé.'
               : !c.useCases.length ? 'Sélectionne au moins un cas d’usage.'
               : 'Complète le cadre de mission.'))
