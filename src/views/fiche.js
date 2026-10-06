@@ -79,6 +79,12 @@ export function renderForm({ mission, route }) {
     const d=mission.macloeMap||{};
     return (Array.isArray(d.route)&&d.route.length>=2)||(Array.isArray(d.polygon)&&d.polygon.length>=3)||(d.start&&d.end);
   };
+  const hasMacloeMapSection = (id) => {
+    const a=mission.macloeMap?.annotations?.[id];
+    if(id==='L') return !!a?.lines?.some((x)=>x?.points?.length>=2);
+    if(id==='E') return !!(a?.lines?.some((x)=>x?.points?.length>=2)||a?.zones?.some((x)=>x?.points?.length>=3));
+    return false;
+  };
 
   function setValidated(id, on) {
     mutate(mission, (m) => {
@@ -98,7 +104,10 @@ export function renderForm({ mission, route }) {
     const vp = validatedProgress(form, validated);
     const sec = sectionById(active) || form.sections[0];
     const sp = sectionProgress(sec, mission[key]);
-    const mapComplete = route==='macloe' && sec.id==='C' && hasCheminementMap();
+    const mapComplete = route==='macloe' && (
+      (sec.id==='C' && hasCheminementMap()) ||
+      ((sec.id==='L'||sec.id==='E') && hasMacloeMapSection(sec.id))
+    );
     const complete = sectionComplete(sec, mission[key]) || mapComplete;
     const done = isValidated(sec.id);
 
@@ -114,6 +123,7 @@ export function renderForm({ mission, route }) {
     const fieldNodes = new Map();
     const liveSectionComplete = () => {
       if(route==='macloe' && sec.id==='C' && hasCheminementMap()) return true;
+      if(route==='macloe' && (sec.id==='L'||sec.id==='E') && hasMacloeMapSection(sec.id)) return true;
       return sec.fields.every((f) => {
         const value = fieldNodes.get(f.key)?.value ?? mission[key][f.key] ?? '';
         return String(value).trim().length > 0;
@@ -167,9 +177,12 @@ export function renderForm({ mission, route }) {
       onclick: () => {
         if (done) { setValidated(sec.id,false); draw(); return; }
         syncSectionFields();
-        const cartoOk = route==='macloe' && sec.id==='C' && hasCheminementMap();
+        const cartoOk = route==='macloe' && (
+          (sec.id==='C' && hasCheminementMap()) ||
+          ((sec.id==='L'||sec.id==='E') && hasMacloeMapSection(sec.id))
+        );
         if (!sectionComplete(sec, mission[key]) && !cartoOk) {
-          toast('Complète le texte ou enregistre un cheminement sur la carte.', 'bad');
+          toast('Complète le texte ou ajoute les éléments sur la carte.', 'bad');
           return;
         }
         setValidated(sec.id,true);
@@ -205,7 +218,16 @@ export function renderForm({ mission, route }) {
                     ? 'Le texte devient facultatif : la carte suffit pour valider Cheminement.'
                     : 'Trace un départ, une arrivée, un itinéraire ou une zone. Cet outil reste facultatif.')),
                 h('a',{class:'btn ghost',href:missionUrl(mission.id,'cheminement')},hasCheminementMap()?'Modifier la carte':'Ouvrir la carte'))
-            : null,
+            : route==='macloe' && (sec.id==='L'||sec.id==='E')
+              ? h('div',{class:'cheminement-bonus'},
+                  h('div',{class:'cheminement-bonus-copy'},
+                    h('span',{class:'eyebrow'},'Outil cartographique'),
+                    h('strong',{},hasMacloeMapSection(sec.id)?'Éléments cartographiques enregistrés':sec.id==='L'?'Lignes de débouché':'Esquive & dégagement'),
+                    h('small',{},sec.id==='L'
+                      ? 'Affiche le cheminement et ajoute une ou plusieurs lignes nommées et colorées.'
+                      : 'Affiche le cheminement et ajoute des lignes d’esquive et des zones de dégagement nommées et colorées.')),
+                  h('a',{class:'btn ghost',href:missionUrl(mission.id,'macloe-map/'+sec.id)},hasMacloeMapSection(sec.id)?'Modifier la carte':'Ouvrir la carte'))
+              : null,
           validate),
         h('button', { class: 'btn ghost block', onclick: () => copyText(toText(form, mission[key]), `${form.title} copié`) }, icon('copy'), `Copier ${form.title}`)),
       ctaBar(h('button', {
