@@ -73,10 +73,12 @@ export function renderMacloeMap({mission,section='L'}){
   function renderAnnotations(){
     if(!drawLayer)return;drawLayer.clearLayers();
     for(const x of data.lines||[]){
+      if(current?.id===x.id)continue;
       if(x.points?.length)L.polyline(x.points.map((p)=>[p.lat,p.lon]),{color:x.color||'#E53935',weight:5,opacity:.95}).addTo(drawLayer);
       centerLabel(x.points,x.name,x.color||'#E53935');
     }
     for(const z of data.zones||[]){
+      if(current?.id===z.id)continue;
       if(z.points?.length>=2)L.polygon(z.points.map((p)=>[p.lat,p.lon]),{color:z.color||'#43A047',weight:3,fillColor:z.color||'#43A047',fillOpacity:.18}).addTo(drawLayer);
       centerLabel(z.points,z.name,z.color||'#43A047');
     }
@@ -99,10 +101,6 @@ export function renderMacloeMap({mission,section='L'}){
         name=input.value.trim();if(!name)return toast('Donne un nom.','bad');
         sh.close();
         current={id:preset?.id||id(),kind,name,color,points:preset?.points?clone(preset.points):[]};
-        if(preset){
-          if(kind==='zone')data.zones=data.zones.filter((x)=>x.id!==preset.id);
-          else data.lines=data.lines.filter((x)=>x.id!==preset.id);
-        }
         mode=kind;drawPanel();renderAnnotations();
       }},preset?'Modifier / retracer':'Commencer le tracé')
     ),{autofocus:false});
@@ -111,8 +109,8 @@ export function renderMacloeMap({mission,section='L'}){
     if(!current)return;
     const min=current.kind==='zone'?3:2;
     if(current.points.length<min)return toast(current.kind==='zone'?'Ajoute au moins 3 points.':'Ajoute au moins 2 points.','bad');
-    if(current.kind==='zone')data.zones=[...(data.zones||[]),clone(current)];
-    else data.lines=[...(data.lines||[]),clone(current)];
+    if(current.kind==='zone')data.zones=[...(data.zones||[]).filter((x)=>x.id!==current.id),clone(current)];
+    else data.lines=[...(data.lines||[]).filter((x)=>x.id!==current.id),clone(current)];
     current=null;mode=null;persist();renderAnnotations();drawPanel();
   }
   function cancelDraw(){current=null;mode=null;renderAnnotations();drawPanel();}
@@ -121,7 +119,8 @@ export function renderMacloeMap({mission,section='L'}){
     let sh;
     sh=sheet(obj.name,h('div',{class:'stack'},
       h('div',{class:'annot-preview'},h('span',{style:'--swatch:'+obj.color,class:'annot-dot'}),h('strong',{},obj.name),h('small',{},obj.points.length+' point(s)')),
-      h('button',{class:'btn primary block',onclick:()=>{sh.close();begin(kind,obj);}},'Modifier / retracer'),
+      h('button',{class:'btn primary block',onclick:()=>{sh.close();begin(kind,obj);}},'Modifier nom / couleur'),
+      h('button',{class:'btn ghost block',onclick:()=>{sh.close();begin(kind,{...obj,points:[]});}},'Retracer'),
       h('button',{class:'btn danger block',onclick:async()=>{
         if(!await confirmDialog('Supprimer ?',obj.name,'Supprimer'))return;
         if(kind==='zone')data.zones=data.zones.filter((x)=>x.id!==obj.id);else data.lines=data.lines.filter((x)=>x.id!==obj.id);
