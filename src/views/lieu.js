@@ -31,7 +31,7 @@ export function renderLieu({ mission }) {
   const radiusTag = h('span', { class: 'map-tag' });
   const results = h('ul', { class: 'results', hidden: true });
   const searchMsg = h('p', { class: 'note', 'aria-live': 'polite' });
-  const next = ctaButton('Valider · MENS / Météo', () => { location.hash = missionUrl(mission.id, 'meteo'); }, { disabled: !hasPoint() });
+  const next = ctaButton('Valider · Choisir les étapes', () => { location.hash = missionUrl(mission.id, 'etapes'); }, { disabled: !hasPoint() });
 
   function refresh() {
     if (hasPoint()) {
