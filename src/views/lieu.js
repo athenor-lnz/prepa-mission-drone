@@ -1,4 +1,4 @@
-import { h, icon, toast, copyText } from '../ui/dom.js';
+import { h, icon, toast, copyText, sheet } from '../ui/dom.js';
 import { topbar, ctaBar, ctaButton, segmented, missionUrl } from '../ui/layout.js';
 import { mutate } from '../state.js';
 import { formatAll } from '../lib/geo.js';
@@ -7,7 +7,7 @@ import { micButton } from '../ui/dictate.js';
 import { openTools } from './outils.js';
 import { info as aerodataInfo, analyzeAerodata } from '../services/aerodata.js';
 
-const RADII = [50, 100, 300, 500, 1000];
+const RADII = [50, 100, 300, 500, 1000, 2000];
 const TILES = {
   plan: { url: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png', attr: '© OpenStreetMap', max: 19 },
   sat: { url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', attr: 'Imagerie © Esri', max: 19 },
@@ -123,6 +123,68 @@ export function renderLieu({ mission }) {
     results.replaceChildren(...r.results.map((x) => h('li', {}, h('button', { class: 'result', onclick: () => { results.hidden = true; input.value = x.label; searchMsg.textContent = `Source : ${r.source}`; setPoint(x.lat, x.lon, x.label); } }, x.label))));
   }
 
+  function locationHelp(message) {
+    let sh;
+    sh = sheet('Localisation', h('div', { class: 'stack' },
+      h('div', { class: 'banner warn' }, icon('warn'), h('span', {}, message)),
+      h('p', { class: 'note' }, 'Sur Android, vérifie aussi : Réglages du téléphone → Applications → ton navigateur ou Prépa Mission Drone → Autorisations → Position.'),
+      h('div', { class: 'row' },
+        h('button', { class: 'btn ghost', onclick: () => sh.close() }, 'Fermer'),
+        h('button', { class: 'btn primary', onclick: () => { sh.close(); locateMe(); } }, 'Réessayer'))));
+  }
+
+  const getPosition = (options) => new Promise((resolve, reject) => {
+    navigator.geolocation.getCurrentPosition(resolve, reject, options);
+  });
+
+  async function locateMe() {
+    if (!globalThis.isSecureContext) {
+      locationHelp('La localisation nécessite une connexion HTTPS.');
+      return;
+    }
+    if (!navigator.geolocation) {
+      locationHelp('La géolocalisation n’est pas disponible sur cet appareil ou dans ce navigateur.');
+      return;
+    }
+
+    try {
+      if (navigator.permissions?.query) {
+        const permission = await navigator.permissions.query({ name: 'geolocation' });
+        if (permission.state === 'denied') {
+          locationHelp('L’accès à la position est actuellement refusé pour cette application.');
+          return;
+        }
+      }
+    } catch { /* certains navigateurs ne permettent pas de lire cet état */ }
+
+    searchMsg.textContent = 'Recherche de votre position…';
+    let pos;
+    try {
+      pos = await getPosition({ enableHighAccuracy: true, timeout: 15000, maximumAge: 0 });
+    } catch (firstError) {
+      if (firstError?.code === 1) {
+        searchMsg.textContent = '';
+        locationHelp('L’accès à la position a été refusé.');
+        return;
+      }
+      try {
+        pos = await getPosition({ enableHighAccuracy: false, timeout: 20000, maximumAge: 60000 });
+      } catch (secondError) {
+        searchMsg.textContent = '';
+        const reason = secondError?.code === 3
+          ? 'La recherche de position a expiré. Vérifie que la localisation du téléphone est activée.'
+          : 'La position n’a pas pu être déterminée. Vérifie les autorisations et le service de localisation.';
+        locationHelp(reason);
+        return;
+      }
+    }
+
+    const accuracy = Math.round(pos.coords.accuracy || 0);
+    setPoint(pos.coords.latitude, pos.coords.longitude, 'Ma position');
+    searchMsg.textContent = accuracy ? `Position trouvée · précision ± ${accuracy} m` : 'Position trouvée';
+    toast(accuracy ? `Position trouvée · ± ${accuracy} m` : 'Position trouvée');
+  }
+
   const input = h('input', { type: 'search', enterkeyhint: 'search', autocomplete: 'off', placeholder: 'Adresse ou coordonnées', 'aria-label': 'Adresse ou coordonnées', value: p.label || '' });
   input.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); doSearch(input.value); } });
 
@@ -143,10 +205,7 @@ export function renderLieu({ mission }) {
   [...seg.children].forEach((b, i) => { b.dataset.v = ['dd', 'ddm', 'dms', 'utm'][i]; });
 
   const mapBtns = h('div', { class: 'map-ctl map-stack' },
-    h('button', { class: 'icon-btn float', 'aria-label': 'Ma position', onclick: () => {
-      if (!navigator.geolocation) return toast('Position indisponible sur cet appareil.', 'bad');
-      navigator.geolocation.getCurrentPosition((pos) => setPoint(pos.coords.latitude, pos.coords.longitude, ''), () => toast('Position refusée ou indisponible.', 'bad'), { enableHighAccuracy: true, timeout: 10000 });
-    } }, icon('locate')),
+    h('button', { class: 'icon-btn float', 'aria-label': 'Ma position', onclick: locateMe }, icon('locate')),
     h('button', { class: 'icon-btn float', 'aria-label': 'Zoom avant', onclick: () => map?.zoomIn() }, icon('plus')),
     h('button', { class: 'icon-btn float', 'aria-label': 'Zoom arrière', onclick: () => map?.zoomOut() }, icon('minus')));
   const modeSeg = h('div', { class: 'seg float-seg', role: 'group', 'aria-label': 'Fond de carte' },
