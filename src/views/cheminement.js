@@ -111,13 +111,19 @@ export function renderCheminement({mission}){
     const input=h('input',{
       type:'number',min:0,max:500,inputmode:'decimal',
       value:Number.isFinite(Number(p.aglM))?String(p.aglM):'',
-      placeholder:'Ex. 60','aria-label':'Hauteur du drone en mètres AGL'
+      placeholder:'Ex. 60','aria-label':'Hauteur du drone en mètres AGL',
+      oninput:(e)=>{const v=e.target.value.trim();aglValue.textContent=v?v+' m AGL':'À définir';}
     });
     const quick=[20,30,50,60,80,100,120];
+    const aglValue=h('strong',{},Number.isFinite(Number(p.aglM))?p.aglM+' m AGL':'À définir');
     const quickWrap=h('div',{class:'agl-quick'},
       ...quick.map((v)=>h('button',{
         class:'agl-chip '+(Number(p.aglM)===v?'on':''),
-        onclick:()=>{input.value=String(v);[...quickWrap.children].forEach((b)=>b.classList.toggle('on',b.textContent===v+' m'));}
+        onclick:()=>{
+          input.value=String(v);
+          aglValue.textContent=v+' m AGL';
+          [...quickWrap.children].forEach((b)=>b.classList.toggle('on',b.textContent===v+' m'));
+        }
       },v+' m'))
     );
     const info=h('div',{class:'route-point-info'},
@@ -137,13 +143,14 @@ export function renderCheminement({mission}){
     modal=sheet(i===0?'Départ':i===data.route.length-1?'Arrivée':'Point '+(i+1),
       h('div',{class:'stack route-point-sheet'},
         h('div',{class:'agl-title'},
-          h('span',{class:'eyebrow'},'Hauteur de vol du drone'),
-          h('strong',{},Number.isFinite(Number(p.aglM))?p.aglM+' m AGL':'À définir')),
+          h('div',{},h('span',{class:'eyebrow'},'Hauteur de vol du drone'),h('small',{},'Au-dessus du sol · AGL')),
+          aglValue),
         info,
         h('div',{class:'agl-section'},
           h('span',{class:'lbl'},'Hauteur au-dessus du sol · AGL'),
           quickWrap,
-          h('label',{class:'field-label'},'Saisie libre en mètres',input)),
+          h('label',{class:'field-label agl-free'},'Saisie libre en mètres',
+            h('div',{class:'agl-free-wrap'},input,h('span',{class:'agl-unit'},'m AGL')))),
         h('div',{class:'banner info'},icon('info'),h('span',{},'Exemple : 60 m signifie que le drone vole à 60 m au-dessus du sol à ce point.')),
         Number.isFinite(terrain)&&Number.isFinite(Number(p.aglM))
           ? h('p',{class:'note'},'Altitude estimée du drone : '+Math.round((terrain+Number(p.aglM))*10)/10+' m AMSL.')
@@ -154,7 +161,7 @@ export function renderCheminement({mission}){
           if(!await confirmDialog('Supprimer ce point ?','Le tracé sera recalculé sans ce point.','Supprimer'))return;
           data.route.splice(i,1);data.elevation=[];data.elevationSource='';syncPointHeightsToProfile();persist();modal.close();renderMapShapes();drawPanel();
         }},'Supprimer ce point')
-      ));
+      ), { autofocus:false });
   }
 
   function renderMapShapes(){
