@@ -823,3 +823,15 @@ button, .btn, .cta { font: inherit; cursor: pointer; }
 .route-ground{stroke:var(--field-line);stroke-width:2;vector-effect:non-scaling-stroke}
 .route-flight-solid{fill:none;stroke:#CDB23A;stroke-width:5;vector-effect:non-scaling-stroke}
 .drone-profile{background:linear-gradient(to bottom,color-mix(in srgb,#CDB23A 8%,var(--surf2)),var(--surf2))}
+
+
+/* --- Editeur AGL : priorité aux commandes avant le clavier --- */
+.agl-title>div{display:flex;flex-direction:column;gap:2px}
+.agl-title small{font-size:10px;color:var(--mute)}
+.agl-free-wrap{position:relative}
+.agl-free-wrap input{padding-right:76px;font-size:22px;font-family:var(--font-mono);font-weight:800}
+.agl-unit{
+  position:absolute;right:14px;top:50%;transform:translateY(-50%);
+  color:var(--mute);font-size:11px;font-weight:800;pointer-events:none
+}
+.route-point-sheet{padding-bottom:calc(8px + env(safe-area-inset-bottom))}
