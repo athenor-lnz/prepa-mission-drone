@@ -580,3 +580,28 @@ button, .btn, .cta { font: inherit; cursor: pointer; }
 .ad-map-popup small{font-size:11px;color:#555}
 .ad-map-popup .btn{min-height:36px;color:#111;background:#fff;box-shadow:inset 0 0 0 1px #d8d8d8}
 .leaflet-popup-content{margin:11px 13px}
+
+
+/* --- Mission : choix du cas d’usage avec explications --- */
+.usecase-section{gap:12px}
+.usecase-list{display:flex;flex-direction:column;gap:8px}
+.usecase-card{
+  width:100%;min-height:92px;padding:12px;border:1px solid var(--line);border-radius:18px;
+  background:var(--surf2);color:var(--ink);display:flex;align-items:flex-start;gap:10px;text-align:left
+}
+.usecase-card.on{
+  background:color-mix(in srgb,var(--accSoft) 68%,var(--surf2));
+  border-color:color-mix(in srgb,var(--acc) 70%,var(--line));
+  box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--acc) 34%,transparent)
+}
+.usecase-check{margin-top:2px;flex:none}
+.usecase-copy{display:flex;flex-direction:column;gap:3px;flex:1;min-width:0}
+.usecase-title-row{display:flex;align-items:center;gap:8px;justify-content:space-between}
+.usecase-title-row strong{font-family:var(--font-display);font-size:15px}
+.usecase-mode{
+  flex:none;padding:4px 7px;border-radius:99px;background:color-mix(in srgb,#2F80ED 15%,var(--surf));
+  color:#5FA8FF;font-family:var(--font-mono);font-size:10px;font-weight:700
+}
+.usecase-mode.bvlos{background:var(--warnSoft);color:var(--warn)}
+.usecase-range{font-size:12px;font-weight:700;color:var(--acc)}
+.usecase-copy small{font-size:11px;line-height:1.35;color:var(--mute)}
