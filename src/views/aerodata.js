@@ -46,12 +46,12 @@ export function renderAerodata(){
         h('div',{},h('span',{class:'eyebrow'},'Base locale'),h('h1',{},'Données aéronautiques'))),
       h('div',{class:'body aerodata-body'},
         h('section',{class:'card-sec data-current'},
-          h('div',{class:'data-section-head'},h('div',{},h('span',{class:'eyebrow'},'Jeu installé'),h('h2',{},meta?'Base active':'Aucune base locale')),meta?h('span',{class:'pill go'},'ACTIVE'):h('span',{class:'pill unknown'},'VIDE')),
+          h('div',{class:'data-section-head'},h('div',{},h('span',{class:'eyebrow'},'Jeu disponible'),h('h2',{},meta?(meta.bundled?'Base embarquée':'Base locale active'):'Aucune base')),meta?h('span',{class:`pill ${meta.bundled?'warn':'go'}`},meta.bundled?'EMBARQUÉE':'ACTIVE'):h('span',{class:'pill unknown'},'VIDE')),
           meta?h('div',{class:'data-grid'},
             dataCard('Espaces',String(meta.spaceCount??0)),
             dataCard('Aérodromes',String(meta.aerodromeCount??0)),
             dataCard('Cycle / effet',meta.effective||'—'),
-            dataCard('Import',fmtDate(meta.importedAt))
+            dataCard(meta.bundled?'Disponibilité':'Import',meta.bundled?'Intégrée à l’app':fmtDate(meta.importedAt))
           ):h('p',{class:'note'},'Importe ton ZIP GeoJSON actuel ou un XML SIA/AIXM.'),
           meta?h('p',{class:'note'},`Source : ${meta.source||'locale'}`):null
         ),
@@ -90,11 +90,11 @@ export function renderAerodata(){
           h('button',{class:'btn ghost block',disabled:busy,onclick:()=>zipInput.click()},'Choisir un ZIP GeoJSON'),zipInput
         ),
 
-        meta?h('button',{class:'btn ghost danger-text block',onclick:async()=>{
-          if(await confirmDialog('Supprimer la base locale ?','Les missions restent conservées, mais la cartographie aéronautique locale sera vide.','Supprimer la base')){
-            await clearAerodata();candidate=null;status='Base locale supprimée.';draw();
+        meta&&!meta.bundled?h('button',{class:'btn ghost block',onclick:async()=>{
+          if(await confirmDialog('Revenir à la base embarquée ?','La base importée sur cet appareil sera supprimée. Les missions sont conservées et la base SIA intégrée à l’application redeviendra active.','Revenir à la base embarquée')){
+            await clearAerodata();candidate=null;status='Base embarquée réactivée.';draw();
           }
-        }},'Supprimer la base aéronautique locale'):null
+        }},'Revenir à la base embarquée'):null
       )
     );
   };
