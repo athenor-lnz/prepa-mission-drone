@@ -292,3 +292,17 @@ button, .btn, .cta { font: inherit; cursor: pointer; }
 .contact-call{background:var(--goSoft)!important;color:var(--go)!important;min-height:42px;text-decoration:none}
 .detected-phones{display:flex;flex-direction:column;align-items:flex-start;gap:7px;padding:9px;border-radius:12px;background:var(--goSoft)}
 .detected-phones .lbl{color:var(--go)}
+
+
+/* --- Étape Mission : identité, créneau global et cadre légal --- */
+.mission-core{gap:14px}
+.field-label{display:flex;flex-direction:column;gap:7px;font-weight:700}
+.field-label input,.field-label textarea{font-weight:500}
+.mission-datetime-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.legal-card{box-shadow:inset 0 0 0 1px var(--line),var(--shadow)}
+.window-summary-head{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}
+.window-summary-head>div{display:flex;flex-direction:column;gap:4px;min-width:0}
+.window-summary-head strong{font-family:var(--font-display);font-size:17px;overflow-wrap:anywhere}
+@media(max-width:520px){
+  .mission-datetime-grid{grid-template-columns:1fr}
+}
