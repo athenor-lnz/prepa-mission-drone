@@ -27,6 +27,16 @@ export function newMission({ now = new Date(), name = 'Nouvelle mission' } = {})
       capture: 'observation',
       vxcore: null,
       useCases: [],
+      judicial: {
+        placeType: '',
+        basis: '',
+        procedure: '',
+        authorizationHeld: false,
+        authorizationPlace: false,
+        authorizationDuration: false,
+        authorizationOffence: false,
+        secureVaultReady: false
+      },
       administrativeOrder: { held: false, cameraCount: null, placeNote: '' }
     },
     place: { label: '', lat: null, lon: null, radiusM: 500 },
@@ -166,11 +176,22 @@ export function sanitizeMission(raw) {
 
   const ctx = raw.context || {};
   const ao = ctx.administrativeOrder || {};
+  const ju = ctx.judicial || {};
   m.context = {
     missionType: known(ctx.missionType, ['judiciaire','administratif','sauvegarde','entrainement','communication','autre'], ''),
     capture: known(ctx.capture, ['observation','captation','enregistrement'], 'observation'),
     vxcore: typeof ctx.vxcore === 'boolean' ? ctx.vxcore : (ctx.missionType === 'judiciaire' || ctx.capture === 'enregistrement' ? true : false),
     useCases: list(ctx.useCases, 20).map((x) => str(x, 60)).filter(Boolean),
+    judicial: {
+      placeType: known(ju.placeType, ['public','private'], ''),
+      basis: known(ju.basis, ['public-3y','public-death-disappearance','public-fugitive','private-706'], ''),
+      procedure: known(ju.procedure, ['public-prelim','public-instruction','private-prelim','private-instruction'], ''),
+      authorizationHeld: ju.authorizationHeld === true,
+      authorizationPlace: ju.authorizationPlace === true,
+      authorizationDuration: ju.authorizationDuration === true,
+      authorizationOffence: ju.authorizationOffence === true,
+      secureVaultReady: ju.secureVaultReady === true
+    },
     administrativeOrder: {
       held: ao.held === true,
       cameraCount: Number.isInteger(Number(ao.cameraCount)) && Number(ao.cameraCount) > 0 ? Math.min(99, Number(ao.cameraCount)) : null,
