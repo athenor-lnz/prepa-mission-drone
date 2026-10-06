@@ -156,16 +156,21 @@ function exportAll() {
 
 async function forceUpdate(){
   try {
+    // Ne touche ni au localStorage ni à IndexedDB : les missions restent intactes.
     if ('caches' in globalThis) {
       const keys = await caches.keys();
       await Promise.all(keys.map((k)=>caches.delete(k)));
     }
-    const reg = await navigator.serviceWorker?.getRegistration?.();
-    if (reg) {
-      try { await reg.update(); } catch {}
+    if ('serviceWorker' in navigator) {
+      const regs = await navigator.serviceWorker.getRegistrations();
+      await Promise.all(regs.map((r)=>r.unregister().catch(()=>false)));
     }
+    try {
+      await fetch(location.pathname+'?force='+Date.now(), { cache:'no-store', credentials:'same-origin' });
+    } catch {}
     try { sessionStorage.setItem('pmd.justForcedUpdate','1'); } catch {}
-    location.reload();
+    const cleanHash=location.hash||'#/';
+    location.replace(location.pathname+'?force='+Date.now()+cleanHash);
   } catch (e) {
     toast('Mise à jour forcée impossible', 'bad');
   }
@@ -176,20 +181,25 @@ function maintenanceSheet(){
   sh=sheet('Maintenance',h('div',{class:'stack'},
     h('div',{class:'banner warn'},icon('warn'),h('span',{},'Cette action efface uniquement le cache de l’application et recharge la dernière version. Les missions enregistrées ne sont pas supprimées.')),
     h('button',{class:'btn primary block',onclick:async()=>{sh.close();await forceUpdate();}},'Forcer la mise à jour'),
-    h('p',{class:'note'},'Astuce : ce menu est accessible en touchant 5 fois rapidement le badge de version.')
+    h('p',{class:'note'},'Astuce : ce menu est accessible en touchant 5 fois rapidement le badge de version, ou par un appui long.')
   ));
 }
 
 export function renderAccueil() {
   flush();
   const root = h('main', { class: 'screen home cockpit-home' });
-  let versionTaps=0,versionTapTimer=null;
+  let versionTaps=0,versionTapTimer=null,versionHoldTimer=null;
   const versionTap=()=>{
     clearTimeout(versionTapTimer);
     versionTaps++;
     if(versionTaps>=5){versionTaps=0;maintenanceSheet();return;}
-    versionTapTimer=setTimeout(()=>{versionTaps=0;},1400);
+    versionTapTimer=setTimeout(()=>{versionTaps=0;},1800);
   };
+  const versionHoldStart=()=>{
+    clearTimeout(versionHoldTimer);
+    versionHoldTimer=setTimeout(()=>{versionTaps=0;maintenanceSheet();},1200);
+  };
+  const versionHoldEnd=()=>clearTimeout(versionHoldTimer);
   try { if(sessionStorage.getItem('pmd.justForcedUpdate')==='1'){sessionStorage.removeItem('pmd.justForcedUpdate');setTimeout(()=>toast('Cache vidé · application rechargée'),250);} } catch {}
   const createMission = () => { const m = store.create(); location.hash = missionUrl(m.id, 'cadre'); };
   const draw = () => {
@@ -203,7 +213,16 @@ export function renderAccueil() {
           h('div', {},
             h('div', { class: 'cockpit-title-row' },
               h('h1', {}, 'Prépa Mission'),
-              h('button', { class: 'app-version mono', title: 'Version de l’application', 'aria-label':'Version v27', onclick:versionTap }, 'v27')),
+              h('button', {
+                class: 'app-version mono',
+                title: 'Version de l’application',
+                'aria-label':'Version v28',
+                onclick:versionTap,
+                onpointerdown:versionHoldStart,
+                onpointerup:versionHoldEnd,
+                onpointercancel:versionHoldEnd,
+                onpointerleave:versionHoldEnd
+              }, 'v28')),
             h('p', { class: 'cockpit-sub' }, 'Drone'))),
         h('button', { class: 'icon-btn cockpit-settings', 'aria-label': 'Réglages', onclick: () => settings(draw) }, icon('sun'))),
       !store.isPersistent ? h('div', { class: 'banner warn', role: 'alert' }, icon('warn'), 'Stockage du navigateur indisponible : les missions seront perdues à la fermeture. Exporte-les.') : null,
