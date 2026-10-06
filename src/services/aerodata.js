@@ -288,6 +288,81 @@ export async function installAerodataCandidate(candidate,{onProgress}={}){
   return meta;
 }
 
+
+const BUNDLED_INDEX='data/aerodata/index.json';
+let bundledPromise=null;
+
+async function decodeBundledBase64(text){
+  if(typeof DecompressionStream==='undefined')throw new Error('Décompression de la base embarquée non prise en charge par ce navigateur.');
+  const clean=String(text||'').trim();
+  const raw=atob(clean),bytes=new Uint8Array(raw.length);
+  for(let i=0;i<raw.length;i++)bytes[i]=raw.charCodeAt(i);
+  const stream=new Blob([bytes]).stream().pipeThrough(new DecompressionStream('gzip'));
+  return JSON.parse(await new Response(stream).text());
+}
+async function fetchBundledText(path){
+  const r=await fetch(path,{cache:'force-cache'});
+  if(!r.ok)throw new Error(`Base embarquée introuvable : ${path}`);
+  return r.text();
+}
+function prepCompactSpaces(data){
+  return (data?.features||[]).flatMap((f)=>{
+    const geometry=f?.g;if(!geometry)return[];
+    const bbox=boundsOf(geometry);if(!bbox)return[];
+    const p=f.p||{};
+    return [{
+      geometry,bbox,
+      p:{
+        territoire:p.x||'',type:p.t||'',subType:p.s||'',id:p.i||'',name:p.n||'',
+        className:p.c||'',ceiling:p.u||'',floor:p.l||'',schedule:p.h||'',remark:p.r||''
+      }
+    }];
+  });
+}
+function prepCompactAerodromes(data){
+  return (data?.features||[]).flatMap((f)=>{
+    if(f?.g?.type!=='Point')return[];
+    const [lon,lat]=f.g.coordinates||[];if(!Number.isFinite(lat)||!Number.isFinite(lon))return[];
+    const p=f.p||{},altitude=Number(p.a);
+    return [{
+      lat,lon,icao:String(p.i||'').trim(),name:String(p.n||'').trim(),type:String(p.t||'').trim(),
+      altitudeFt:Number.isFinite(altitude)?altitude:null,remark:String(p.r||'').trim(),
+      runways:(Array.isArray(p.p)?p.p:[]).map(normalizeRunway),
+      frequencies:(Array.isArray(p.f)?p.f:[]).map(normalizeFrequency)
+    }];
+  });
+}
+async function loadBundledAerodata(){
+  if(bundledPromise)return bundledPromise;
+  bundledPromise=(async()=>{
+    const idxResp=await fetch(BUNDLED_INDEX,{cache:'force-cache'});
+    if(!idxResp.ok)throw new Error('Manifeste de la base aéronautique embarquée introuvable.');
+    const idx=await idxResp.json();
+    if(!Array.isArray(idx.spaceBundles)||!idx.aerodromes)throw new Error('Manifeste aéronautique embarqué invalide.');
+    const [spaceParts,aeroText]=await Promise.all([
+      Promise.all(idx.spaceBundles.map((name)=>fetchBundledText(`data/aerodata/${name}`))),
+      fetchBundledText(`data/aerodata/${idx.aerodromes}`)
+    ]);
+    const [packedSpaces,packedAerodromes]=await Promise.all([
+      decodeBundledBase64(spaceParts.join('')),
+      decodeBundledBase64(aeroText)
+    ]);
+    const spaces=prepCompactSpaces(packedSpaces),aerodromes=prepCompactAerodromes(packedAerodromes);
+    if(spaces.length!==Number(idx.spaceCount)||aerodromes.length!==Number(idx.aerodromeCount)){
+      throw new Error('Contrôle de la base aéronautique embarquée échoué.');
+    }
+    const meta={
+      source:idx.source||'GeoGM / SIA embarqué',
+      effective:idx.effective||null,created:idx.created||null,importedAt:null,
+      spaceCount:spaces.length,aerodromeCount:aerodromes.length,
+      format:idx.format||'Base embarquée',bundled:true
+    };
+    cache={meta,spaces,aerodromes};
+    return meta;
+  })().catch((e)=>{bundledPromise=null;throw e;});
+  return bundledPromise;
+}
+
 export async function importAerodata(file,{onProgress}={}){
   if(!file)throw new Error('Aucun fichier sélectionné.');
   let spacesText=null,aerodromesText=null,indexText='{}';
@@ -313,12 +388,24 @@ export async function importAerodata(file,{onProgress}={}){
 }
 
 export async function info(){
-  if(!cache.meta)cache.meta=await getKey('meta');
-  return cache.meta;
+  if(cache.meta)return cache.meta;
+  const stored=await getKey('meta');
+  if(stored){cache.meta=stored;return cache.meta;}
+  try{return await loadBundledAerodata();}catch{return null;}
 }
-async function loadSpaces(){ if(!cache.spaces)cache.spaces=await getKey('spaces')||[]; return cache.spaces; }
-async function loadAerodromes(){ if(!cache.aerodromes)cache.aerodromes=await getKey('aerodromes')||[]; return cache.aerodromes; }
-export async function clearAerodata(){await deleteDb();}
+async function loadSpaces(){
+  if(cache.spaces)return cache.spaces;
+  if(cache.meta?.bundled)return cache.spaces||[];
+  cache.spaces=await getKey('spaces')||[];
+  return cache.spaces;
+}
+async function loadAerodromes(){
+  if(cache.aerodromes)return cache.aerodromes;
+  if(cache.meta?.bundled)return cache.aerodromes||[];
+  cache.aerodromes=await getKey('aerodromes')||[];
+  return cache.aerodromes;
+}
+export async function clearAerodata(){await deleteDb();bundledPromise=null;}
 
 function inRing(ring,x,y){
   let inside=false;
