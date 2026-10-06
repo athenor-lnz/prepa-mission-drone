@@ -41,6 +41,7 @@ export function newMission({ now = new Date(), name = 'Nouvelle mission' } = {})
     smepp: { S1: '', S2: '', M: '', E_A: '', E_M: '', E_I: '', E_C: '', E_A2: '', E_L: '', P1: '', P2: '' },
     validation: { macloe: [], smepp: [] },
     admin: { gendrone: 'todo', visualdrone: 'todo' },
+    workflow: { mensExternal: false },
     checklists: {}
   };
 }
@@ -205,6 +206,7 @@ export function sanitizeMission(raw) {
   const g = raw.admin?.gendrone;
   const v = raw.admin?.visualdrone;
   m.admin = { gendrone: ['todo', 'sent', 'validated'].includes(g) ? g : 'todo', visualdrone: ['todo', 'declared'].includes(v) ? v : 'todo' };
+  m.workflow = { mensExternal: raw.workflow?.mensExternal === true };
 
   // Check-lists : on ne conserve que les identifiants connus et des booléens vrais.
   m.checklists = {};
