@@ -147,8 +147,10 @@ function settings(rerender) {
     h('div', {}, h('span', { class: 'lbl' }, 'Thème'), h('div', { class: 'seg' }, opt('auto', 'Auto', p.theme, 'theme'), opt('light', 'Clair', p.theme, 'theme'), opt('dark', 'Sombre', p.theme, 'theme'))),
     h('div', {}, h('span', { class: 'lbl' }, 'Unité du vent'), h('div', { class: 'seg' }, opt('kt', 'kt', p.windUnit, 'windUnit'), opt('m/s', 'm/s', p.windUnit, 'windUnit'), opt('km/h', 'km/h', p.windUnit, 'windUnit'))),
     h('div', {}, h('span', { class: 'lbl' }, 'Sauvegarde'),
-      h('button', { class: 'btn ghost block', onclick: exportAll }, 'Exporter toutes les missions'),
-      h('button', { class: 'btn ghost block', onclick: () => file.click() }, 'Importer un fichier'), file,
+      h('div', { class: 'settings-save-actions' },
+        h('button', { class: 'btn ghost block', onclick: exportAll }, 'Exporter toutes les missions'),
+        h('button', { class: 'btn ghost block', onclick: () => file.click() }, 'Importer un fichier')),
+      file,
       h('p', { class: 'note' }, 'Les missions sont conservées dans ce navigateur. Exporte-les avant de vider le cache ou de changer d’appareil.'))));
 }
 
