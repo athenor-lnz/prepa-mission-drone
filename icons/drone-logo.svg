@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-label="Drone">
+  <rect x="4" y="4" width="120" height="120" rx="28" fill="#0E1621"/>
+  <g fill="none" stroke="#CDB23A" stroke-width="7" stroke-linecap="round" stroke-linejoin="round">
+    <circle cx="31" cy="31" r="15"/>
+    <circle cx="97" cy="31" r="15"/>
+    <circle cx="31" cy="97" r="15"/>
+    <circle cx="97" cy="97" r="15"/>
+    <path d="M42 42L56 56M86 42L72 56M42 86L56 72M86 86L72 72"/>
+  </g>
+  <path d="M54 51h20l9 13-9 13H54L45 64z" fill="#CDB23A"/>
+  <rect x="59" y="57" width="10" height="14" rx="4" fill="#0E1621"/>
+  <g stroke="#CDB23A" stroke-width="4" stroke-linecap="round">
+    <path d="M18 31h26M31 18v26M84 31h26M97 18v26M18 97h26M31 84v26M84 97h26M97 84v26"/>
+  </g>
+</svg>
