@@ -25,6 +25,7 @@ export function newMission({ now = new Date(), name = 'Nouvelle mission' } = {})
     context: {
       missionType: '',
       capture: 'observation',
+      vxcore: null,
       useCases: [],
       administrativeOrder: { held: false, cameraCount: null, placeNote: '' }
     },
@@ -132,6 +133,7 @@ export function sanitizeMission(raw) {
   m.context = {
     missionType: known(ctx.missionType, ['judiciaire','administratif','sauvegarde','entrainement','communication','autre'], ''),
     capture: known(ctx.capture, ['observation','captation','enregistrement'], 'observation'),
+    vxcore: typeof ctx.vxcore === 'boolean' ? ctx.vxcore : (ctx.missionType === 'judiciaire' || ctx.capture === 'enregistrement' ? true : false),
     useCases: list(ctx.useCases, 20).map((x) => str(x, 60)).filter(Boolean),
     administrativeOrder: {
       held: ao.held === true,
@@ -139,7 +141,7 @@ export function sanitizeMission(raw) {
       placeNote: str(ao.placeNote, 1000)
     }
   };
-  if (m.context.missionType === 'judiciaire') m.context.capture = 'enregistrement';
+  if (m.context.missionType === 'judiciaire') { m.context.capture = 'enregistrement'; m.context.vxcore = true; }
 
   const p = raw.place || {};
   m.place = { label: str(p.label, 300), lat: numOrNull(p.lat), lon: numOrNull(p.lon), radiusM: numOrNull(p.radiusM) ?? 500 };
