@@ -621,3 +621,81 @@ button, .btn, .cta { font: inherit; cursor: pointer; }
 .usecase-sheet-badges{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
 .usecase-sheet-text{font-size:15px;line-height:1.5}
 .settings-save-actions{display:flex;flex-direction:column;gap:10px;margin-top:8px}
+
+
+/* --- MACLOE : outil bonus de cheminement cartographique --- */
+.cheminement-bonus{
+  display:flex;align-items:center;gap:10px;padding:12px;border-radius:18px;
+  background:color-mix(in srgb,#2F80ED 9%,var(--surf2));border:1px solid color-mix(in srgb,#2F80ED 32%,var(--line))
+}
+.cheminement-bonus-copy{display:flex;flex-direction:column;gap:2px;flex:1;min-width:0}
+.cheminement-bonus-copy strong{font-family:var(--font-display);font-size:14px}
+.cheminement-bonus-copy small{font-size:11px;line-height:1.35;color:var(--mute)}
+.cheminement-bonus .btn{flex:none}
+
+.route-tool{position:fixed;inset:0;z-index:3000;background:var(--bg);overflow:hidden}
+.route-map{position:absolute;inset:0;background:var(--surf2)}
+.route-top{
+  position:absolute;z-index:600;top:0;left:0;right:0;
+  padding:calc(9px + env(safe-area-inset-top)) 10px 8px;
+  display:grid;grid-template-columns:46px minmax(0,1fr) auto;gap:8px;align-items:center;
+  background:linear-gradient(to bottom,color-mix(in srgb,var(--bg) 94%,transparent),transparent)
+}
+.route-top>div:nth-child(2){display:flex;flex-direction:column;min-width:0}
+.route-top>div:nth-child(2) strong{font-family:var(--font-display);font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.route-top .mini-seg{min-width:146px;background:color-mix(in srgb,var(--surf) 92%,transparent);backdrop-filter:blur(12px)}
+.route-top .icon-btn{background:color-mix(in srgb,var(--surf) 92%,transparent);backdrop-filter:blur(12px)}
+
+.route-panel{
+  position:absolute;z-index:650;left:8px;right:8px;bottom:calc(8px + env(safe-area-inset-bottom));
+  max-height:48dvh;overflow:auto;padding:12px;border-radius:24px;
+  background:color-mix(in srgb,var(--surf) 96%,transparent);
+  -webkit-backdrop-filter:blur(18px);backdrop-filter:blur(18px);
+  box-shadow:0 12px 40px rgba(0,0,0,.28);display:flex;flex-direction:column;gap:9px
+}
+.route-panel-head{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}
+.route-panel-head>div{display:flex;flex-direction:column;gap:2px}
+.route-panel-head strong{font-family:var(--font-display);font-size:17px}
+.route-panel-head small{font-size:11px;color:var(--mute)}
+.route-mode-row{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+.route-mode{
+  min-height:44px;border:1px solid var(--line);border-radius:13px;background:var(--surf2);color:var(--mute);
+  font:inherit;font-size:12px;font-weight:750
+}
+.route-mode.on{background:var(--acc);border-color:var(--acc);color:var(--accInk)}
+.route-mini-actions{display:grid;grid-template-columns:1fr 1fr;gap:7px}
+
+.route-div-icon{background:transparent!important;border:0!important}
+.route-pin{
+  width:34px;height:34px;border-radius:50%;display:grid;place-items:center;
+  background:#2F80ED;color:#fff;border:3px solid #fff;box-shadow:0 3px 12px rgba(0,0,0,.35);
+  font-family:var(--font-display);font-size:11px;font-weight:800
+}
+.route-pin.start{background:var(--go);color:#07140d}
+.route-pin.end{background:var(--bad);color:#fff}
+
+.route-profile{display:flex;flex-direction:column;gap:7px;padding-top:3px}
+.route-profile-title{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.route-profile-title small{font-size:10px;color:var(--mute)}
+.route-profile-chart{
+  height:180px;border-radius:16px;background:var(--surf2);border:1px solid var(--line);overflow:hidden;touch-action:manipulation
+}
+.route-profile-chart svg{width:100%;height:100%;display:block}
+.route-terrain{fill:none;stroke:#2F80ED;stroke-width:4;vector-effect:non-scaling-stroke}
+.route-flight{fill:none;stroke:#CDB23A;stroke-width:4;stroke-dasharray:8 5;vector-effect:non-scaling-stroke}
+.route-chart-control{fill:#CDB23A;stroke:var(--surf);stroke-width:3;vector-effect:non-scaling-stroke}
+.route-chart-label{fill:var(--ink);font-size:12px;font-family:var(--font-mono)}
+.route-height-points{display:flex;gap:6px;overflow-x:auto;padding-bottom:2px;scrollbar-width:none}
+.route-height-points::-webkit-scrollbar{display:none}
+.route-height-chip{
+  flex:0 0 auto;padding:7px 9px;border:0;border-radius:99px;background:var(--accSoft);color:var(--acc);
+  font:inherit;font-size:11px;font-weight:700
+}
+
+@media(max-width:430px){
+  .route-top{grid-template-columns:44px minmax(0,1fr)}
+  .route-top .mini-seg{grid-column:1/-1;width:100%;min-width:0}
+  .route-panel{max-height:53dvh}
+  .cheminement-bonus{align-items:stretch;flex-direction:column}
+  .cheminement-bonus .btn{width:100%}
+}
