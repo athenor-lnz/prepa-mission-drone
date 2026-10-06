@@ -216,13 +216,13 @@ export function renderAccueil() {
               h('button', {
                 class: 'app-version mono',
                 title: 'Version de l’application',
-                'aria-label':'Version v28',
+                'aria-label':'Version v29',
                 onclick:versionTap,
                 onpointerdown:versionHoldStart,
                 onpointerup:versionHoldEnd,
                 onpointercancel:versionHoldEnd,
                 onpointerleave:versionHoldEnd
-              }, 'v28')),
+              }, 'v29')),
             h('p', { class: 'cockpit-sub' }, 'Drone'))),
         h('button', { class: 'icon-btn cockpit-settings', 'aria-label': 'Réglages', onclick: () => settings(draw) }, icon('sun'))),
       !store.isPersistent ? h('div', { class: 'banner warn', role: 'alert' }, icon('warn'), 'Stockage du navigateur indisponible : les missions seront perdues à la fermeture. Exporte-les.') : null,
