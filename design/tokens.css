@@ -35,9 +35,9 @@
   --field-line: #6B7C8E;
   --ink: #EEF3F7;
   --mute: #9AA9B8;
-  --acc: #B9F23A;
-  --accInk: #0B1304;
-  --accSoft: #232F0C;
+  --acc: #CDB23A;
+  --accInk: #0D1218;
+  --accSoft: #332E12;
   --go: #3EE58C;
   --goSoft: #0F2E1E;
   --warn: #FFB020;
@@ -55,7 +55,7 @@
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme]) {
     --bg: #090D12; --surf: #131A22; --surf2: #1B242E; --line: #2A3541; --field-line: #6B7C8E;
-    --ink: #EEF3F7; --mute: #9AA9B8; --acc: #B9F23A; --accInk: #0B1304; --accSoft: #232F0C;
+    --ink: #EEF3F7; --mute: #9AA9B8; --acc: #CDB23A; --accInk: #0D1218; --accSoft: #332E12;
     --go: #3EE58C; --goSoft: #0F2E1E; --warn: #FFB020; --warnSoft: #34260A;
     --bad: #FF7A6E; --badInk: #2A0A07; --badSoft: #3A1814;
     --shadow: 0 6px 24px rgba(0,0,0,.45); --scrim: rgba(0,0,0,.55);
