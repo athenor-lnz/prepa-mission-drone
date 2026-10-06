@@ -14,6 +14,7 @@ import { renderMensMap } from './views/mens-map.js';
 import { renderMacloeMap } from './views/macloe-map.js';
 import { renderFinalMap } from './views/final-map.js';
 import { renderMissionPdf } from './views/mission-pdf.js';
+import { renderDrones } from './views/drones.js';
 import { h } from './ui/dom.js';
 
 const app = document.getElementById('app');
@@ -48,6 +49,7 @@ function route() {
   flush();
   const parts = location.hash.replace(/^#\/?/, '').split('/').filter(Boolean);
   if (parts[0] === 'data') { mount(renderAerodata()); return; }
+  if (parts[0] === 'drones') { mount(renderDrones({ id: parts[1] || null })); return; }
   if (parts[0] === 'mission' && ID_RE.test(parts[1] || '')) {
     const mission = store.get(parts[1]);
     const r = parts[2] || 'cadre';
