@@ -14,31 +14,31 @@ const TYPES = [
 const CASES = [
   {
     id:'ouverte',
-    title:'Catégorie ouverte AE',
+    title:'Catégorie ouverte',
     mode:'VLOS',
     range:'Selon sous-catégorie',
-    description:'Régime catégorie ouverte. Vérifier la classe du drone, les personnes présentes, la hauteur et les distances applicables à la situation.'
+    description:'Vol relevant de la catégorie ouverte. Vérifier la classe du drone, la sous-catégorie applicable, la hauteur, les distances et la présence éventuelle de personnes.'
   },
   {
     id:'sts-gn-01-1',
-    title:'STS GN 01.1',
+    title:'Scénario 1.1 · En vue',
     mode:'VLOS',
     range:'Vol en vue',
-    description:'Le télépilote conserve l’APAD en vue directe pendant le vol. Vérifier les conditions prévues par le scénario et le matériel engagé.'
+    description:'Scénario 1.1 : le télépilote conserve l’APAD en vue directe pendant le vol. Vérifier les conditions du scénario, le matériel engagé et les limites opérationnelles applicables.'
   },
   {
     id:'hors-vue-1km',
-    title:'Hors vue · 1 km max',
+    title:'Scénario 2.2 · Hors vue · 1 km',
     mode:'BVLOS',
     range:'Élongation max 1 km',
-    description:'Cas d’usage hors vue limité à 1 km. Vérifier avant mission les conditions, moyens et contraintes prévus par le scénario applicable.'
+    description:'Scénario 2.2 en hors vue avec une élongation maximale de 1 km. Vérifier avant le vol les conditions, moyens, procédures et contraintes applicables.'
   },
   {
     id:'hors-vue-2km',
-    title:'Hors vue · 2 km max',
+    title:'Scénario 2.2 · Hors vue · 2 km',
     mode:'BVLOS',
     range:'Élongation max 2 km',
-    description:'Cas d’usage hors vue limité à 2 km. Vérifier avant mission les conditions, moyens et contraintes prévus par le scénario applicable.'
+    description:'Scénario 2.2 en hors vue avec une élongation maximale de 2 km. Vérifier avant le vol les conditions, moyens, procédures et contraintes applicables.'
   }
 ];
 
@@ -78,6 +78,22 @@ export function renderCadre({ mission }) {
       m.context.useCases = [...set];
     });
     draw();
+  }
+
+  function openCase(item) {
+    let modal;
+    const selected = c.useCases.includes(item.id);
+    modal = sheet(item.title, h('div', { class: 'stack usecase-sheet' },
+      h('div', { class: 'usecase-sheet-badges' },
+        h('span', { class: `usecase-mode ${item.mode === 'BVLOS' ? 'bvlos' : ''}` }, item.mode),
+        h('span', { class: 'pill' }, item.range)),
+      h('p', { class: 'usecase-sheet-text' }, item.description),
+      h('div', { class: 'banner info' }, icon('info'), h('span', {}, 'La documentation opérationnelle en vigueur reste la référence pour les conditions détaillées.')),
+      h('button', {
+        class: `btn block ${selected ? 'ghost' : 'primary'}`,
+        onclick: () => { toggleCase(item.id); modal.close(); }
+      }, selected ? 'Retirer ce cas d’usage' : 'Sélectionner ce cas d’usage')
+    ));
   }
 
   function setWindow(which, value) {
@@ -223,21 +239,27 @@ export function renderCadre({ mission }) {
 
         h('section', { class: 'card-sec usecase-section' },
           h('span', { class: 'lbl' }, 'Cas d’usage / scénario'),
-          h('p', { class: 'note' }, 'Sélectionne le ou les cas prévus pour la mission. Les repères essentiels sont affichés ici ; la documentation opérationnelle en vigueur reste la référence.'),
+          h('p', { class: 'note' }, 'Coche le ou les scénarios retenus. Appuie sur un scénario pour afficher son explication.'),
           h('div', { class: 'usecase-list' }, CASES.map((item) => {
             const selected=c.useCases.includes(item.id);
-            return h('button', {
-              class: `usecase-card ${selected ? 'on' : ''}`,
-              'aria-pressed': String(selected),
-              onclick: () => toggleCase(item.id)
+            return h('div', {
+              class: `usecase-card compact ${selected ? 'on' : ''}`,
+              role:'button', tabindex:'0',
+              onclick: () => openCase(item),
+              onkeydown: (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openCase(item); } }
             },
-              h('span', { class: 'check-dot usecase-check' }, selected ? icon('check', 16) : ''),
+              h('button', {
+                class: `check-dot usecase-check ${selected ? 'on' : ''}`,
+                'aria-label': `${selected ? 'Retirer' : 'Sélectionner'} ${item.title}`,
+                'aria-pressed': String(selected),
+                onclick: (e) => { e.stopPropagation(); toggleCase(item.id); }
+              }, selected ? icon('check', 16) : ''),
               h('span', { class:'usecase-copy' },
                 h('span', { class:'usecase-title-row' },
                   h('strong', {}, item.title),
                   h('span', { class:`usecase-mode ${item.mode==='BVLOS'?'bvlos':''}` }, item.mode)),
-                h('span', { class:'usecase-range' }, item.range),
-                h('small', {}, item.description))
+                h('span', { class:'usecase-range' }, item.range)),
+              h('span', { class:'usecase-more', 'aria-hidden':'true' }, icon('arrow',18))
             );
           }))),
 
