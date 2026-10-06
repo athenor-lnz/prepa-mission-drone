@@ -805,3 +805,21 @@ button, .btn, .cta { font: inherit; cursor: pointer; }
 .route-point-coord{font-size:9px;color:var(--mute)}
 .route-point-agl{font-size:11px;font-weight:800}
 .route-point-row>svg{grid-column:3;grid-row:1/3;color:var(--mute)}
+
+
+/* --- Hauteur de vol AGL par point --- */
+.agl-title{
+  display:flex;align-items:center;justify-content:space-between;gap:10px;
+  padding:10px 12px;border-radius:16px;background:var(--accSoft)
+}
+.agl-title strong{font-family:var(--font-display);font-size:18px;color:var(--acc)}
+.agl-section{display:flex;flex-direction:column;gap:9px}
+.agl-quick{display:grid;grid-template-columns:repeat(4,1fr);gap:7px}
+.agl-chip{
+  min-height:44px;border-radius:12px;border:1px solid var(--line);
+  background:var(--surf2);color:var(--ink);font:inherit;font-size:13px;font-weight:800
+}
+.agl-chip.on{background:var(--acc);border-color:var(--acc);color:var(--accInk)}
+.route-ground{stroke:var(--field-line);stroke-width:2;vector-effect:non-scaling-stroke}
+.route-flight-solid{fill:none;stroke:#CDB23A;stroke-width:5;vector-effect:non-scaling-stroke}
+.drone-profile{background:linear-gradient(to bottom,color-mix(in srgb,#CDB23A 8%,var(--surf2)),var(--surf2))}
