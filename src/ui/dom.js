@@ -38,7 +38,8 @@ const PATHS = {
   lock: 'M6 11h12v9H6zM8 11V8a4 4 0 018 0v3',
   trash: 'M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13',
   link: 'M10 14a4 4 0 005.7 0l3-3a4 4 0 00-5.7-5.7l-1 1M14 10a4 4 0 00-5.7 0l-3 3A4 4 0 0011 18.7l1-1',
-  drone: 'M8 10l4 2 4-2M12 12v5M9 17h6M6 8H3M21 8h-3M6 8a2 2 0 110-4 2 2 0 010 4zM18 8a2 2 0 110-4 2 2 0 010 4zM7 10l-2 3M17 10l2 3M5 13H2M22 13h-3'
+  drone: 'M8 10l4 2 4-2M12 12v5M9 17h6M6 8H3M21 8h-3M6 8a2 2 0 110-4 2 2 0 010 4zM18 8a2 2 0 110-4 2 2 0 010 4zM7 10l-2 3M17 10l2 3M5 13H2M22 13h-3',
+  layers: 'M12 3L3 8l9 5 9-5-9-5zM3 12l9 5 9-5M3 16l9 5 9-5'
 };
 
 export function icon(name, size = 24) {
