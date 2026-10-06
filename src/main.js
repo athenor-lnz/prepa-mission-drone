@@ -7,6 +7,7 @@ import { renderMeteo } from './views/meteo.js';
 import { renderEspace, renderNotam, renderSupAip } from './views/espace.js';
 import { renderFiche, renderForm } from './views/fiche.js';
 import { renderChecklists, renderChecklistDetail } from './views/checklists.js';
+import { renderAerodata } from './views/aerodata.js';
 import { h } from './ui/dom.js';
 
 const app = document.getElementById('app');
@@ -39,6 +40,7 @@ const MISSION_ROUTES = {
 function route() {
   flush();
   const parts = location.hash.replace(/^#\/?/, '').split('/').filter(Boolean);
+  if (parts[0] === 'data') { mount(renderAerodata()); return; }
   if (parts[0] === 'mission' && ID_RE.test(parts[1] || '')) {
     const mission = store.get(parts[1]);
     const r = parts[2] || 'cadre';
