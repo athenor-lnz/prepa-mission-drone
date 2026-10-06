@@ -667,7 +667,7 @@ button, .btn, .cta { font: inherit; cursor: pointer; }
 
 .route-div-icon{background:transparent!important;border:0!important}
 .route-pin{
-  width:34px;height:34px;border-radius:50%;display:grid;place-items:center;
+  min-width:34px;width:max-content;padding:0 8px;height:34px;border-radius:17px;display:grid;place-items:center;
   background:#2F80ED;color:#fff;border:3px solid #fff;box-shadow:0 3px 12px rgba(0,0,0,.35);
   font-family:var(--font-display);font-size:11px;font-weight:800
 }
@@ -761,3 +761,11 @@ button, .btn, .cta { font: inherit; cursor: pointer; }
   background:var(--surf2);border:1px solid var(--line);color:var(--mute);
   font-size:10px;font-weight:700;letter-spacing:.04em
 }
+
+
+/* --- Cheminement : propriétés d’un point --- */
+.route-point-sheet{gap:12px}
+.route-point-info{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.route-point-info>div{padding:10px;border-radius:14px;background:var(--surf2);display:flex;flex-direction:column;gap:3px;min-width:0}
+.route-point-info strong{font-size:12px;overflow-wrap:anywhere}
+.route-point-sheet .btn.danger{margin-top:2px}
