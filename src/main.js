@@ -6,6 +6,7 @@ import { renderLieu } from './views/lieu.js';
 import { renderMeteo } from './views/meteo.js';
 import { renderEspace, renderNotam, renderSupAip } from './views/espace.js';
 import { renderFiche, renderForm } from './views/fiche.js';
+import { renderChecklists, renderChecklistDetail } from './views/checklists.js';
 import { h } from './ui/dom.js';
 
 const app = document.getElementById('app');
@@ -41,6 +42,11 @@ function route() {
   if (parts[0] === 'mission' && ID_RE.test(parts[1] || '')) {
     const mission = store.get(parts[1]);
     const r = parts[2] || 'cadre';
+    if (mission && r === 'checklists') {
+      const checklistId = parts[3] || '';
+      mount(checklistId ? renderChecklistDetail({ mission, checklistId }) : renderChecklists({ mission }));
+      return;
+    }
     if (mission && MISSION_ROUTES[r]) { mount(MISSION_ROUTES[r]({ mission, route: r })); return; }
     location.hash = mission ? `#/mission/${mission.id}/cadre` : '#/';
     return;
