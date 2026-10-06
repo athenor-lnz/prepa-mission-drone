@@ -516,3 +516,14 @@ button, .btn, .cta { font: inherit; cursor: pointer; }
 @media(min-width:520px){
   .check-menu{display:grid;grid-template-columns:1fr 1fr}
 }
+
+/* --- Check-lists : points facultatifs non bloquants --- */
+.check-card-count{display:flex;flex-direction:column;align-items:flex-end;gap:1px}
+.check-card-count small{font-family:var(--font-body);font-size:9px;color:var(--mute);white-space:nowrap}
+.check-row-title{display:flex;align-items:center;gap:7px;flex-wrap:wrap}
+.optional-badge{
+  font-style:normal;font-family:var(--font-body);font-size:9px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;
+  padding:3px 6px;border-radius:99px;background:var(--accSoft);color:var(--acc)
+}
+.check-row.optional:not(.done) .check-circle{border-style:dashed;opacity:.75}
+.check-row.optional .check-row-copy small{color:color-mix(in srgb,var(--mute) 85%,var(--acc))}
