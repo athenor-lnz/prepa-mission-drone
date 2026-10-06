@@ -154,9 +154,43 @@ function exportAll() {
   document.body.append(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 1000);
 }
 
+async function forceUpdate(){
+  try {
+    if ('caches' in globalThis) {
+      const keys = await caches.keys();
+      await Promise.all(keys.map((k)=>caches.delete(k)));
+    }
+    const reg = await navigator.serviceWorker?.getRegistration?.();
+    if (reg) {
+      try { await reg.update(); } catch {}
+    }
+    try { sessionStorage.setItem('pmd.justForcedUpdate','1'); } catch {}
+    location.reload();
+  } catch (e) {
+    toast('Mise à jour forcée impossible', 'bad');
+  }
+}
+
+function maintenanceSheet(){
+  let sh;
+  sh=sheet('Maintenance',h('div',{class:'stack'},
+    h('div',{class:'banner warn'},icon('warn'),h('span',{},'Cette action efface uniquement le cache de l’application et recharge la dernière version. Les missions enregistrées ne sont pas supprimées.')),
+    h('button',{class:'btn primary block',onclick:async()=>{sh.close();await forceUpdate();}},'Forcer la mise à jour'),
+    h('p',{class:'note'},'Astuce : ce menu est accessible en touchant 5 fois rapidement le badge de version.')
+  ));
+}
+
 export function renderAccueil() {
   flush();
   const root = h('main', { class: 'screen home cockpit-home' });
+  let versionTaps=0,versionTapTimer=null;
+  const versionTap=()=>{
+    clearTimeout(versionTapTimer);
+    versionTaps++;
+    if(versionTaps>=5){versionTaps=0;maintenanceSheet();return;}
+    versionTapTimer=setTimeout(()=>{versionTaps=0;},1400);
+  };
+  try { if(sessionStorage.getItem('pmd.justForcedUpdate')==='1'){sessionStorage.removeItem('pmd.justForcedUpdate');setTimeout(()=>toast('Cache vidé · application rechargée'),250);} } catch {}
   const createMission = () => { const m = store.create(); location.hash = missionUrl(m.id, 'cadre'); };
   const draw = () => {
     const missions = store.list();
@@ -169,7 +203,7 @@ export function renderAccueil() {
           h('div', {},
             h('div', { class: 'cockpit-title-row' },
               h('h1', {}, 'Prépa Mission'),
-              h('span', { class: 'app-version mono', title: 'Version de l’application' }, 'v24')),
+              h('button', { class: 'app-version mono', title: 'Version de l’application', 'aria-label':'Version v25', onclick:versionTap }, 'v25')),
             h('p', { class: 'cockpit-sub' }, 'Drone'))),
         h('button', { class: 'icon-btn cockpit-settings', 'aria-label': 'Réglages', onclick: () => settings(draw) }, icon('sun'))),
       !store.isPersistent ? h('div', { class: 'banner warn', role: 'alert' }, icon('warn'), 'Stockage du navigateur indisponible : les missions seront perdues à la fermeture. Exporte-les.') : null,
