@@ -20,7 +20,7 @@ export function renderChecklists({mission}){
   const root=h('main',{class:'screen scroll checklist-screen'});
   const draw=()=>{
     root.replaceChildren(
-      head(mission,'Check-lists opérationnelles',missionUrl(mission.id,'fiche')),
+      head(mission,'Check-lists opérationnelles',missionUrl(mission.id,'etapes')),
       h('div',{class:'body checklist-body'},
         h('p',{class:'check-intro'},'Valide chaque point au fil de la mission. L’avancement est enregistré dans cette mission.'),
         h('div',{class:'check-menu'},
