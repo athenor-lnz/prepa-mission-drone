@@ -143,7 +143,7 @@ function ariView(step){
         h('section',{class:'failure-card'},
           h('h2',{},'Action réflexe'),
           h('div',{class:'failure-action-grid'},
-            ...['Monter','Descendre','Stationnaire','Déplacement'].map((x)=>h('div',{class:'failure-action'},x))),
+            ...['Monter','Descendre','Stationnaire','Déplacement'].map((x)=>h('div',{class:'failure-action'},x)))),
         h('section',{class:'failure-card'},
           h('h2',{},'Puis analyser'),
           h('p',{},'Analyser l’environnement, la panne ou l’alerte et son degré d’urgence.'),
