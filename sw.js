@@ -1,7 +1,7 @@
 // PWA : cache de la coque applicative. Les API et tuiles externes restent réseau uniquement.
-const VERSION = 'pmd-design-b-v8';
+const VERSION = 'pmd-design-b-v9';
 const SHELL = [
-  './','index.html','css/app.css','design/tokens.css','manifest.webmanifest','icons/icon.svg','icons/icon-maskable.svg',
+  './','index.html','css/app.css','design/tokens.css','manifest.webmanifest','icons/icon.svg','icons/icon-maskable.svg','icons/drone-logo.png',
   'src/main.js','src/state.js',
   'src/lib/geo.js','src/lib/units.js','src/lib/verdict.js','src/lib/storage.js','src/lib/time.js','src/lib/weather.js','src/lib/airspace.js','src/lib/forms.js','src/lib/recap.js',
   'src/services/http.js','src/services/geocode.js','src/services/meteo.js','src/services/airspace.js','src/services/aerodata.js','src/services/contacts.js','src/services/speech.js',
