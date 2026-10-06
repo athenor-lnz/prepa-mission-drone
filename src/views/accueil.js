@@ -169,7 +169,7 @@ export function renderAccueil() {
     root.replaceChildren(...[
       h('header', { class: 'cockpit-head' },
         h('div', { class: 'cockpit-brand' },
-          h('div', { class: 'cockpit-drone', 'aria-hidden': 'true' }, icon('drone', 58)),
+          h('div', { class: 'cockpit-drone', 'aria-hidden': 'true' }, h('img', { src: 'icons/drone-logo.png', alt: '', width: '76', height: '76' })),
           h('div', {},
             h('span', { class: 'eyebrow' }, 'Gendarmerie · Préparation opérationnelle'),
             h('h1', {}, 'Prépa Mission'),
@@ -186,7 +186,7 @@ export function renderAccueil() {
       others.length
         ? h('ul', { class: 'mlist cockpit-list' }, others.map((m) => card(m, draw)))
         : (!current ? h('div', { class: 'empty cockpit-empty' },
-            h('div', { class: 'empty-ico' }, icon('drone', 44)),
+            h('div', { class: 'empty-ico cockpit-empty-logo' }, h('img', { src: 'icons/drone-logo.png', alt: '', width: '64', height: '64' })),
             h('h2', {}, 'Prêt pour la première mission'),
             h('p', {}, 'Crée une mission pour lancer le parcours de préparation.'),
             h('button', { class: 'btn ghost', onclick: () => settings(draw) }, 'Importer des missions')) : null)
