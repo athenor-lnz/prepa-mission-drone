@@ -23,7 +23,7 @@ export function renderLieu({ mission }) {
   const mapEl = h('div', { class: 'map', id: 'map', role: 'application', 'aria-label': 'Carte : touchez pour placer le point' });
   const root = h('main', { class: 'screen lieu' }, mapEl);
   let map; let marker; let circle; let layer; let airOverlay; let mode = 'plan';
-  let fmt = 'dms';
+  let fmt = 'dms'; let showAerodata = true;
   const p = mission.place;
   const hasPoint = () => Number.isFinite(p.lat) && Number.isFinite(p.lon);
 
@@ -89,6 +89,7 @@ export function renderLieu({ mission }) {
     if (!map || !hasPoint()) return;
     if (!airOverlay) airOverlay = L.layerGroup().addTo(map);
     airOverlay.clearLayers();
+    if (!showAerodata) return;
     try {
       const meta = await aerodataInfo();
       if (!meta) return;
@@ -188,35 +189,76 @@ export function renderLieu({ mission }) {
   const input = h('input', { type: 'search', enterkeyhint: 'search', autocomplete: 'off', placeholder: 'Adresse ou coordonnées', 'aria-label': 'Adresse ou coordonnées', value: p.label || '' });
   input.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); doSearch(input.value); } });
 
-  const panel = h('section', { class: 'panel' },
+  function coordinateSheet() {
+    let sh;
+    const value = h('div', { class: 'coord-sheet-value mono' }, coordText.textContent);
+    const picker = segmented(
+      [{ value: 'dd', label: 'DD' }, { value: 'ddm', label: 'DDM' }, { value: 'dms', label: 'DMS' }, { value: 'utm', label: 'UTM' }],
+      fmt,
+      (v) => {
+        fmt = v;
+        refresh();
+        value.textContent = coordText.textContent;
+        [...picker.children].forEach((b, i) => b.classList.toggle('on', ['dd','ddm','dms','utm'][i] === v));
+      },
+      'Format des coordonnées'
+    );
+    sh = sheet('Coordonnées', h('div', { class: 'stack' },
+      picker,
+      value,
+      h('button', { class: 'btn ghost block', onclick: () => hasPoint() && copyText(coordText.textContent, 'Coordonnées copiées') }, icon('copy'), 'Copier les coordonnées')));
+  }
+
+  function layersSheet() {
+    let sh;
+    const base = (value, label) => h('button', {
+      class: mode === value ? 'on' : '',
+      'aria-pressed': String(mode === value),
+      onclick: () => { setMode(value); sh.close(); layersSheet(); }
+    }, label);
+    const overlayBtn = h('button', {
+      class: showAerodata ? 'check-choice on' : 'check-choice',
+      'aria-pressed': String(showAerodata),
+      onclick: () => {
+        showAerodata = !showAerodata;
+        overlayBtn.classList.toggle('on', showAerodata);
+        overlayBtn.setAttribute('aria-pressed', String(showAerodata));
+        drawAerodataOverlay();
+      }
+    }, h('span', { class: 'check-dot' }, showAerodata ? icon('check', 16) : ''), h('span', {}, 'Espaces & aérodromes GeoGM / SIA'));
+    sh = sheet('Couches cartographiques', h('div', { class: 'stack' },
+      h('div', {}, h('span', { class: 'lbl' }, 'Fond de carte'), h('div', { class: 'seg map-base-picker' },
+        base('plan', 'Plan'), base('sat', 'Satellite'), base('oaci', 'OACI'))),
+      h('div', {}, h('span', { class: 'lbl' }, 'Superpositions'), h('div', { class: 'check-list' }, overlayBtn)),
+      h('p', { class: 'note' }, 'Les données aéronautiques locales apparaissent uniquement si le jeu GeoGM / SIA a déjà été importé.')));
+  }
+
+  const panel = h('section', { class: 'panel zone-panel' },
     h('div', { class: 'grab' }),
-    h('div', { class: 'search' }, icon('search'), input,
+    h('div', { class: 'zone-panel-head' },
+      h('div', {}, h('span', { class: 'eyebrow' }, 'Zone de mission'), h('strong', {}, hasPoint() ? 'Point défini' : 'Choisir un point')),
+      radiusTag),
+    h('div', { class: 'search zone-search' }, icon('search'), input,
       micButton({ label: 'Dicter une adresse', onText: (t) => { input.value = t; doSearch(t); } }),
       h('button', { class: 'icon-btn', 'aria-label': 'Lancer la recherche', onclick: () => doSearch(input.value) }, icon('arrow'))),
     results, searchMsg,
-    segmented([{ value: 'dd', label: 'DD' }, { value: 'ddm', label: 'DDM' }, { value: 'dms', label: 'DMS' }, { value: 'utm', label: 'UTM' }], fmt, (v) => { fmt = v; refresh(); for (const b of panel.querySelectorAll('.seg.fmt button')) b.classList.toggle('on', b.dataset.v === v); }, 'Format des coordonnées'),
-    h('div', { class: 'coord-box' }, coordText,
-      h('button', { class: 'icon-btn tint', 'aria-label': 'Copier les coordonnées', onclick: () => hasPoint() && copyText(coordText.textContent, 'Coordonnées copiées') }, icon('copy'))),
-    h('div', { class: 'radii', role: 'group', 'aria-label': 'Rayon de travail' },
+    h('button', { class: 'zone-coordinate', onclick: coordinateSheet, 'aria-label': 'Afficher les coordonnées et changer de format' },
+      h('span', { class: 'zone-coordinate-copy' }, h('span', { class: 'lbl' }, 'Coordonnées'), coordText),
+      h('span', { class: 'zone-coordinate-format' }, fmt.toUpperCase()),
+      icon('arrow', 18)),
+    h('div', { class: 'zone-radius-head' }, h('span', { class: 'lbl' }, 'Rayon de mission'), h('span', { class: 'note' }, 'Touchez la carte pour déplacer le point')),
+    h('div', { class: 'radii zone-radii', role: 'group', 'aria-label': 'Rayon de travail' },
       RADII.map((r) => h('button', { 'data-r': r, 'aria-pressed': 'false', onclick: () => { mutate(mission, (m) => { m.place.radiusM = r; }); circle?.setRadius(r); fit(); refresh(); drawAerodataOverlay(); } }, r >= 1000 ? `${r / 1000} km` : `${r} m`))));
 
-  // pastilles format : remplace le composant générique pour garder l'état visuel
-  const seg = panel.querySelector('.seg'); seg.classList.add('fmt');
-  [...seg.children].forEach((b, i) => { b.dataset.v = ['dd', 'ddm', 'dms', 'utm'][i]; });
-
-  const mapBtns = h('div', { class: 'map-ctl map-stack' },
+  const mapBtns = h('div', { class: 'map-ctl map-stack zone-map-tools' },
     h('button', { class: 'icon-btn float', 'aria-label': 'Ma position', onclick: locateMe }, icon('locate')),
+    h('button', { class: 'icon-btn float', 'aria-label': 'Couches cartographiques', onclick: layersSheet }, icon('layers')),
     h('button', { class: 'icon-btn float', 'aria-label': 'Zoom avant', onclick: () => map?.zoomIn() }, icon('plus')),
     h('button', { class: 'icon-btn float', 'aria-label': 'Zoom arrière', onclick: () => map?.zoomOut() }, icon('minus')));
-  const modeSeg = h('div', { class: 'seg float-seg', role: 'group', 'aria-label': 'Fond de carte' },
-    h('button', { class: 'on', onclick: (e) => { setMode('plan'); toggle(e); } }, 'Plan'),
-    h('button', { onclick: (e) => { setMode('sat'); toggle(e); } }, 'Satellite'),
-    h('button', { onclick: (e) => { setMode('oaci'); toggle(e); } }, 'OACI'));
-  const toggle = (e) => { for (const b of modeSeg.children) b.classList.toggle('on', b === e.currentTarget); };
 
   root.append(
     topbar(mission, 'lieu'),
-    h('div', { class: 'dock' }, h('div', { class: 'dock-ctl' }, h('div', { class: 'map-left' }, radiusTag, modeSeg), mapBtns), panel),
+    h('div', { class: 'dock zone-dock' }, h('div', { class: 'dock-ctl zone-dock-ctl' }, mapBtns), panel),
     ctaBar(h('button', { class: 'btn tool', 'aria-label': 'Outils : conversions', onclick: () => openTools({ lat: p.lat, lon: p.lon }) }, icon('tools')), next));
 
   // La carte est créée après l'insertion dans le DOM
