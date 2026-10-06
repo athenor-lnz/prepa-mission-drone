@@ -85,5 +85,8 @@ test('structure d\'une nouvelle mission', () => {
   assert.equal(Object.keys(m.macloe).length, 6);
   assert.deepEqual(m.validation, { macloe: [], smepp: [] });
   assert.equal(m.context.capture, 'observation');
+  assert.deepEqual(m.context.administrativeOrder, { held: false, cameraCount: null, placeNote: '' });
+  assert.equal(m.window.start, '');
+  assert.equal(m.window.end, '');
   assert.deepEqual(m.admin, { gendrone: 'todo', visualdrone: 'todo' });
 });
