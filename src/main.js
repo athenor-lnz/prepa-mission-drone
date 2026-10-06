@@ -9,6 +9,7 @@ import { renderFiche, renderForm } from './views/fiche.js';
 import { renderChecklists, renderChecklistDetail } from './views/checklists.js';
 import { renderAerodata } from './views/aerodata.js';
 import { renderCheminement } from './views/cheminement.js';
+import { renderEtapes } from './views/etapes.js';
 import { h } from './ui/dom.js';
 
 const app = document.getElementById('app');
@@ -35,7 +36,8 @@ const MISSION_ROUTES = {
   supaip: renderSupAip,
   macloe: renderForm,
   smepp: renderForm,
-  fiche: renderFiche
+  fiche: renderFiche,
+  etapes: renderEtapes
 };
 
 function route() {
