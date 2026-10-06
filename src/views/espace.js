@@ -1,17 +1,14 @@
 import { h, icon, toast, sheet } from '../ui/dom.js';
 import { topbar, ctaBar, ctaButton, subtabs, missionUrl } from '../ui/layout.js';
 import { mutate } from '../state.js';
-import { fetchRestrictions } from '../services/airspace.js';
-import { summarizeZones } from '../lib/airspace.js';
 import { formatClock } from '../lib/time.js';
-import { importAerodata, info as aerodataInfo, clearAerodata, analyzeAerodata, vacSearchUrl, SIA_URL, SOFIA_URL, SUPAIP_URL } from '../services/aerodata.js';
+import { importAerodata, info as aerodataInfo, clearAerodata, analyzeAerodata, vacSearchUrl, vacDirectUrl, hasDirectVac, SIA_URL, SOFIA_URL, SUPAIP_URL } from '../services/aerodata.js';
 import { listContacts, addContact, removeContact, telHref, phonesInText } from '../services/contacts.js';
 
 const OFFICIAL = {
   sia: { label: 'SIA — information aéronautique', url: SIA_URL },
   sofia: { label: 'SOFIA-Briefing — NOTAM', url: SOFIA_URL },
-  supaip: { label: 'SIA — SUP AIP', url: SUPAIP_URL },
-  geo: { label: 'Géoportail — restrictions UAS', url: 'https://www.geoportail.gouv.fr/' }
+  supaip: { label: 'SIA — SUP AIP', url: SUPAIP_URL }
 };
 function extLink(l) { return h('a', { class: 'ext', href: l.url, target: '_blank', rel: 'noopener noreferrer' }, icon('link', 18), l.label); }
 
@@ -42,6 +39,7 @@ export function renderEspace({ mission }) {
   let layer = null;
   let overlay = null;
   let mapMode = 'oaci';
+  let zoneFilter = 'ALL';
 
   const TILES = {
     plan: { url:'https://tile.openstreetmap.org/{z}/{x}/{y}.png', attr:'© OpenStreetMap', max:19 },
@@ -58,28 +56,24 @@ export function renderEspace({ mission }) {
     loading = true; draw();
     let localResult = null;
     try {
-      if (meta) localResult = await analyzeAerodata({ lat:p.lat, lon:p.lon, radiusM:p.radiusM || 500, nearest:5 });
+      if (meta) localResult = await analyzeAerodata({ lat:p.lat, lon:p.lon, radiusM:p.radiusM || 500, nearest:12 });
     } catch (e) { console.warn(e); }
-    const wfs = await fetchRestrictions(p.lat, p.lon);
     loading = false;
     local = localResult;
     mutate(mission, (m) => {
       const e = m.mens.espace;
-      if (wfs.ok) {
-        e.fetchedAt = wfs.fetchedAt; e.source = wfs.source; e.zones = wfs.data.slice(0,50); e.error = null;
-      } else {
-        e.error = wfs.error; e.zones = []; if (!localResult) e.fetchedAt = null;
-      }
+      // Cette application n'utilise pas les restrictions UAS Géoportail.
+      e.fetchedAt = null; e.source = null; e.zones = []; e.error = null;
       if (localResult?.meta) {
         e.localAnalysisAt = new Date().toISOString();
         e.localDataset = { source:localResult.meta.source, effective:localResult.meta.effective, featureCount:localResult.meta.spaceCount, aerodromeCount:localResult.meta.aerodromeCount };
-        e.localZones = localResult.zones.slice(0,100).map((z)=>({ id:z.id,type:z.type,subType:z.subType,name:z.name,className:z.className,floor:z.floor,ceiling:z.ceiling,schedule:z.schedule,remark:z.remark,pointOnly:z.pointOnly }));
+        e.localZones = localResult.zones.slice(0,150).map((z)=>({ id:z.id,type:z.type,subType:z.subType,name:z.name,className:z.className,floor:z.floor,ceiling:z.ceiling,schedule:z.schedule,remark:z.remark,pointOnly:z.pointOnly }));
         e.aerodromes = localResult.aerodromes.map((a)=>({ icao:a.icao,name:a.name,type:a.type,altitudeFt:a.altitudeFt,distanceM:a.distanceM,remark:a.remark,frequencies:a.frequencies,runways:a.runways }));
         e.controlled = localResult.controlled;
       }
     });
     draw();
-    if (feedback) toast(localResult ? `${localResult.zones.length} espace(s) détecté(s) dans le rayon · ${localResult.aerodromes.length} aérodrome(s) proche(s)` : 'Restrictions UAS actualisées');
+    if (feedback) toast(localResult ? `${localResult.zones.length} espace(s) SIA détecté(s) · ${localResult.aerodromes.length} aérodrome(s) proche(s)` : 'Analyse SIA indisponible');
   }
 
   function datasetCard() {
@@ -107,27 +101,39 @@ export function renderEspace({ mission }) {
       importing?h('p',{id:'air-import-progress',class:'note',role:'status'},'Import en cours…'):null);
   }
 
-  function uasResult() {
-    if (loading) return h('p',{class:'note',role:'status'},'Analyse de l’espace aérien…');
-    if (!es.fetchedAt && !es.localAnalysisAt) return h('div',{class:'banner warn'},icon('warn'),h('span',{},'Espace aérien non vérifié pour cette zone.'));
-    const cards=[];
-    if (es.fetchedAt) {
-      const s=summarizeZones(es.zones||[]);
-      const cls={none:'go',limited:'warn',unknown:'warn',forbidden:'nogo'}[s.level];
-      const title={none:'Aucune restriction UAS cartographiée au point',limited:`Restriction UAS · hauteur max ${s.maxHeightM} m`,unknown:'Restriction UAS à interpréter',forbidden:'Restriction UAS · vol interdit au point'}[s.level];
-      cards.push(h('section',{class:`verdict ${cls}`},
-        h('div',{class:'v-top'},h('span',{class:'eyebrow'},'Géoplateforme · point mission'),h('span',{class:'mono small'},`maj ${formatClock(es.fetchedAt)}`)),
-        h('div',{class:'v-title'},title),
-        (es.zones||[]).slice(0,8).map((z)=>h('p',{class:'zone'},h('strong',{},z.limit||'Limite'),z.remark?` — ${z.remark}`:'')),
-        h('p',{class:'v-src'},`Source : ${es.source}. Complément de la base SIA locale.`)));
-    }
-    if (es.error) cards.push(h('div',{class:'banner warn'},icon('warn'),h('span',{},`Géoplateforme : ${es.error}`)));
-    return cards;
+  function zoneSource(){
+    return local?.zones || es.localZones || [];
+  }
+  function zoneTypes(){
+    const order=['CTR','TMA','CTA','R','P','D','TRA','D-OTHER','SECTOR','RAS','FIR','UIR','UTA','OCA'];
+    const found=[...new Set(zoneSource().map((z)=>z.type).filter(Boolean))];
+    return found.sort((a,b)=>{
+      const ai=order.indexOf(a),bi=order.indexOf(b);
+      return (ai<0?999:ai)-(bi<0?999:bi)||a.localeCompare(b);
+    });
+  }
+  function filteredZones(){
+    const zones=zoneSource();
+    return zoneFilter==='ALL'?zones:zones.filter((z)=>z.type===zoneFilter);
+  }
+  function zoneFilterBar(){
+    const types=zoneTypes();
+    if(types.length<2)return null;
+    return h('div',{class:'air-filter-wrap'},
+      h('div',{class:'air-filter-head'},h('span',{class:'lbl'},'Filtrer les zones'),h('span',{class:'mono small'},`${filteredZones().length}/${zoneSource().length}`)),
+      h('div',{class:'air-filters'},
+        h('button',{class:`air-filter ${zoneFilter==='ALL'?'on':''}`,onclick:()=>{zoneFilter='ALL';draw();}},'Toutes'),
+        types.map((type)=>{
+          const count=zoneSource().filter((z)=>z.type===type).length;
+          return h('button',{class:`air-filter ${zoneFilter===type?'on':''}`,onclick:()=>{zoneFilter=type;draw();}},`${type} · ${count}`);
+        })
+      )
+    );
   }
 
   function localZonesCard() {
     if (!meta) return null;
-    const zones=local?.zones || es.localZones || [];
+    const zones=filteredZones();
     const controlled=(local?.controlled ?? es.controlled);
     const head=controlled===true
       ? h('div',{class:'banner warn'},icon('warn'),h('span',{},'Une CTR/TMA/CTA de la base SIA intersecte le rayon de mission.'))
@@ -137,6 +143,7 @@ export function renderEspace({ mission }) {
     return h('section',{class:'card-sec'},
       h('span',{class:'lbl'},'Espaces SIA intersectant le rayon'),
       head,
+      zoneFilterBar(),
       zones.length
         ? h('div',{class:'air-zone-list'},zones.slice(0,20).map((z)=>{
             const title=[z.id,z.name].filter(Boolean).join(' · ')||'Espace sans identifiant';
@@ -243,7 +250,7 @@ export function renderEspace({ mission }) {
           h('span',{class:'lbl'},'Pistes'),
           a.runways.slice(0,4).map((r)=>h('div',{class:'small'},runwayLabel(r)))):null,
         a.remark?h('p',{class:'note'},a.remark):null,
-        a.icao?h('a',{class:'btn ghost small',href:vacSearchUrl(a.icao),target:'_blank',rel:'noopener noreferrer'},'VAC / AIP ↗'):null
+        a.icao?h('a',{class:'btn ghost small',href:vacDirectUrl(a.icao,meta?.effective),target:'_blank',rel:'noopener noreferrer'},hasDirectVac(a.icao)?'Ouvrir la VAC ↗':'Rechercher au SIA ↗'):null
       ))):h('p',{class:'note'},'Aucun aérodrome disponible dans la base locale.'));
   }
 
@@ -262,11 +269,20 @@ export function renderEspace({ mission }) {
     setMode(mapMode);
     L.circle([p.lat,p.lon],{radius:p.radiusM||500,color:'#2F80ED',fillColor:'#2F80ED',weight:3,dashArray:'8 6',fillOpacity:.08}).addTo(overlay);
     L.marker([p.lat,p.lon]).addTo(overlay);
-    for(const z of local?.zones||[]){
+    for(const z of filteredZones()){
       if(!z.geometry||z.geometry.type==='Point')continue;
       try{L.geoJSON({type:'Feature',geometry:z.geometry},{style:{color:['P','R','D'].includes(z.type)?'#B3261E':'#8A5200',weight:2,fillOpacity:.08}}).addTo(overlay);}catch{}
     }
-    for(const a of local?.aerodromes||[]) L.circleMarker([a.lat,a.lon],{radius:5,weight:2,fillOpacity:.8}).bindTooltip(`${a.icao||''} ${a.name||''}`).addTo(overlay);
+    for(const a of local?.aerodromes||[]){
+      const marker=L.circleMarker([a.lat,a.lon],{radius:6,weight:2,fillOpacity:.9}).addTo(overlay);
+      marker.bindTooltip(`${a.icao||''} ${a.name||''}`.trim(),{direction:'top'});
+      const popup=h('div',{class:'ad-map-popup'},
+        h('strong',{},[a.icao,a.name].filter(Boolean).join(' · ')||'Aérodrome'),
+        h('small',{},`${fmtDistance(a.distanceM)}${Number.isFinite(a.altitudeFt)?` · ${a.altitudeFt} ft`:''}`),
+        a.icao?h('a',{class:'btn ghost small',href:vacDirectUrl(a.icao,meta?.effective),target:'_blank',rel:'noopener noreferrer'},hasDirectVac(a.icao)?'VAC ↗':'SIA ↗'):null
+      );
+      marker.bindPopup(popup);
+    }
     const bounds=L.circle([p.lat,p.lon],{radius:Math.max(1500,p.radiusM||500)}).getBounds();map.fitBounds(bounds,{padding:[16,16],maxZoom:13});
     setTimeout(()=>map.invalidateSize(),50);
   }
@@ -288,15 +304,14 @@ export function renderEspace({ mission }) {
         localZonesCard(),
         aerodromeCard(),
         contactDirectoryCard(),
-        ...[].concat(uasResult()).filter(Boolean),
-        h('section',{class:'card-sec'},h('span',{class:'lbl'},'Sources officielles'),extLink(OFFICIAL.sia),extLink(OFFICIAL.geo)),
+        h('section',{class:'card-sec'},h('span',{class:'lbl'},'Source officielle'),extLink(OFFICIAL.sia)),
         h('div',{class:'official-note'},'La détection locale est une aide à la préparation. Toujours confirmer avec les publications SIA, NOTAM, SUP AIP et l’organisme ATS lorsque nécessaire.')
       ] : h('div',{class:'empty'},h('p',{},'Définis d’abord la zone de mission.'),h('a',{class:'btn primary',href:missionUrl(mission.id,'lieu')},'Choisir la zone')),
       footer(mission,'espace')));
     queueMicrotask(initMiniMap);
   }
 
-  refreshMeta().then(async()=>{ if(meta&&hasPoint){try{local=await analyzeAerodata({lat:p.lat,lon:p.lon,radiusM:p.radiusM||500,nearest:5});}catch{} } draw(); });
+  refreshMeta().then(async()=>{ if(meta&&hasPoint){try{local=await analyzeAerodata({lat:p.lat,lon:p.lon,radiusM:p.radiusM||500,nearest:12});}catch{} } draw(); });
   draw();
   return { el:root, destroy(){map?.remove();} };
 }
