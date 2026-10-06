@@ -175,11 +175,11 @@ button, .btn, .cta { font: inherit; cursor: pointer; }
 .interim { color: var(--mute); font-style: italic; min-height: 0; }
 
 /* feuilles et toasts */
-.scrim { position: fixed; inset: 0; background: var(--scrim); z-index: 1000; display: flex; align-items: flex-end; justify-content: center; }
+.scrim { position: fixed; inset: 0; background: var(--scrim); z-index: 5000; display: flex; align-items: flex-end; justify-content: center; }
 .sheet { background: var(--surf); border-radius: var(--r-sheet) var(--r-sheet) 0 0; width: min(560px, 100%); max-height: 88dvh; overflow-y: auto; padding: 8px 18px calc(24px + env(safe-area-inset-bottom)); display: flex; flex-direction: column; gap: 14px; }
 .sheet-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; } .sheet-head h2 { overflow-wrap: anywhere; }
 .res-row { display: flex; justify-content: space-between; align-items: center; gap: 10px; border-bottom: 1px solid var(--line); padding-bottom: 10px; } .res-row .mono { overflow-wrap: anywhere; }
-.toast { position: fixed; left: 50%; bottom: calc(var(--cta-h) + 40px + env(safe-area-inset-bottom)); transform: translate(-50%, 20px); background: var(--ink); color: var(--bg); padding: 12px 18px; border-radius: 99px; font-weight: 600; opacity: 0; pointer-events: none; transition: .2s; z-index: 2000; max-width: 92vw; text-align: center; }
+.toast { position: fixed; left: 50%; bottom: calc(var(--cta-h) + 40px + env(safe-area-inset-bottom)); transform: translate(-50%, 20px); background: var(--ink); color: var(--bg); padding: 12px 18px; border-radius: 99px; font-weight: 600; opacity: 0; pointer-events: none; transition: .2s; z-index: 6000; max-width: 92vw; text-align: center; }
 .toast.show { opacity: 1; transform: translate(-50%, 0); } .toast.bad { background: var(--bad); color: var(--badInk); }
 .badge-dot { position: absolute; top: 8px; right: 8px; width: 8px; height: 8px; border-radius: 9px; background: var(--warn); }
 
