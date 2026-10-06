@@ -1,9 +1,9 @@
 // PWA : cache de la coque applicative. Les API et tuiles externes restent réseau uniquement.
-const VERSION = 'pmd-design-b-v32';
+const VERSION = 'pmd-design-b-v33';
 const SHELL = [
   './','index.html','css/app.css','design/tokens.css','manifest.webmanifest','icons/icon.svg','icons/icon-maskable.svg','icons/drone-logo.svg',
   'src/main.js','src/state.js',
-  'src/lib/geo.js','src/lib/units.js','src/lib/verdict.js','src/lib/storage.js','src/lib/time.js','src/lib/weather.js','src/lib/airspace.js','src/lib/forms.js','src/lib/recap.js','src/lib/checklists.js','src/lib/final-map.js',
+  'src/lib/geo.js','src/lib/units.js','src/lib/verdict.js','src/lib/storage.js','src/lib/time.js','src/lib/weather.js','src/lib/airspace.js','src/lib/forms.js','src/lib/recap.js','src/lib/checklists.js','src/lib/final-map.js','src/lib/kml.js',
   'src/services/http.js','src/services/geocode.js','src/services/meteo.js','src/services/airspace.js','src/services/aerodata.js','src/services/elevation.js','src/services/contacts.js','src/services/speech.js',
   'src/ui/dom.js','src/ui/layout.js','src/ui/dictate.js',
   'src/views/accueil.js','src/views/cadre.js','src/views/lieu.js','src/views/meteo.js','src/views/espace.js','src/views/fiche.js','src/views/outils.js','src/views/checklists.js','src/views/aerodata.js','src/views/cheminement.js','src/views/macloe-map.js','src/views/final-map.js','src/views/mission-pdf.js','src/views/etapes.js',
