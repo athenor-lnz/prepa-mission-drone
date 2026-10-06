@@ -45,6 +45,15 @@ export function buildRecap(mission) {
   const L=[];
   L.push(`MISSION : ${mission.name}`);
   L.push(`Cadre : ${TYPE_LABELS[mission.context?.missionType]||'non défini'} · ${CAPTURE_LABELS[mission.context?.capture]||'non défini'}`);
+  if (mission.context?.missionType === 'judiciaire') L.push('  Police judiciaire : enregistrement via VXCORE');
+  if (mission.context?.missionType === 'administratif') {
+    const ao = mission.context?.administrativeOrder || {};
+    L.push(`  Arrêté préfectoral : ${ao.held ? 'en possession' : 'non confirmé'}`);
+    if (ao.held) {
+      L.push(`  Caméras autorisées : ${ao.cameraCount ?? '—'}`);
+      L.push(`  Lieu / périmètre arrêté : ${ao.placeNote || '—'}`);
+    }
+  }
   L.push(`Cas d’usage : ${mission.context?.useCases?.length ? mission.context.useCases.join(' · ') : 'non renseigné'}`);
 
   const p=mission.place;
