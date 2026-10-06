@@ -87,7 +87,7 @@ export async function copyText(text, okMessage = 'Copié') {
 }
 
 /** Feuille modale (bas d'écran). Retourne { close }. Échap et clic sur le fond ferment. */
-export function sheet(title, content, { onClose } = {}) {
+export function sheet(title, content, { onClose, autofocus = true } = {}) {
   const prevFocus = document.activeElement;
   const close = () => { scrim.remove(); document.removeEventListener('keydown', onKey); prevFocus?.focus?.(); onClose?.(); };
   const onKey = (e) => { if (e.key === 'Escape') close(); };
@@ -98,7 +98,7 @@ export function sheet(title, content, { onClose } = {}) {
   const scrim = h('div', { class: 'scrim', onclick: (e) => { if (e.target === scrim) close(); } }, panel);
   document.body.append(scrim);
   document.addEventListener('keydown', onKey);
-  (panel.querySelector('input,textarea,button.primary') || panel.querySelector('button'))?.focus();
+  if (autofocus) (panel.querySelector('input,textarea,button.primary') || panel.querySelector('button'))?.focus();
   return { close };
 }
 
